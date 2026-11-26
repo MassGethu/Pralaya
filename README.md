@@ -2,6 +2,8 @@
 
 PRALAYA forecasts daily weather over India and lets users compare an unperturbed forecast with a forecast that starts from a localized atmospheric shock. The dashboard shows how the forecasts differ and calculates regional agricultural weather-stress indicators from the same rollouts.
 
+**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact.
+
 ## Train
 
 Download `india_climate_train.nc`, `stats.json`, `API_CONTRACT.md`, the kit wheel and `SHA256SUMS.txt`. Run `shasum -a 256 -c SHA256SUMS.txt` in the download directory and keep the dataset outside the repository. [Organizer's v1.0.0 release](https://github.com/OfficialAbhinavSingh/yug-monsoon-kit/releases/tag/v1.0.0)

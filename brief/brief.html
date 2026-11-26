@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRALAYA — Project Brief (Track 2: Multiverse of Monsoon)</title>
+<style>
+  @page { size: A4; margin: 11mm 12mm 10mm 12mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 8.35pt; line-height: 1.32; color: #16202a; }
+  .page { height: 276mm; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
+  .page:last-child { page-break-after: auto; }
+  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.6pt solid #16202a; padding-bottom: 2.2mm; margin-bottom: 2.6mm; }
+  header h1 { font-size: 17pt; letter-spacing: 0.06em; margin: 0; }
+  header h1 span { font-weight: 400; font-size: 9.5pt; letter-spacing: 0; color: #4a5866; margin-left: 2mm; }
+  header .meta { text-align: right; font-size: 7pt; color: #4a5866; line-height: 1.35; }
+  h2 { font-size: 9.6pt; margin: 2.6mm 0 1.1mm; text-transform: uppercase; letter-spacing: 0.05em; color: #0b4f6c; }
+  h2:first-child { margin-top: 0; }
+  p { margin: 0 0 1.4mm; }
+  ul { margin: 0 0 1.4mm; padding-left: 4mm; }
+  li { margin-bottom: 0.55mm; }
+  .usp { background: #eef5f8; border-left: 2.4pt solid #0b4f6c; padding: 1.8mm 2.6mm; margin-bottom: 1.6mm; font-size: 8.7pt; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4.5mm; }
+  table { border-collapse: collapse; width: 100%; margin: 0.6mm 0 1.4mm; font-size: 7.5pt; }
+  th, td { border-bottom: 0.5pt solid #c9d3db; padding: 0.75mm 1.2mm; text-align: left; vertical-align: top; }
+  th { background: #f1f4f6; font-weight: 600; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .good { color: #116b3a; font-weight: 600; }
+  .bad { color: #a23a12; font-weight: 600; }
+  .note { font-size: 6.9pt; color: #4a5866; }
+  .mono { font-family: Menlo, Consolas, monospace; font-size: 7.1pt; }
+  figure { margin: 0 0 1.6mm; }
+  figure img { width: 100%; display: block; border: 0.5pt solid #c9d3db; }
+  figcaption { font-size: 6.9pt; color: #4a5866; margin-top: 0.8mm; }
+  .flow { display: flex; gap: 1.2mm; flex-wrap: wrap; margin: 0.6mm 0 1.6mm; }
+  .flow span { background: #f1f4f6; border: 0.5pt solid #c9d3db; border-radius: 1.2mm; padding: 0.6mm 1.6mm; font-size: 7.4pt; }
+  .flow b { color: #0b4f6c; }
+  footer { margin-top: auto; border-top: 0.5pt solid #c9d3db; padding-top: 1.2mm; font-size: 6.6pt; color: #4a5866; }
+</style>
+</head>
+<body>
+
+<!-- ============================ PAGE 1 ============================ -->
+<section class="page">
+  <header>
+    <h1>PRALAYA <span>India's weather digital twin · Track 2 "Multiverse of Monsoon"</span></h1>
+    <div class="meta">Team: Mass · Jarvis · Hridhin<br>Code at commit <span class="mono">385e70f</span> · checkpoint <span class="mono">b3_roll4</span><br>weights sha256 <span class="mono">20ebabfd…b4e4</span> (3.47 MB, plain git)</div>
+  </header>
+
+  <div class="usp"><b>USP.</b> PRALAYA forecasts India's daily weather 10 days ahead from three days of state, lets a user inject a localized shock and watch it ripple outward, and turns the difference between the two futures into transparent agricultural stress indicators. Every number shown is computed live from our own trained model; nothing is pre-rendered, looked up or downloaded.</div>
+
+  <div class="cols">
+  <div>
+    <h2>Model design</h2>
+    <ul>
+      <li><b>Residual CNN</b> (<span class="mono">model/net.py</span>): width 96, 5 residual blocks, replicate padding, 0.86 M parameters. Input: last 3 days × 6 channels (normalized), land–sea mask, orography, latitude, longitude, and sin/cos of the <i>target</i> day. Output: tomorrow as a change added to today, so an untrained model equals persistence.</li>
+      <li><b>Autoregressive rollout:</b> each predicted day is fed back in; the seasonal phase advances 2π/365 per step. Rain passes through a ReLU, so it is never negative.</li>
+      <li><b>Training:</b> b1 learns one step (40 epochs); b3 fine-tunes b1 through a <b>4-day rollout</b> (12 epochs, lr 3e-4) with latitude-weighted MSE. Trained on Apple MPS, served on CPU.</li>
+      <li><b>Shock path:</b> the server adds the physical delta once to the last input day; the model never sees "a shock", only a different starting state. Null and all-zero shocks give bit-identical forecasts.</li>
+    </ul>
+
+    <h2>Data and validation</h2>
+    <ul>
+      <li>Organizer archive 2005–2021, 32 × 36 grid at 1°. Split by calendar year: <b>train 2005–2019</b> (weights, normalization, climatology baseline), <b>val 2020</b> (selection only), <b>test 2021</b>.</li>
+      <li>A window counts only if inputs and all 10 targets lie in one split. Data audit: 30/30 checks pass.</li>
+      <li>Six candidates (b1, b3 × 3 seeds). The selection rule was set after seed-0 validation and before full 2021 scoring. A prior 2021 temperature-range check informed validity testing. Full scores followed the selection commit (<span class="mono">ed10825</span>). Per-window skill is +0.046 on validation and +0.043 in 2021.</li>
+    </ul>
+
+    <h2>Drift and blur: what we did and measured</h2>
+    <ul>
+      <li><b>Drift:</b> multi-step rollout training teaches the model to recover from its own errors. Against b1 on 2021, b3 cuts day-8 skill loss from −0.204 to −0.112 and raises shock stability (warm Bay of Bengal) from 66% to 86%.</li>
+      <li><b>Blur:</b> day-8 spatial variance stays at 0.83–1.02 of observed for every channel (kit band 0.4–2.5), with 90% of windows in band, so forecasts keep structure instead of smoothing to an average.</li>
+      <li><b>Validity:</b> the server rejects non-finite output, clips rain to ≥ 0 and t2m to 233.15–333.15 K, and logs the total and per-channel clipping counts.</li>
+    </ul>
+  </div>
+
+  <div>
+    <h2>Measured evidence (local, test year 2021)</h2>
+    <p class="note">353 windows, shipped checkpoint, kit scoring functions (<span class="mono">monsoon_r1.scoring</span>). Skill = 1 − RMSE / min(RMSE persistence, RMSE climatology), latitude-weighted, mean of 6 channels per window; 95% block-bootstrap CIs. These are local proxies, not leaderboard scores; the grader uses 5 hidden 2023–24 windows.</p>
+    <table>
+      <tr><th>Metric</th><th class="n">Day 1</th><th class="n">Day 4</th><th class="n">Day 8</th></tr>
+      <tr><td>Skill vs better baseline</td><td class="n good">+0.238</td><td class="n">+0.004</td><td class="n bad">−0.112</td></tr>
+      <tr><td>Skill vs persistence only</td><td class="n">—</td><td class="n good">+0.222</td><td class="n">—</td></tr>
+      <tr><td>Heavy-rain CSI (&gt;10 mm/day, pooled): model</td><td class="n">0.530</td><td class="n">0.332</td><td class="n">0.289</td></tr>
+      <tr><td>&nbsp;&nbsp;persistence / climatology</td><td class="n">0.426 / 0.260</td><td class="n">0.209 / 0.261</td><td class="n">0.196 / 0.262</td></tr>
+    </table>
+    <table>
+      <tr><th>Check</th><th>Result (2021)</th></tr>
+      <tr><td>Beats persistence at day 4 (qualification gate)</td><td><span class="good">+0.222</span> [0.203, 0.244]; 95% of windows</td></tr>
+      <tr><td>Heavy-rain CSI skill (per window)</td><td>+0.081 [0.065, 0.102]</td></tr>
+      <tr><td>Invalid windows (NaN, rain &lt; 0, t2m range)</td><td>0 of 353</td></tr>
+      <tr><td>Shock: localized near box on day 1</td><td>100% of windows, both shocks</td></tr>
+      <tr><td>Shock: spreads outward by days 4–8</td><td>warm Bay 94% · Arabian Sea wind 62%</td></tr>
+      <tr><td>Shock: stable (&lt; 5 std everywhere)</td><td>warm Bay 86% · Arabian Sea wind 95%</td></tr>
+      <tr><td>Zero shock</td><td>bit-identical to no shock</td></tr>
+    </table>
+    <p class="note">Clean checkout of <span class="mono">385e70f</span>: official schema validator 6/6 and repo scan 15/15 with zero flags. Under offline ARM64 limits (4 CPU, 6 GiB, read-only repo), eight ten-step calls took 122–209 ms and peak container memory was 245 MiB. Native x86 latency remains unverified.</p>
+
+    <h2>Failure modes</h2>
+    <ul>
+      <li><b>Day 8 trails the better baseline</b> (skill −0.112). On 2020 validation, ocean temperature first fell below baseline at day 1. Weak daily variation makes ocean persistence hard to beat.</li>
+      <li><b>Extreme rain is under-forecast.</b> On val 2020, frequency bias at ≥ 25 mm/day is 0.80 / 0.55 / 0.45 at days 1 / 4 / 8. Worst window: pre-cyclone Amphan convection (May 2020), 10 mm/day forecast where 139 mm/day fell.</li>
+      <li><b>Shock instability is rain-only.</b> We reproduced all 51 unstable warm-Bay and 37 unstable Arabian-Sea windows flagged on val 2020: every peak is in rainfall, most inside the shock box (58 of 88), with a median of 38–51 mm/day added, usually where the model already forecasts rain. A rain-stability fine-tune is pre-registered but not yet shipped.</li>
+      <li><b>Not a physical model.</b> "Physics-aware" here means persistence-anchored residual steps, terrain and land–sea inputs, and non-negative rain; there is no explicit conservation law. Shock responses show model sensitivity, not proven causation.</li>
+    </ul>
+  </div>
+  </div>
+  <footer>Data: organizer kit <span class="mono">india_climate_train.nc</span> (v1.0.0, sha256 f37bdbd0…903b): modified Copernicus Climate Change Service information (ERA5, Hersbach et al. 2020) via Google WeatherBench 2 (Rasp et al. 2024), CC BY 4.0. Evidence: <span class="mono">evaluation/results/report_test.md</span>, <span class="mono">trace_b3_roll4_val.md</span>, <span class="mono">docs/TRAINING.md</span>, <span class="mono">docs/SELECTION.md</span>.</footer>
+</section>
+
+<!-- ============================ PAGE 2 ============================ -->
+<section class="page">
+  <header>
+    <h1>PRALAYA <span>Live visualization and agricultural impact</span></h1>
+    <div class="meta">Dashboard: <span class="mono">dashboard/</span> (Vite + TypeScript, separate from the server)<br>Every map and indicator comes from live <span class="mono">POST /simulate</span> calls</div>
+  </header>
+
+  <div class="cols">
+  <div>
+    <h2>Interactive map and timeline</h2>
+    <div class="flow"><span><b>1</b> Load 3-day state</span><span><b>2</b> Run Prime (no shock)</span><span><b>3</b> Draw shock box</span><span><b>4</b> Run Branch</span><span><b>5</b> Compare &amp; play days</span></div>
+    <ul>
+      <li>India map on the model's own 32 × 36 grid (row 0 = 6.5°N, column 0 = 65.5°E), north up, coastlines and city markers, seven variables (rain, temperature, wind speed, both wind components, pressure, moisture).</li>
+      <li>Views: <b>Prime</b>, <b>Branch</b>, signed <b>Difference</b> (Branch − Prime, zero-centred diverging scale fixed across days) and <b>Swipe</b>. A 10-day timeline plays the rollout.</li>
+      <li>Shocks: draw a box or type coordinates; add physical deltas (K, mm/day, m/s, Pa, kg/m²) or a percentage of the last input day. Presets reproduce the organizer's warm Bay of Bengal and weaker Arabian Sea wind recipes exactly. Negative rain shocks are capped so shocked rain never goes below 0.</li>
+      <li>Prime and Branch always send the identical history, seasonal encoding and horizon. A zero check sends an all-zero tensor and reports the per-channel difference against the official tolerance.</li>
+      <li><b>Ripple reach:</b> share of cells outside the shock box whose |Δ| exceeds a variable-specific threshold (rain 1 mm/day), per day. It describes the model's response, not a causal claim.</li>
+    </ul>
+    <figure>
+      <img src="dashboard_diff_day6.jpg" alt="PRALAYA dashboard, Difference view on forecast day 6 after a warm Bay of Bengal shock">
+      <figcaption>Live dashboard, Difference view, forecast day 6 (21 Jul 2021): warm Bay of Bengal shock (+3 K t2m, +15% moisture, dashed box) on the held-out window ending 15 Jul 2021. The rainfall response has grown from the box toward the coast and inland (peak |Δ| 22.8 mm/day). Green box: farm region.</figcaption>
+    </figure>
+  </div>
+
+  <div>
+    <h2>Agricultural impact: weather-stress indicators</h2>
+    <p>For a user-drawn farm region (land cells with land fraction ≥ 0.5) over chosen forecast days, computed identically for Prime and Branch:</p>
+    <ul>
+      <li><b>Regional daily rain</b> = cos(latitude)-weighted mean of tp over region cells; <b>cumulative rain</b> = its sum over the days.</li>
+      <li><b>Dry day</b> = regional rain &lt; 2.5 mm/day; <b>longest dry spell</b> = longest run of dry days.</li>
+      <li><b>Heavy-rain exposure</b> = share of (cell, day) pairs with tp ≥ 10 mm/day (the contract's heavy-rain level).</li>
+      <li><b>Mean 2 m temperature</b> = weighted mean of the daily-mean t2m field (not a daily maximum).</li>
+    </ul>
+
+    <h2>Worked example (live, independently recomputed)</h2>
+    <p class="note">Window ending 15 Jul 2021 (test year, never used for training or selection). Shock: organizer warm Bay of Bengal recipe. Farm region: central India, 18.5–25.5°N, 74.5–83.5°E, 80 land cells, days 1–7. We recomputed every value below from the raw rollouts outside the dashboard; all match.</p>
+    <table>
+      <tr><th>Indicator</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Branch − Prime</th></tr>
+      <tr><td>Cumulative rainfall</td><td class="n">66.1 mm</td><td class="n">66.2 mm</td><td class="n">+0.1 mm</td></tr>
+      <tr><td>Longest dry spell</td><td class="n">2 d</td><td class="n">1 d</td><td class="n">−1 d</td></tr>
+      <tr><td>Dry days (&lt; 2.5 mm/day)</td><td class="n">2</td><td class="n">1</td><td class="n">−1</td></tr>
+      <tr><td>Heavy-rain exposure (≥ 10 mm/day)</td><td class="n">46.8%</td><td class="n">48.4%</td><td class="n">+1.6 pp</td></tr>
+      <tr><td>Mean 2 m temperature</td><td class="n">28.6 °C</td><td class="n">28.7 °C</td><td class="n">+0.18 K</td></tr>
+    </table>
+    <p>Reading: a warmer, moister Bay of Bengal leaves central India's week-ahead totals almost unchanged but shortens the longest dry spell and slightly raises heavy-rain exposure. The rainfall response starts in the Bay (6% of cells outside the box change on day 1; peak 8.6 mm/day) and spreads to the coast and inland by day 6.</p>
+
+    <h2>Inverse search and preparedness</h2>
+    <p>The Scenarios tab searches signed shocks for a rainfall deficit or an absolute threshold. It shows the lowest-cost qualifying shock, cumulative rainfall spread across the tested scenarios, and water shortfall under user-set daily supplements. Replay as Branch checks the full returned forecast.</p>
+    <p>On the window ending 30 Jun 2020, a +1.5 K Bay of Bengal shock raised Odisha’s seven-day rainfall from <b>105.64 to 115.12 mm</b>, crossing 115 mm. The dashboard flags this magnitude outside the recommended range. The rollout matched on replay.</p>
+
+    <h2>Assumptions and limits</h2>
+    <ul>
+      <li>Indicators compare two simulated futures. A change relative to Prime is not a climatological drought, a yield estimate or a loss figure; no crop type, soil or irrigation data are used.</li>
+      <li>The grid is 1° and daily: it cannot resolve farm-scale conditions, hourly heat or cyclone tracks, and extreme rain is under-forecast (page 1).</li>
+      <li>A shock moves the model outside its training data; the response measures model sensitivity under a controlled change, not real-world causation. Large rain responses inside the shock box are the main known artefact.</li>
+      <li>Research prototype; not a substitute for IMD forecasts or agronomic advice.</li>
+    </ul>
+  </div>
+  </div>
+  <footer>Reproduce with <span class="mono">python serve.py --port 8000</span> and <span class="mono">python -m scripts.scenario_service --port 8001</span> in separate terminals. See <span class="mono">dashboard/README.md</span> for the dashboard commands and local demo inputs.</footer>
+</section>
+
+</body>
+</html>
