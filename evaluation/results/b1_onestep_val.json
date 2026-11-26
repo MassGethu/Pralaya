@@ -6,7 +6,7 @@
  "first_init_day": "2020-01-03",
  "last_init_day": "2020-12-21",
  "invalid_windows": [],
- "cpu_rollout_ms_median": 25.111625000135973,
+ "cpu_rollout_ms_median": 24.726062518311664,
  "leads": {
   "1": {
    "rmse_model": {
@@ -248,56 +248,56 @@
   "anti_blur_points_proxy": 10.0
  },
  "shocks": {
-  "windows": 36,
+  "windows": 354,
   "null_exact": true,
   "null_ok": true,
   "warm_ocean": {
    "nonzero": 1.0,
    "localized": 1.0,
-   "propagates": 0.9722222222222222,
-   "stable": 0.6666666666666666,
+   "propagates": 0.9576271186440678,
+   "stable": 0.6977401129943502,
    "no_teleport": 1.0,
-   "near_frac_day1_mean": 0.9730558097362518,
-   "near_frac_day1_min": 0.9197515845298767,
-   "far_frac_max": 2.476052031852305e-05,
-   "max_abs_std": 18.937904357910156,
+   "near_frac_day1_mean": 0.971933439121408,
+   "near_frac_day1_min": 0.830405056476593,
+   "far_frac_max": 9.822222637012601e-05,
+   "max_abs_std": 21.306602478027344,
    "peak_resp_std_by_day_mean": [
-    1.209,
-    1.362,
-    1.696,
-    1.809,
-    2.085,
-    2.411,
-    2.975,
-    2.784,
-    2.732,
-    2.798
+    1.057,
+    1.263,
+    1.464,
+    1.694,
+    2.023,
+    2.364,
+    2.676,
+    2.689,
+    2.715,
+    2.784
    ]
   },
   "monsoon_stall": {
    "nonzero": 1.0,
    "localized": 1.0,
-   "propagates": 0.7222222222222222,
-   "stable": 0.75,
+   "propagates": 0.711864406779661,
+   "stable": 0.7796610169491526,
    "no_teleport": 1.0,
-   "near_frac_day1_mean": 0.9888598405652576,
-   "near_frac_day1_min": 0.9449381232261658,
+   "near_frac_day1_mean": 0.9863174965152632,
+   "near_frac_day1_min": 0.8718162178993225,
    "far_frac_max": 0.0003603026270866394,
-   "max_abs_std": 10.52090072631836,
+   "max_abs_std": 20.43743896484375,
    "peak_resp_std_by_day_mean": [
-    1.597,
-    1.812,
-    1.677,
-    1.588,
-    1.684,
-    1.875,
-    1.879,
-    1.975,
-    2.321,
-    2.148
+    1.371,
+    1.387,
+    1.384,
+    1.421,
+    1.545,
+    1.643,
+    1.807,
+    1.844,
+    2.01,
+    2.069
    ]
   },
-  "causality_points_proxy_mean": 13.333333333333334
+  "causality_points_proxy_mean": 13.400423728813559
  },
- "eval_seconds": 13.4
+ "eval_seconds": 45.0
 }

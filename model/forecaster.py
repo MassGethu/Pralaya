@@ -1,8 +1,7 @@
-"""Inference adapter: load a PRALAYA checkpoint on CPU and run the official /simulate semantics.
+"""Inference adapter: load a PRALAYA checkpoint on CPU and run the official simulate-endpoint semantics.
 
-serve.py (owned by Mass) parses JSON and calls `Forecaster.simulate`; everything numerical lives here, so each
-transformation has one owner:
-  * perturbation: added ONCE to init_states[-1] in physical units (None == zeros, bit-for-bit)
+serve.py (Mass) parses JSON and applies the shock, then calls model.inference.load_cpu; the numerics live here:
+  * perturbation: the release path (load_cpu) passes None; the optional argument is for local evaluation only
   * admissibility: rain in the shocked last state is clipped at 0 before the model sees it
   * normalisation, rollout and seasonal advance: inside PralayaNet
 No dates, archives or network access are used here.
@@ -16,7 +15,8 @@ import torch
 
 from .net import NC, NLAT, NLON, T_IN, TP, PralayaNet
 
-DEFAULT_CKPT = Path(__file__).resolve().parent / "assets" / "pralaya.pt"
+BUNDLE_DIR = Path(__file__).resolve().parent / "bundle"
+DEFAULT_CKPT = BUNDLE_DIR / "pralaya.pt"
 
 
 def load_model(path: str | Path = DEFAULT_CKPT) -> tuple[PralayaNet, dict]:

@@ -1,7 +1,7 @@
 """Local held-out benchmark using the official kit scoring functions (monsoon_r1.scoring).
 
   python -m evaluation.evaluate --ckpt runs/b1_onestep/best.pt --split val
-  python -m evaluation.evaluate --ckpt model/assets/pralaya.pt --split test --out evaluation/results/release_test.json
+  python -m evaluation.evaluate --ckpt model/bundle/pralaya.pt --split test --out evaluation/results/release_test.json
 
 Runs the real inference path (model.Forecaster on CPU) on every 3-day window in the split whose 10 target days also
 lie in the split. Persistence = last input day repeated. Climatology = training-years-only seasonal mean

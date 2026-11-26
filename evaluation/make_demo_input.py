@@ -1,10 +1,10 @@
-"""Write a /simulate request body for a live demo from the LOCAL training archive (output is gitignored, never shipped).
+"""Write a simulate-endpoint request body for a live demo from the LOCAL training archive (output is gitignored, never shipped).
 
   python -m evaluation.make_demo_input --last-day 2021-07-15                       # Prime request
   python -m evaluation.make_demo_input --last-day 2021-07-15 --shock warm_ocean     # Branch request (official recipe)
 
 Writes demo_inputs/<last-day>[_<shock>].json = {"init_states": [3,6,32,36], "doy_sincos": [s, c], "steps": 10,
-"perturbation": null | [6,32,36]}; POST it to /simulate as-is. The 3 input days are last-day-2 .. last-day.
+"perturbation": null | [6,32,36]}; POST it to the simulate endpoint as-is. The 3 input days are last-day-2 .. last-day.
 """
 from __future__ import annotations
 

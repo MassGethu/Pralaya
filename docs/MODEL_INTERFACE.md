@@ -18,23 +18,24 @@ verified against `india_climate_train.nc` (sha256 `f37bdb…903b`, 122,831,709 b
 | Step | Owner | Where |
 |---|---|---|
 | JSON parse/encode, `/health`, `/simulate`, `inference_ms`, input shape errors -> HTTP 4xx | Mass | `serve.py` |
-| Copy inputs, add perturbation once to `init_states[-1]` (null == zeros, bit-identical), clip shocked rain at 0 | Jarvis | `model/forecaster.py` |
+| Add perturbation once to `init_states[-1]` (skipped when all zeros) | Mass | `inference_adapter.py` |
+| Copy inputs, clip input rain at 0 | Jarvis | `model/forecaster.py` |
 | Normalisation, static geography, seasonal advance, autoregressive rollout, rain >= 0 | Jarvis | `model/net.py` |
 
 ## How serve.py should call it
 ```python
-from model import Forecaster
-FC = Forecaster()                    # loads model/assets/pralaya.pt on CPU, torch threads = 4, at import time
-out = FC.simulate(init_states, doy_sincos, steps, perturbation)   # perturbation: None or [6,32,36]
-# out: np.float32 [steps,6,32,36] physical units -> out.tolist()
+from model.inference import load_cpu
+forecast = load_cpu(Path("model/bundle"))           # loads model/bundle/pralaya.pt on CPU, 4 torch threads
+out = forecast(history, doy_sincos, steps)          # history already shocked by the adapter
+# out: np.float32 [steps,6,32,36] physical units
 ```
-- `Forecaster(path)` takes an explicit checkpoint path if we swap candidates; default `model/assets/pralaya.pt`.
-- `FC.model_id` is the checkpoint ID, so it can go in `/health` `model_name`.
+- `forecast.model_id` is the checkpoint ID.
+- Season: the model conditions on the TARGET day, so it rotates the supplied last-input pair by 2*pi/365 before the first transition and once per step after.
 - It raises `ValueError` on bad shapes/NaN, so map that to HTTP 422.
 - It is deterministic, keeps no state between calls and never mutates its inputs.
 - `serve.py` must NOT import `train.py` or `evaluation/` (repo_scan treats every module serve.py imports as inference code).
 
-## Checkpoint format (`model/assets/pralaya.pt`, loaded with `torch.load(..., weights_only=True)`)
+## Checkpoint format (`model/bundle/pralaya.pt`, loaded with `torch.load(..., weights_only=True)`)
 `{"state_dict", "config": {"width", "blocks"}, "mean" [6], "std" [6], "static" [2,32,36], "meta": {"model_id", "train_years", ...}}`.
 Self-contained: no stats.json, no climatology and no archive are needed at inference. Expected size ~3.5 MB (no LFS needed).
 

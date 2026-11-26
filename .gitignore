@@ -10,6 +10,6 @@ data/
 runs/
 demo_inputs/
 evaluation/results/*.npy
-# only the selected release checkpoint under model/assets/ is committed
+# only the selected release checkpoint under model/bundle/ is committed
 *.pt
-!model/assets/pralaya.pt
+!model/bundle/pralaya.pt
