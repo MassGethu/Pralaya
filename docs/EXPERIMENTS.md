@@ -336,3 +336,27 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - every seed has slightly better heavy-rain day-1 CSI.
 - **Status:** e3_rainstab passes rules 1–5. It is promoted only if neither `b2_unet` nor `b5_transport` passes rules 1–4
   with a higher seed-0 S, which is decided at 03:00. `model/bundle` is unchanged until then.
+
+### Round 2 outcome: `e3_rainstab` promoted
+- `b2_unet`: not promoted (`mass/b2-unet` @ `1d7e76f`; chain stopped at the stage-1 check).
+- `b5_transport`: not promoted (`hridhin/b5-transport` @ `6f65cfb`; fails rules 3 and 4a).
+- `b4_heavyrain`: not promoted (fails rules 2 and 3).
+- `e3_rainstab` is the only round-2 run passing rules 1–5, so **it is promoted.** We ship seed 0, as registered.
+  Seed 2 scores higher, but picking it would be one more selection on val.
+- **Release:**
+  - `model/bundle/pralaya.pt` = `runs/e3_rainstab/best.pt`, sha256 `90605130…68d88db`
+    (`90605130265bb9282ee0e2bdd5fec698c0f3ac4b2df8802f0a8be94eb68d88db`), 3,470,551 bytes.
+  - Same architecture config as e3 (`{"width": 96, "blocks": 5}`), so serving code needs no change.
+  - Rollback: `git checkout 3578dd2 -- model/bundle/pralaya.pt` (e3_roll8_ocean, sha256 `d29656ae…0c7a90`).
+    Then restore `evaluation/results/shock_ranges_e3_roll8_ocean.*` as `shock_ranges.*`.
+- **Checks on `jarvis/model` with the new bundle:**
+  - all 33 tests;
+  - `scripts/check_inference.py` against a live `serve.py`;
+  - the official schema validator: all checks passed;
+  - `monsoon_r1.repo_scan`: 15/15, no flags;
+  - memprobe: peak 241 MB;
+  - deterministic: identical repeated forecasts, and a null shock equals no shock.
+- **Shock ranges regenerated** (`docs/SHOCK_RANGES.md`):
+  - trusted Bay of Bengal −2 … +2 K and Arabian Sea wind −30 … +30 %;
+  - the scenario service has an `e3_rainstab` profile with 13 defaults.
+  - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.

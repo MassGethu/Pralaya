@@ -25,6 +25,7 @@ B3_MAGNITUDES = {"warm_ocean": (-1, -0.5, 0.5, 1), "monsoon_stall": (-20, -10, 1
 VALIDATED_MAGNITUDES = {
     "b3_roll4": B3_MAGNITUDES,
     "e3_roll8_ocean": {**B3_MAGNITUDES, "warm_ocean": (*B3_MAGNITUDES["warm_ocean"], 1.5)},
+    "e3_rainstab": {"warm_ocean": (-2, -1, -0.5, 0.5, 1, 1.5, 2), "monsoon_stall": (-30, -20, -10, 10, 20, 30)},
 }
 Positive = Annotated[FiniteFloat, Field(gt=0)]
 Nonnegative = Annotated[FiniteFloat, Field(ge=0)]

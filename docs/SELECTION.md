@@ -46,4 +46,4 @@ spread, shock stability CIs with the unstable channel, region skill table, and t
   See `evaluation/results/selection_val.md`.
 - Test (`e50d790`, scored once afterwards): `b3_roll4` S 46.77; all six candidates in `evaluation/results/report_test.md`.
 - Later: `b3_roll4` was replaced by `e3_roll8_ocean` under the separate, pre-registered rule in
-  [EXPERIMENTS.md](EXPERIMENTS.md) (val only).
+  [EXPERIMENTS.md](EXPERIMENTS.md) (val only), and `e3_roll8_ocean` by `e3_rainstab` in round 2 under the same rules.

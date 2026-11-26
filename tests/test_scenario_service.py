@@ -78,6 +78,16 @@ class ScenarioServiceTest(unittest.TestCase):
         self.assertTrue(warm["within_recommended_range"])
         self.assertFalse(warm["within_b3_recommended_range"])
 
+    def test_rainstab_profile_uses_its_own_validated_ranges(self):
+        self.parameters.pop("candidates")
+        request = ScenarioRequest(**self.parameters, deficit_mm=0.2)
+        report = evaluate(request, ControlledForecast(), self.land, {"model_id": "e3_rainstab"})
+        self.assertEqual(report["ensemble"]["scenario_count"], 13)
+        by = {(c["recipe"], c["amplitude"]): c for c in report["candidates"]}
+        self.assertTrue(by[("warm_ocean", 2)]["within_recommended_range"])
+        self.assertTrue(by[("monsoon_stall", -30)]["within_recommended_range"])
+        self.assertFalse(by[("warm_ocean", 2)]["within_b3_recommended_range"])
+
 
 if __name__ == "__main__":
     unittest.main()
