@@ -271,3 +271,24 @@ tuning on val, and no inner-holdout retrain. `model/bundle` is not touched and n
 - 03:00: seed-0 results for all runs are pushed.
 - 05:30: seeds s1 and s2 for the single winner, run one after another.
 - Anything late or failing is "not promoted", with one line on why.
+
+### Round 2 results (seed 0, val 2020, vs `e3_roll8_ocean`)
+**`b4_heavyrain`: not promoted.** It fails rule 2 (S 46.14, ΔS −3.23) and rule 3 (paired Δ skill −0.0270
+[−0.0331, −0.0202]). Rule 4 would have passed: stable 88.4 / 91.0 % vs 88.1 / 88.4 %, heavy-25 d1 CSI 0.364 vs
+0.364, day-8 in band 0.927 vs 0.897. The best checkpoint is epoch 3 (val_score 0.4120). Every epoch scored worse on
+val_score than the b3 starting point (0.4094).
+
+| vs e3 | S | paired Δ [CI] | stable warm / stall | CSI 25 d1 / d8 | POD 25 d1 / d8 | CSI 50 d1 / d8 | POD 50 d1 / d8 | freq bias 10 mm d8 | day-8 tp var ratio | day-8 in band |
+|---|---|---|---|---|---|---|---|---|---|---|
+| e3_roll8_ocean | 49.37 | – | 88.1 / 88.4 | 0.364 / 0.080 | 0.478 / 0.106 | 0.235 / 0.002 | 0.289 / 0.003 | 0.94 | 0.72 | 0.897 |
+| b4_heavyrain | 46.14 | −0.0270 [−0.0331, −0.0202] | 88.4 / 91.0 | 0.364 / 0.098 | 0.481 / 0.152 | 0.225 / 0.007 | 0.271 / 0.008 | 1.77 | 1.78 | 0.927 |
+
+- **What happened:** weighting wet cells ×4 made the model rain too often. At day 8 it forecasts 85k cells with
+  ≥ 10 mm/day against 48k observed (frequency bias 1.77 vs 0.94), and the tp field is too variable (ratio 1.78 vs 0.72).
+- **The cost:** tp skill falls (day 4 +0.03 → −0.00, day 8 −0.06 → −0.13), and that drives the S drop.
+- **The gain is small:**
+  - day-8 25 mm/day POD rises 0.106 → 0.152 and CSI 0.080 → 0.098;
+  - 50 mm/day is still essentially unpredicted after day 1;
+  - day-1 heavy rain is unchanged.
+- **Conclusion:** a flat loss weight on wet cells trades many false alarms for a few extra heavy-rain hits. It does
+  not beat e3.
