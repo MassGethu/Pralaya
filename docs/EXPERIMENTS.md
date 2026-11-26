@@ -391,3 +391,24 @@ the raw ensemble's paired response (raw ensemble Branch − raw ensemble Prime).
 
 2021 is scored once afterwards as a follow-up (must not fall below the served release's 56.92). Seeds are the
 members themselves, so there is no separate rule-5 run. If any gate fails, the release stays as it is.
+
+### `a5_ens3` result (val 2020, served): **not promoted**, fails gate 3
+| served, val 2020 | S | rmse | CSI | blur | causality | propagates warm / stall | stable warm / stall | day-8 in band |
+|---|---|---|---|---|---|---|---|---|
+| release (`e3_rainstab` + calibration) | 57.92 | 22.92 | 11.07 | 10 | 13.92 | 97.7 / 57.1 % | 92.9 / 94.9 % | 0.870 |
+| `a5_ens3` | 65.82 | 29.16 | 12.79 | 10 | 13.87 | 95.5 / 44.9 % | 99.4 / 99.7 % | 0.858 |
+
+- Gate 1 passes (S +7.9). Gates 4 and 5 pass (null exact; anti-blur 10/10; in-band −1.1 pp; tp variance ratio 0.49).
+- **Gate 3 fails.** Averaging three members' shock responses shrinks the far-field response, so propagation falls
+  by 2.2 pp (warm) and 12.2 pp (stall). The 2 pp limit was fixed in advance, so `a5_ens3` is not promoted, and its
+  paired CI and the 2021 follow-up were not run.
+- The refitted weights trust the ensemble more than the single model (day-8 non-rain weights 0.30–0.84 vs
+  0.30–0.64; persistence share on day 1 is 0.5 vs 1.0).
+
+## Round 3b, pre-registered: `a5b_ens3_resp0`
+Written and pushed **before** any `a5b` number was computed (27 Nov 2026, ~05:25 IST), after `a5_ens3` failed gate 3.
+
+**Change vs `a5_ens3`, one thing:** Prime stays the calibrated 3-seed mean (same `calibration.pt`, same fit). Branch
+uses seed 0's own paired response instead of the averaged one: Branch = calibrated ensemble Prime +
+(seed-0 raw Branch − seed-0 raw Prime). The shock response is therefore exactly the shipped release's.
+**Gates:** the same six as `a5_ens3`, against the same served baseline. 2021 follow-up once afterwards (≥ 56.92).
