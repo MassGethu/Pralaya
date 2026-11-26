@@ -7,7 +7,7 @@
  "first_init_day": "2020-01-03",
  "last_init_day": "2020-12-21",
  "invalid_windows": [],
- "cpu_rollout_ms_median": 113.5285210039001,
+ "cpu_rollout_ms_median": 35.87483349838294,
  "leads": {
   "1": {
    "rmse_model": {
@@ -1975,5 +1975,5 @@
    "n": 354
   }
  },
- "eval_seconds": 205.9
+ "eval_seconds": 67.9
 }

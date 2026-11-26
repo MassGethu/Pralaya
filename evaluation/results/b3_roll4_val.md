@@ -16,7 +16,7 @@ Day-4 per channel (RMSE model / persistence / climatology):
 
 Aggregate: SS per-window +0.0461 (proxy 11.5/30), CSI skill +0.0710 (proxy 10.7/15), anti-blur proxy 10.0/10 (in-band 90%), day-4 beats persistence: True
 Day-8 variance ratio: {'t2m': 1.0130000114440918, 'tp': 0.8489999771118164, 'u10': 0.8849999904632568, 'v10': 0.9380000233650208, 'msl': 0.953000009059906, 'tcwv': 0.9440000057220459}
-Invalid windows: 0; CPU 10-step rollout median 114 ms
+Invalid windows: 0; CPU 10-step rollout median 36 ms
 Shocks (354 windows): null exact=True ok=True; causality proxy 13.8/15
 - warm_ocean: nonzero 100%, localized 100% (day-1 near frac mean 0.97, min 0.89), propagates 94%, stable 86% (max 20.17 std), far frac max 0.000
 - monsoon_stall: nonzero 100%, localized 100% (day-1 near frac mean 0.99, min 0.91), propagates 64%, stable 90% (max 16.88 std), far frac max 0.000
