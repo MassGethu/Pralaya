@@ -76,11 +76,12 @@ export function startClock(el: HTMLElement) {
 /** One-line description of the Branch currently on screen, flagging when the shock was edited after it ran. */
 export function scenarioLine(
   b: { runNo: number; zero: boolean; spec: ShockSpec | null; specKey: string } | null, primeRunNo: number | null, currentKey: string,
+  appliedText?: string, // components as applied (e.g. rain capped at 0); defaults to the typed values
 ): { html: string; state: "idle" | "stale" | "current" } {
   if (!b) return { html: primeRunNo ? `<span>Prime run #${primeRunNo} ready. Choose a shock and run Branch.</span>` : "", state: "idle" };
   const title = b.zero ? "Zero shock (all-zero tensor)" : `${escapeHtml(b.spec!.label)} · ${describeBox(b.spec!.box)}`;
   const stale = !b.zero && b.specKey !== currentKey;
-  const comps = b.spec ? `<span class="mono">${b.spec.components.map((c) => `${c.channel} ${c.mode === "add" ? signed(c.value, 2) + " " + CHANNEL_INFO[c.channel].unit : signed(c.value, 0) + " %"}`).join(" · ")}</span>` : "";
+  const comps = appliedText ? `<span class="mono">${escapeHtml(appliedText)}</span>` : b.spec ? `<span class="mono">${b.spec.components.map((c) => `${c.channel} ${c.mode === "add" ? signed(c.value, 2) + " " + CHANNEL_INFO[c.channel].unit : signed(c.value, 0) + " %"}`).join(" · ")}</span>` : "";
   const warn = stale ? `<span class="warn">Shock edited since this run: maps show Branch #${b.runNo}. Run Branch to update.</span>` : "";
   return { html: `<span class="tag">Branch #${b.runNo}</span><span>${title}</span>${comps}${warn}`, state: stale ? "stale" : "current" };
 }

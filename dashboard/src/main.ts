@@ -6,6 +6,7 @@ import {
 import { type ViewVar, VIEW_VARS, difference, displayField, maxAbs, sharedRange } from "./fields";
 import { fixtureSimulate, syntheticInput } from "./fixture";
 import { type ImpactResult, computeImpact } from "./impact";
+import { type BoxFieldResult, type TypedBox, boxFromFields } from "./boxinput";
 import { type Box, boxCellCount, boxFromDegrees, boxMask, clampBox, describeBox } from "./region";
 import { type AgriMode, agriChartSvg, indicatorTableHtml, legendHtml, outcomeCardsHtml, rippleChartSvg } from "./charts";
 import { escapeHtml, fmt, signed } from "./format";
@@ -19,6 +20,7 @@ import { type AppApi, buildCommands, nextAction } from "./actions";
 import { introEnabled, playIntro } from "./intro";
 import { ScenarioPanel, type ScenarioReplay } from "./scenarios";
 import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
+import { componentSummary, rainCap } from "./shocklabel";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
 // ---------------- state ----------------
@@ -59,6 +61,8 @@ const S = {
   hover: null as number | null,
   fixtureEngine: false,
   health: null as Health | null,
+  /** Feedback for the typed lat/lon fields; shown only while the box it describes is still the shock box. */
+  boxMsg: null as (BoxFieldResult & { typed: TypedBox; forBox: string }) | null,
 };
 
 type MapMode = "prime" | "swipe" | "branch" | "diff";
@@ -186,13 +190,11 @@ function setupControls() {
   });
   for (const id of ["shock-lat0", "shock-lat1", "shock-lon0", "shock-lon1"]) {
     $<HTMLInputElement>(id).addEventListener("change", () => {
-      const v = (k: string) => Number($<HTMLInputElement>(k).value);
-      const box = boxFromDegrees(v("shock-lat0"), v("shock-lat1"), v("shock-lon0"), v("shock-lon1"));
-      if (box) S.shock = { ...S.shock, box, label: "Custom shock" };
-      else $("shock-preview").innerHTML = `<p class="err">No cell centres inside that box.</p>`;
-      renderAll();
+      const v = (k: string) => { const raw = $<HTMLInputElement>(k).value.trim(); return raw === "" ? NaN : Number(raw); };
+      applyTypedBox({ latMin: v("shock-lat0"), latMax: v("shock-lat1"), lonMin: v("shock-lon0"), lonMax: v("shock-lon1") });
     });
   }
+  $("box-swap").addEventListener("click", () => { if (S.boxMsg?.fix) applyTypedBox(S.boxMsg.fix); });
   document.querySelectorAll<HTMLButtonElement>("[data-brush]").forEach((b) =>
     b.addEventListener("click", () => {
       drawingScenarioRegion = false;
@@ -234,6 +236,10 @@ function setupControls() {
   flowToggle.checked = !WindFlow.reducedMotion();
   flow.setEnabled(flowToggle.checked);
   flowToggle.addEventListener("change", () => flow.setEnabled(flowToggle.checked));
+  // If the OS switches to reduced motion mid-demo, stop the wind particles too (they can be turned back on in Setup).
+  matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", (e) => {
+    if (e.matches) { flowToggle.checked = false; flow.setEnabled(false); }
+  });
   $<HTMLInputElement>("tg-terrain").addEventListener("change", (e) => mapMain.setOptions({ terrain: (e.target as HTMLInputElement).checked }));
   $<HTMLInputElement>("tg-smooth").addEventListener("change", (e) => mapMain.setOptions({ smooth: (e.target as HTMLInputElement).checked }));
   const step = (d: number) => {
@@ -261,6 +267,15 @@ function setupControls() {
     if (e.key === "ArrowRight") { stopPlay(); step(1); e.preventDefault(); }
   });
   for (const id of ["agri-d0", "agri-d1", "agri-dry", "agri-heavy"]) $(id).addEventListener("input", () => { renderAgri(); renderOutcome(); });
+}
+
+/** Typed lat/lon box: apply it, or keep the old box and remember the typed numbers plus why they were refused. */
+function applyTypedBox(typed: TypedBox) {
+  const res = boxFromFields(typed);
+  if (res.box) S.shock = { ...S.shock, box: res.box, label: "Custom shock" };
+  // Stored in state (not written into the preview) so renderAll() cannot wipe it.
+  S.boxMsg = res.kind === "ok" ? null : { ...res, typed, forBox: JSON.stringify(S.shock.box) };
+  renderAll();
 }
 
 async function onFile(e: Event) {
@@ -312,11 +327,23 @@ function scenarioContext() {
   return { input, prime: prime.rollout, land: S.land, primeRun: prime.runNo };
 }
 
+/** Why the scenario search is unavailable, in the order the user can fix it. */
+function scenarioWhy(): string {
+  const engine = currentEngine();
+  if (!S.input) return "Load an input and run Prime first.";
+  if (!engine) return "The model server is not answering. Start it, then run the search.";
+  if (engine.kind !== "live" || engine.model !== "PRALAYA") return "Scenario search needs the trained PRALAYA server, not the fixture engine.";
+  if (!S.prime || S.prime.inputId !== S.input.id || !sameEngine(S.prime.engine, engine)) return "Run Prime first.";
+  return "";
+}
+
 async function pollHealth() {
   if (S.fixtureEngine) { renderStatus(); return; }
+  const wasReady = !!S.health?.ready;
   S.health = await health();
-  renderStatus();
-  renderButtons();
+  // A change in server readiness changes the next step, the HUD buttons and the "why disabled" lines too.
+  if (wasReady !== S.health.ready) renderAll();
+  else { renderStatus(); renderButtons(); }
 }
 
 async function execute(perturbation: Float32Array | null, slot: "prime" | "branch"): Promise<{ r: Rollout; ms: number | null; wall: number; engine: Engine } | null> {
@@ -345,12 +372,14 @@ async function runPrime() {
     const out = await execute(null, "prime");
     if (seq !== S.seq.prime || S.input?.id !== inputId || !out) return; // superseded
     S.prime = { rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter };
+    announce(`Prime run ${S.prime.runNo} ready: ${out.r.steps}-day forecast.`);
     if (!S.branch) S.mapView = "prime";
     if (S.branch && !sameEngine(S.branch.engine, out.engine)) S.branch = null;
     S.day = Math.min(S.day, out.r.steps);
   } catch (e) {
     if (seq !== S.seq.prime || (e instanceof ApiError && e.kind === "aborted")) return;
     S.primeErr = (e as Error).message;
+    announce(`Prime failed: ${S.primeErr}`);
   } finally {
     if (seq === S.seq.prime) S.busy.prime = false;
     renderAll();
@@ -383,6 +412,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
     S.mapView = "diff"; // the shock's effect is the point of the demo
+    announce(zero ? `Zero-shock check run ${S.branch.runNo} finished.` : `Branch run ${S.branch.runNo} ready. The map now shows Branch minus Prime.`);
     if (replay) {
       $<HTMLInputElement>("agri-d0").value = String(replay.dayStart);
       $<HTMLInputElement>("agri-d1").value = String(replay.dayEnd);
@@ -393,6 +423,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
     S.branchErr = (e as Error).message;
+    announce(`Branch failed: ${S.branchErr}`);
   } finally {
     if (seq === S.seq.branch) S.busy.branch = false;
     renderAll();
@@ -400,6 +431,12 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
 }
 
 // ---------------- derived ----------------
+/** The current draft shock as it would be sent, or null when there is no input or the shock is invalid. */
+function draftDelta(): Float32Array | null {
+  if (!S.input) return null;
+  return cached(`draft|${S.input.id}|${specKey(S.shock)}`, () => { try { return buildPerturbation(S.input!, S.shock); } catch { return null; } });
+}
+
 /** Branch and Prime are comparable only if made from the same input, horizon and engine. */
 function comparable(): boolean {
   const p = S.prime, b = S.branch;
@@ -446,6 +483,20 @@ function diffFieldsRaw(): Float32Array[] {
 const varInfo = () => VIEW_VARS.find((v) => v.id === S.view)!;
 
 // ---------------- rendering ----------------
+/** Busy buttons keep their label, gain a spinner and tell assistive tech they are working. */
+function setBusy(b: HTMLElement, busy: boolean) {
+  b.classList.toggle("is-busy", busy);
+  b.setAttribute("aria-busy", String(busy));
+}
+
+/** Say finished runs and errors out loud once (the #announce live region), without re-announcing on every redraw. */
+let lastAnnounce = "";
+function announce(text: string) {
+  if (!text || text === lastAnnounce) return;
+  lastAnnounce = text;
+  $("announce").textContent = text;
+}
+
 function renderAll() {
   renderStepper();
   renderHudNow();
@@ -480,9 +531,18 @@ function renderInputInfo() {
 
 function renderShockControls() {
   const b = S.shock.box;
-  const set = (id: string, v: number) => { const el = $<HTMLInputElement>(id); if (document.activeElement !== el) el.value = v.toFixed(1); };
-  set("shock-lat0", latOf(b.r0)); set("shock-lat1", latOf(b.r1)); set("shock-lon0", lonOf(b.c0)); set("shock-lon1", lonOf(b.c1));
+  // A refused edit stays visible: keep the typed numbers in the fields until the box changes some other way.
+  const m = S.boxMsg && S.boxMsg.forBox === JSON.stringify(b) ? S.boxMsg : null;
+  const set = (id: string, v: number, typed?: number) => {
+    const el = $<HTMLInputElement>(id);
+    el.setAttribute("aria-invalid", String(!!m));
+    if (document.activeElement !== el) el.value = typed !== undefined ? (Number.isFinite(typed) ? String(typed) : "") : v.toFixed(1);
+  };
+  set("shock-lat0", latOf(b.r0), m?.typed.latMin); set("shock-lat1", latOf(b.r1), m?.typed.latMax);
+  set("shock-lon0", lonOf(b.c0), m?.typed.lonMin); set("shock-lon1", lonOf(b.c1), m?.typed.lonMax);
   document.querySelectorAll<HTMLButtonElement>("[data-brush]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.brush === S.brush)));
+  $("box-msg").textContent = m?.message ?? "";
+  $("box-swap").hidden = !m?.fix;
 
   const wrap = $("components");
   wrap.replaceChildren();
@@ -524,6 +584,10 @@ function renderShockControls() {
     try {
       const delta = buildPerturbation(S.input, S.shock);
       const sums = summarisePerturbation(delta, S.shock);
+      const cap = rainCap(S.input, S.shock, delta);
+      if (cap && cap.capped > 0) {
+        lines.push(`<p class="note">Rain is capped so it never goes below 0: in ${cap.capped} of ${cap.cells} cells the requested cut is larger than the rain there. Applied tp change: ${signed(cap.appliedMean, 1)} mm/day on average (min ${signed(cap.appliedMin, 1)}).</p>`);
+      }
       lines.push(
         `<table class="mini"><thead><tr><th>Channel</th><th>Δ min</th><th>Δ mean</th><th>Δ max</th></tr></thead><tbody>` +
           sums.map((s) => `<tr><td>${s.channel} <span class="unit">${CHANNEL_INFO[s.channel].unit}</span></td><td class="mono">${signed(s.min, 3)}</td><td class="mono">${signed(s.mean, 3)}</td><td class="mono">${signed(s.max, 3)}</td></tr>`).join("") +
@@ -538,21 +602,34 @@ function renderShockControls() {
 
 function renderButtons() {
   const engine = currentEngine();
-  scenarioPanel?.update(scenarioContext(), S.impactBox);
+  scenarioPanel?.update(scenarioContext(), S.impactBox, scenarioWhy());
+  const hasPrime = !!S.input && !!S.prime && S.prime.inputId === S.input.id;
+  const ok = hasPrime && !!engine;
+  const serverWhy = S.health ? "the model server is not answering (see the status at the top right)" : "the model server has not answered yet";
+
+  // One primary button per stage: Load until there is input, then Prime, then Branch (amber, in the Shock tab).
+  $("load-btn").classList.toggle("btn-primary", !S.input);
   const primeBtn = $<HTMLButtonElement>("run-prime");
   primeBtn.disabled = !S.input || S.busy.prime || !engine;
   primeBtn.textContent = S.busy.prime ? "Running Prime…" : S.prime ? "Re-run Prime" : "Run Prime";
-  const ok = !!S.input && !!S.prime && S.prime.inputId === S.input.id && !!engine;
-  $<HTMLButtonElement>("run-branch").disabled = !ok || S.busy.branch;
-  $<HTMLButtonElement>("run-branch").textContent = S.busy.branch ? "Running Branch…" : "Run Branch";
+  primeBtn.classList.toggle("btn-primary", !!S.input && !hasPrime);
+  setBusy(primeBtn, S.busy.prime);
+  $("why-prime").textContent = S.busy.prime ? "" : !S.input ? "Run Prime unlocks after you load a three-day input." : !engine ? `Run Prime is off because ${serverWhy}.` : "";
+
+  const branchBtn = $<HTMLButtonElement>("run-branch");
+  branchBtn.disabled = !ok || S.busy.branch;
+  branchBtn.textContent = S.busy.branch ? "Running Branch…" : "Run Branch";
+  setBusy(branchBtn, S.busy.branch);
   $<HTMLButtonElement>("zero-check").disabled = !ok || S.busy.branch;
+  $("why-branch").textContent = S.busy.branch ? "" : !S.input ? "Load an input, then run Prime: Branch is compared against it."
+    : !hasPrime ? "Run Prime first: Branch is compared against it." : !engine ? `Run Branch is off because ${serverWhy}.` : "";
 
   const pi = $("prime-info");
   $("prime-err").innerHTML = S.primeErr ? `<p class="err">Prime failed: ${escapeHtml(S.primeErr)}</p>` : "";
   if (S.primeErr) pi.innerHTML = "";
   else if (S.busy.prime) pi.innerHTML = `<p class="hint pulse">Waiting for /simulate…</p>`;
   else {
-    const down = !engine && S.input ? `<p class="err">Server not ready (${escapeHtml(S.health?.detail ?? "no answer")}). Start it with <code>python serve.py --port 8000</code>; results below stay tied to their run numbers.</p>` : "";
+    const down = !engine && S.input ? `<p class="err">Server not ready (${escapeHtml(S.health?.detail ?? "no answer")}). Start it with <code>python serve.py</code> (port from <code>PRALAYA_API_URL</code>); results below stay tied to their run numbers.</p>` : "";
     const last = S.prime ? `<p class="ok">Run #${S.prime.runNo} · ${engineLabel(S.prime.engine)} · ${S.prime.rollout.steps} days · ${S.prime.ms != null ? `${fmt(S.prime.ms, 0)} ms server` : ""} ${fmt(S.prime.wallMs, 0)} ms round trip</p>` : "";
     pi.innerHTML = down + last;
   }
@@ -591,7 +668,8 @@ function renderToolbar() {
   renderOutcome();
 
   const line = $("scenario-line");
-  const r = scenarioLine(S.branch, S.prime?.runNo ?? null, specKey(S.shock));
+  const br = S.branch && !S.branch.zero && S.branch.inputId === S.input?.id ? S.branch : null;
+  const r = scenarioLine(S.branch, S.prime?.runNo ?? null, specKey(S.shock), br ? componentSummary(br.spec!, S.input, br.delta) : undefined);
   line.innerHTML = r.html;
   line.dataset.state = r.state;
 }
@@ -694,7 +772,8 @@ function renderHudNow() {
   const b = S.branch && comparable() ? S.branch : null;
   const stale = !!b && !b.zero && b.specKey !== specKey(S.shock);
   const ready = !!S.input && !!S.prime && S.prime.inputId === S.input.id && !!currentEngine();
-  const comp = S.shock.components.map((c) => `${c.channel} ${c.mode === "add" ? `${signed(c.value, 1)} ${CHANNEL_INFO[c.channel].unit}` : `${signed(c.value, 0)}%`}`).join(" · ");
+  // Label what the map shows: the Branch's applied delta when it is current, else the draft as it would be applied.
+  const comp = b && !b.zero && !stale ? componentSummary(b.spec!, S.input, b.delta) : componentSummary(S.shock, S.input, draftDelta());
   const diffs = diffFields();
   const peak: [string, string][] = b && !b.zero && !stale && diffs ? [[`Peak Δ today`, `${fmt(maxAbs(diffs[S.day - 1]), 1)} ${varInfo().unit}`]] : [];
   const shock: HudTag = {
@@ -704,7 +783,7 @@ function renderHudNow() {
     title: S.shock.label, sub: comp, rows: peak, pin: b && !b.zero ? `#${b.runNo}` : "Draft", onOpen: () => openDrawer("shock"),
     actions: [
       { label: "Edit", onClick: () => openDrawer("shock") },
-      { label: S.busy.branch ? "Running…" : "Run Branch", primary: true, disabled: !ready || S.busy.branch, onClick: () => void runBranch(false) },
+      { label: S.busy.branch ? "Running…" : "Run Branch", primary: !b || b.zero || stale, busy: S.busy.branch, disabled: !ready || S.busy.branch, onClick: () => void runBranch(false) },
     ],
   };
   const imp = currentImpact();
@@ -713,7 +792,7 @@ function renderHudNow() {
   const farm: HudTag = {
     box: f, kind: "farm", kicker: "Farm region", state: imp && !imp.empty ? "live" : "empty",
     title: "Farm region",
-    sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(0)}–${latOf(f.r1).toFixed(0)}°N · ${lonOf(f.c0).toFixed(0)}–${lonOf(f.c1).toFixed(0)}°E`,
+    sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(1)}–${latOf(f.r1).toFixed(1)}°N · ${lonOf(f.c0).toFixed(1)}–${lonOf(f.c1).toFixed(1)}°E`,
     rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–", onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
   };
   renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: null });
@@ -760,7 +839,8 @@ function renderMaps() {
     const ds = divergingScale(S.view, m);
     content = { kind: "single", field: diffs![S.day - 1], scale: ds };
     caption = m === 0 ? `Branch − Prime · day ${S.day} · identical everywhere` : `Branch − Prime · day ${S.day} · max |Δ| ${fmt(maxAbs(diffs![S.day - 1]), 2)} ${vi.deltaUnit}`;
-    leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, fixed across days");
+    leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, same scale every day",
+      { title: `${vi.label} change, Branch − Prime`, day: S.day, ends: S.view === "tp" ? ["drier", "wetter"] : ["lower", "higher"] });
   }
   mapMain.draw(content, ov);
   $("map-host").dataset.view = mode;
@@ -774,6 +854,7 @@ function renderMaps() {
     const v = b.dataset.view as MapMode;
     b.setAttribute("aria-pressed", String(v === mode));
     b.disabled = v === "prime" ? !pf : !bf;
+    b.title = b.disabled ? (v === "prime" ? "Run Prime to see this view" : "Run Branch to compare with Prime") : "";
   });
 
   // Initial shock footprint (day 0)

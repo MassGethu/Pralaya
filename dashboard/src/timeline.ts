@@ -21,11 +21,16 @@ export class Timeline {
     this.svg.setAttribute("class", "tl-svg");
     this.svg.setAttribute("role", "slider");
     this.svg.setAttribute("aria-label", "Forecast day");
+    this.svg.setAttribute("tabindex", "0"); // ← / → (handled by the app) and Home / End move the day
+    this.svg.addEventListener("keydown", (e) => {
+      if (e.key === "Home" || e.key === "End") { e.preventDefault(); this.onDay(e.key === "Home" ? 1 : this.model.steps); }
+    });
     host.replaceChildren(this.svg);
     new ResizeObserver(() => this.draw()).observe(host);
     this.svg.addEventListener("pointerdown", (e) => { this.dragging = true; this.svg.setPointerCapture(e.pointerId); this.pick(e); });
     this.svg.addEventListener("pointermove", (e) => { if (this.dragging) this.pick(e); });
     this.svg.addEventListener("pointerup", () => (this.dragging = false));
+    this.svg.addEventListener("pointercancel", () => (this.dragging = false));
   }
 
   set(m: TimelineModel) {

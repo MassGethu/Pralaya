@@ -19,7 +19,7 @@ export interface HudTag {
   rows: [string, string][];
   pin?: string; // compact value for small maps
   onOpen?: () => void;
-  actions: { label: string; primary?: boolean; disabled?: boolean; onClick: () => void }[];
+  actions: { label: string; primary?: boolean; busy?: boolean; disabled?: boolean; onClick: () => void }[];
 }
 
 export interface HudModel {
@@ -90,6 +90,7 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
       for (const a of t.actions) {
         const b = el("button", `hud-btn${a.primary ? " primary" : ""}`, a.label);
         b.disabled = !!a.disabled;
+        if (a.busy) { b.classList.add("is-busy"); b.setAttribute("aria-busy", "true"); }
         b.addEventListener("click", (e) => { e.stopPropagation(); a.onClick(); });
         b.addEventListener("pointerdown", (e) => e.stopPropagation());
         act.append(b);
