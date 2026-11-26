@@ -53,7 +53,8 @@ export function rippleChartSvg(fractions: number[] | null, day: number): string 
  * Small marks under the axis flag dry days (regional mean below the dry threshold) for each timeline.
  */
 export function agriChartSvg(res: Extract<ImpactResult, { empty: false }>, mode: AgriMode, day: number, dry: number): string {
-  const W = 380, H = 180, pl = 38, pr = 10, pt = 26, pb = 34;
+  // pb leaves three rows under the plot: day numbers, dry-day marks, and the dry-day key on its own line.
+  const W = 380, H = 196, pl = 38, pr = 10, pt = 26, pb = 50;
   const cum = (a: number[]) => a.reduce<number[]>((o, v) => (o.push((o.at(-1) ?? 0) + v), o), []);
   const pc = cum(res.prime.dailyRain), bc = cum(res.branch.dailyRain);
   const series = mode === "abs" ? { ref: pc, main: bc } : { ref: pc.map(() => 0), main: bc.map((v, i) => v - pc[i]) };
@@ -75,23 +76,51 @@ export function agriChartSvg(res: Extract<ImpactResult, { empty: false }>, mode:
   res.days.forEach((d, i) => {
     s += `<circle cx="${x(i)}" cy="${y(series.main[i])}" r="2.5" class="pt-main"><title>Day ${d}: Branch ${fmt(bc[i], 1)} mm, Prime ${fmt(pc[i], 1)} mm cumulative</title></circle>`;
     s += `<text x="${x(i)}" y="${H - pb + 14}" text-anchor="middle" class="svg-tick">${d}</text>`;
-    if (res.prime.dailyRain[i] < dry) s += `<rect x="${x(i) - 6}" y="${H - 10}" width="5" height="4" class="dry-prime"><title>Day ${d}: Prime dry day</title></rect>`;
-    if (res.branch.dailyRain[i] < dry) s += `<rect x="${x(i) + 1}" y="${H - 10}" width="5" height="4" class="dry-branch"><title>Day ${d}: Branch dry day</title></rect>`;
+    if (res.prime.dailyRain[i] < dry) s += `<rect x="${x(i) - 6}" y="${H - pb + 21}" width="5" height="4" class="dry-prime"><title>Day ${d}: Prime dry day</title></rect>`;
+    if (res.branch.dailyRain[i] < dry) s += `<rect x="${x(i) + 1}" y="${H - pb + 21}" width="5" height="4" class="dry-branch"><title>Day ${d}: Branch dry day</title></rect>`;
   });
   const k = res.days.indexOf(day);
   if (k >= 0) {
     const v = series.main[k];
     const label = mode === "abs" ? `Day ${day} · ${fmt(bc[k], 1)} mm (Prime ${fmt(pc[k], 1)})` : `Day ${day} · ${signed(v, 1)} mm vs Prime`;
-    const anchor = x(k) > W - 150 ? "end" : "start";
     s += `<line x1="${x(k)}" x2="${x(k)}" y1="${pt}" y2="${H - pb}" class="cursor"/><circle cx="${x(k)}" cy="${y(v)}" r="4.5" class="pt-focus"/>`;
-    // Put the label on the emptier side of the point so it never sits on the line.
-    const upper = y(v) < pt + (H - pt - pb) / 2;
-    const ly = upper ? Math.min(H - pb - 4, y(v) + 18) : Math.max(pt + 10, y(v) - 12);
-    s += `<text x="${x(k) + (anchor === "end" ? -8 : 8)}" y="${ly}" text-anchor="${anchor}" class="callout">${label}</text>`;
+    const spot = calloutSpot({ px: x(k), py: y(v), width: label.length * 6.6, box: [pl, pt, W - pr, H - pb], lines: [series.main, series.ref].map((a) => a.map((val, i) => [x(i), y(val)] as [number, number])) });
+    s += `<text x="${spot.x}" y="${spot.y}" text-anchor="${spot.anchor}" class="callout">${label}</text>`;
   }
   s += `<text x="${pl}" y="14" class="svg-tick">${mode === "abs" ? "mm, cumulative" : "Branch − Prime, mm"} · <tspan class="lg-branch">━ Branch</tspan> <tspan class="lg-prime">┅ Prime</tspan></text>`;
-  s += `<text x="${W - pr}" y="${H - 2}" text-anchor="end" class="svg-tick">dry day (&lt; ${dry} mm/day): <tspan class="lg-prime">▬</tspan> Prime <tspan class="lg-branch">▬</tspan> Branch</text>`;
+  s += `<text x="${pl}" y="${H - 3}" class="svg-tick">Dry day (&lt; ${dry} mm/day): <tspan class="lg-prime">▬</tspan> Prime <tspan class="lg-branch">▬</tspan> Branch</text>`;
   return s;
+}
+
+/**
+ * Where to put a chart callout so its text crosses neither line: try beside the point (above or below, right or
+ * left), then the plot's top corners. Text is ~12 units tall with its baseline at y.
+ */
+export function calloutSpot(o: { px: number; py: number; width: number; box: [number, number, number, number]; lines: [number, number][][] }):
+  { x: number; y: number; anchor: "start" | "end" } {
+  const [x0, y0, x1, y1] = o.box;
+  const lineY = (pts: [number, number][], qx: number): number | null => {
+    for (let i = 1; i < pts.length; i++) {
+      const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+      if (qx >= ax && qx <= bx) return bx === ax ? ay : ay + ((qx - ax) / (bx - ax)) * (by - ay);
+    }
+    return null;
+  };
+  const fits = (left: number, base: number) => {
+    if (left < x0 || left + o.width > x1 || base - 11 < y0 || base + 3 > y1) return false;
+    for (let qx = left - 2; qx <= left + o.width + 2; qx += 3) {
+      for (const pts of o.lines) { const ly = lineY(pts, qx); if (ly != null && ly > base - 14 && ly < base + 6) return false; }
+    }
+    // keep clear of the highlighted point itself
+    return !(o.px > left - 6 && o.px < left + o.width + 6 && o.py > base - 16 && o.py < base + 8);
+  };
+  const cands: { x: number; y: number; anchor: "start" | "end" }[] = [];
+  for (const dy of [-14, 22, -28, 36]) {
+    cands.push({ x: o.px + 8, y: o.py + dy, anchor: "start" }, { x: o.px - 8, y: o.py + dy, anchor: "end" });
+  }
+  cands.push({ x: x0 + 6, y: y0 + 12, anchor: "start" }, { x: x1 - 4, y: y0 + 12, anchor: "end" }, { x: x1 - 4, y: y1 - 6, anchor: "end" });
+  for (const c of cands) if (fits(c.anchor === "start" ? c.x : c.x - o.width, c.y)) return c;
+  return { x: x0 + 6, y: y0 + 12, anchor: "start" };
 }
 
 type Impact = Extract<ImpactResult, { empty: false }>;

@@ -4,6 +4,7 @@ import { boxFromFields } from "../src/boxinput";
 import { boxFromDegrees } from "../src/region";
 import { buildPerturbation } from "../src/shock";
 import { componentSummary, rainCap } from "../src/shocklabel";
+import { calloutSpot } from "../src/charts";
 
 describe("typed shock box (bug 1: invalid coordinates must not fail silently)", () => {
   const T = (latMin: number, latMax: number, lonMin: number, lonMax: number) => ({ latMin, latMax, lonMin, lonMax });
@@ -79,4 +80,30 @@ describe("rain-cap labels (bug 2: show the applied delta, not the requested one)
     const spec = { box, label: "s", components: [{ channel: "t2m" as const, mode: "add" as const, value: 3 }] };
     expect(rainCap(input, spec, buildPerturbation(input, spec))).toBeNull();
   });
+});
+
+describe("chart callout placement (never on a line)", () => {
+  // The Impact chart's day-1 case: cumulative rain rises left to right from the bottom-left corner.
+  const box: [number, number, number, number] = [38, 26, 370, 146];
+  const rising: [number, number][] = [[38, 144], [93, 140], [148, 130], [203, 110], [259, 80], [314, 50], [370, 28]];
+  const lineY = (qx: number) => {
+    for (let i = 1; i < rising.length; i++) {
+      const [ax, ay] = rising[i - 1], [bx, by] = rising[i];
+      if (qx >= ax && qx <= bx) return ay + ((qx - ax) / (bx - ax)) * (by - ay);
+    }
+    return null;
+  };
+  for (const [px, py] of [rising[0], rising[3], rising[6]]) {
+    it(`keeps the label off the line for the point at x=${px}`, () => {
+      const width = 160;
+      const spot = calloutSpot({ px, py, width, box, lines: [rising] });
+      const left = spot.anchor === "start" ? spot.x : spot.x - width;
+      expect(left).toBeGreaterThanOrEqual(box[0]);
+      expect(left + width).toBeLessThanOrEqual(box[2]);
+      for (let qx = left; qx <= left + width; qx += 2) {
+        const ly = lineY(qx);
+        if (ly != null) expect(ly < spot.y - 13 || ly > spot.y + 4).toBe(true);
+      }
+    });
+  }
 });
