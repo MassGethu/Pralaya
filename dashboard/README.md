@@ -37,7 +37,11 @@ python dashboard/tools/make_demo_input.py --nc ~/Documents/PRALAYA-data/india_cl
     --last-day 2021-07-15 --out ~/Documents/PRALAYA-data/demo_inputs/monsoon_2021-07-15.json
 ```
 
-It needs `numpy`, `xarray` and `netCDF4`. The output is `{"init_states": [3,6,32,36], "doy_sincos": [sin, cos], "meta": {...}}`, with the official encoding `doy_sincos = [sin(2π·doy/365), cos(2π·doy/365)]` for the last input day. The tool refuses to write inside the repository. In the dashboard, use **Load input JSON**. A request body Mass shares (one with `init_states` and `doy_sincos`) also loads directly.
+It needs `numpy`, `xarray` and `netCDF4`. This is the team's single demo-input tool (agreed with Jarvis).
+
+Seasonal encoding, confirmed with Jarvis: `doy` is the 1-based day of year (1 January = 1) of the **last** of the three input days. Do not advance it for the forecast; the model rotates the season forward once per step.
+
+Demo windows come from 2021, the held-out test year: no 2021 data trained the model or chose the checkpoint. Use monsoon dates so the contract shocks produce a visible rain response. Prepared inputs (Indian land-mean rain on the last input day): `2021-07-22` (14.9 mm/day, the wettest July–August 2021 day, recommended), `2021-08-17` (12.1 mm/day) and `2021-07-15` (8.3 mm/day). The output is `{"init_states": [3,6,32,36], "doy_sincos": [sin, cos], "meta": {...}}`, with the official encoding `doy_sincos = [sin(2π·doy/365), cos(2π·doy/365)]` for the last input day. The tool refuses to write inside the repository. In the dashboard, use **Load input JSON**. A request body Mass shares (one with `init_states` and `doy_sincos`) also loads directly.
 
 `public/static/static_fields.json` holds only the kit's static fields (`land_sea_mask`, `orography_m`), exported with `--export-static`. It contains no weather data.
 
