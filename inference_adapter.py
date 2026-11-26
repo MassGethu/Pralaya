@@ -1,6 +1,7 @@
 """Request validation and the physical-unit boundary for the forecast model."""
 
 import base64
+import logging
 import math
 from collections.abc import Callable
 from pathlib import Path
@@ -13,6 +14,7 @@ STATE_SHAPE = (6, 32, 36)
 HISTORY_SHAPE = (3, *STATE_SHAPE)
 MAX_STEPS = 14  # monsoon_r1.contract.MAX_STEPS in the organizer's v1.0.0 wheel
 DEVELOPMENT_NAME = "PRALAYA-dev-persistence"
+LOGGER = logging.getLogger(__name__)
 Forecast = Callable[[np.ndarray, np.ndarray, int], np.ndarray]
 
 
@@ -101,10 +103,14 @@ class Inference:
         if not np.isfinite(rollout).all():
             raise ValueError("forecast returned nonfinite values")
         temperature = rollout[:, 0]
-        lower = min(233.15, float(np.float32(233.15)))
-        upper = max(333.15, float(np.float32(333.15)))
-        if np.any(rollout[:, 1] < 0) or np.any((temperature < lower) | (temperature > upper)):
-            raise ValueError("forecast violates the rainfall or temperature validity bounds")
-        # Represent float32-rounded endpoints precisely when encoding the JSON response.
+        rain = rollout[:, 1]
+        clipped_temperature = np.count_nonzero((temperature < 233.15) | (temperature > 333.15))
+        clipped_rain = np.count_nonzero(rain < 0)
         np.clip(temperature, 233.15, 333.15, out=temperature)
+        np.maximum(rain, 0, out=rain)
+        if clipped_temperature or clipped_rain:
+            LOGGER.warning(
+                "Clipped %d forecast cells (t2m=%d, tp=%d)",
+                clipped_temperature + clipped_rain, clipped_temperature, clipped_rain,
+            )
         return rollout
