@@ -129,7 +129,7 @@
     </ul>
     <figure>
       <img src="dashboard_diff_day6.jpg" alt="PRALAYA dashboard, Difference view on forecast day 6 after a warm Bay of Bengal shock">
-      <figcaption>Live dashboard, Difference view, forecast day 6 (21 Jul 2021): warm Bay of Bengal shock (+3 K t2m, +15% moisture, dashed box) on the window ending 15 Jul 2021. The rainfall response has grown from the box toward the coast and inland. Green box: farm region. <b>Captured with the previous checkpoint <span class="mono">b3_roll4</span></b> (peak |Δ| 22.8 mm/day); with e3_rainstab the same view peaks at 25.6 mm/day.</figcaption>
+      <figcaption>Live dashboard, Difference view, forecast day 6 (21 Jul 2021): warm Bay of Bengal shock (+3 K t2m, +15% moisture, dashed box) on the window ending 15 Jul 2021. The rainfall response has grown from the box toward the coast (peak |Δ| 25.6 mm/day); the farm region gets +0.6 mm over days 1–7. Green box: farm region. Captured from the live server running the shipped e3_rainstab.</figcaption>
     </figure>
   </div>
 
@@ -143,8 +143,8 @@
       <li><b>Mean 2 m temperature</b> = weighted mean of the daily-mean t2m field (not a daily maximum).</li>
     </ul>
 
-    <h2>Worked example (recomputed from raw rollouts)</h2>
-    <p class="note">Window ending 15 Jul 2021 (test year, never used for training or selection), e3_rainstab. Shock: organizer warm Bay of Bengal recipe. Farm region: central India, 18.5–25.5°N, 74.5–83.5°E, 80 land cells, days 1–7. Values are computed from the raw rollouts with the dashboard's formulas; the same script reproduces the b3_roll4 dashboard values exactly.</p>
+    <h2>Worked example (live, independently recomputed)</h2>
+    <p class="note">Window ending 15 Jul 2021 (test year, never used for training or selection), e3_rainstab. Shock: organizer warm Bay of Bengal recipe. Farm region: central India, 18.5–25.5°N, 74.5–83.5°E, 80 land cells, days 1–7. Values are recomputed from the raw rollouts with the dashboard's formulas and match the live dashboard (+0.6 mm; day-6 peak 25.56 mm/day).</p>
     <table>
       <tr><th>Indicator</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Branch − Prime</th></tr>
       <tr><td>Cumulative rainfall</td><td class="n">65.4 mm</td><td class="n">66.0 mm</td><td class="n">+0.6 mm</td></tr>

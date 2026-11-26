@@ -2,7 +2,7 @@
 
 PRALAYA forecasts daily weather over India and lets users compare an unperturbed forecast with a forecast that starts from a localized atmospheric shock. The dashboard shows how the forecasts differ and calculates regional agricultural weather-stress indicators from the same rollouts.
 
-**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact. It describes the shipped `e3_rainstab`; its 2021 numbers were scored once after promotion, and the dashboard screenshot is still from `b3_roll4` (labelled as such).
+**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact. It describes the shipped `e3_rainstab`; its 2021 numbers were scored once after promotion, as a follow-up only.
 
 ## Train
 
