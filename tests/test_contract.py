@@ -14,6 +14,7 @@ repo scan would otherwise treat it as inference code.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -66,9 +67,16 @@ def test_checkpoint_is_real_and_tracked():
     head = CHECKPOINT.read_bytes()[:200]
     assert not head.startswith(b"version https://git-lfs"), "checkpoint is a Git LFS pointer, not weights"
     assert CHECKPOINT.stat().st_size > 1024, "checkpoint under 1 KB: the repo scan would report no weights"
-    probe = subprocess.run(["git", "check-ignore", "-q", str(CHECKPOINT)], cwd=ROOT, capture_output=True)
-    if probe.returncode in (0, 1):  # 128 = not a git checkout, nothing to check
-        assert probe.returncode == 1, ".gitignore ignores model/bundle/pralaya.pt; add !model/bundle/pralaya.pt"
+    git = shutil.which("git")
+    if git is None:
+        return  # The evaluator image can exercise the actual bundled bytes without Git.
+    repo = subprocess.run([git, "rev-parse", "--show-toplevel"], cwd=ROOT, capture_output=True, text=True)
+    if repo.returncode == 0 and Path(repo.stdout.strip()).resolve() == ROOT:
+        path = str(CHECKPOINT.relative_to(ROOT))
+        tracked = subprocess.run([git, "ls-files", "--error-unmatch", "--", path], cwd=ROOT, capture_output=True)
+        assert tracked.returncode == 0, f"checkpoint is not tracked: {path}"
+        ignored = subprocess.run([git, "check-ignore", "--no-index", "-q", "--", path], cwd=ROOT, capture_output=True)
+        assert ignored.returncode == 1, ".gitignore must keep !model/bundle/pralaya.pt"
 
 
 def test_loader_contract():
