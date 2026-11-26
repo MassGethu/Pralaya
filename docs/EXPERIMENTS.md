@@ -371,3 +371,44 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - trusted Bay of Bengal −2 … +2 K and Arabian Sea wind −30 … +30 %;
   - the scenario service has an `e3_rainstab` profile with 13 defaults.
   - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.
+
+---
+## Round 3, pre-registered: `a4_rainhead` (two-part rainfall output)
+Written and pushed **before** any `a4_rainhead` evaluation number was computed (27 Nov 2026, 05:15 IST; training
+started 05:14 and only its own val_score log exists). Branch `hridhin/a4-rainhead`, base `jarvis/model` `bc127f3`.
+Hard cutoff 06:45 IST; the result is reported pass or fail at that time either way.
+
+**Change (one idea):** the tp output becomes two parts. The existing tp head channel is the wet-day amount
+(ReLU, as before, and loaded from b3_roll4). A new 3×3 conv on the same features gives the logit of
+p(tp ≥ 1 mm/day). Served tp = p × amount; the rollout feeds this served tp back. The new conv starts at weight 0 and
+bias +6, so p = sigmoid(6) = 0.9975 everywhere at the start (`--rain-head`, config `rain_head: true`).
+
+**Loss:** the existing loss for the five non-rain channels and, for tp, the existing normalised squared error on the
+amount over wet cells only (target ≥ 1 mm/day; dry cells add 0), plus BCE on occurrence (target tp ≥ 1 mm/day,
+latitude-weighted mean, weight 1, `--occ-weight 1`). Everything else is e3_rainstab's recipe:
+`python train.py --name a4_rainhead --init runs/b3_roll4/best.pt --rollout 8 --lr 1e-4 --epochs 12 --ocean-t2m-weight 4 --stab-weight 1 --seed 0 --rain-head`.
+best.pt is chosen by val_score, as for every earlier run.
+
+**Start check (done before training, 64 val windows):** b3_roll4 loads with only `rain_logit.weight/bias` missing.
+Day 1: the amount and the five non-rain channels equal b3_roll4 exactly (max |Δ| 0.0). The served tp is
+0.9975 × b3_roll4's (max |Δ| 0.15 mm/day). Over the 8-day rollout the feedback grows this to a max |Δ| of
+3.6 mm/day in tp (0.48 std) and ≤ 0.10 std in other channels. So the brief's "matches to 1e-4" holds for the amount and
+the non-rain channels on day 1, not for the served tp: bias +6 cannot give p = 1 exactly.
+
+**Serving:** `serve.py` and `inference_adapter.py` are unchanged; `PralayaNet` reads `rain_head` from the checkpoint
+config. Old checkpoints load unchanged (`tests/test_rain_head.py`).
+
+**Evaluation (val 2020, all 354 windows, both kit shocks):** raw (`python -m evaluation.evaluate --ckpt runs/a4_rainhead/best.pt --split val`)
+and served. For served, `calibration.pt` is refitted for the new checkpoint with the existing fit, floor 0.3, rain
+weights pinned to 1, using `codex/rainstab-demo` once Codex pushes it.
+
+**Gates (all must hold; served path unless stated; baseline = served release on main `b97d7d8`, served S 57.92):**
+1. S ≥ 58.92 (served baseline + 1.0).
+2. Paired per-window skill difference vs the served baseline: 95% CI lower bound > 0.
+3. Shock propagation and stability, both boxes: no more than 2 pp below the served baseline.
+4. Null shock exact; 0 invalid windows.
+5. Anti-blur 10/10 and the day-8 in-band share no more than 2 pp below the served baseline.
+6. Heavy rain: 25 mm/day CSI (`evaluation.trace`) at day 1 and day 8 both higher than the baseline's 0.365 / 0.078
+   (tp has rain weight 1 in the calibration, so served Prime tp = raw tp).
+
+If any gate fails, or the run is not evaluated by 06:45, `a4_rainhead` is not promoted and the release stays as it is.

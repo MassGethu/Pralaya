@@ -15,6 +15,7 @@ python -m pip install -r requirements-train.txt
 python train.py --data /path/to/india_climate_train.nc --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0
 python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0
 python train.py --data /path/to/india_climate_train.nc --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1
+# experiment a4_rainhead (not shipped): same recipe plus --rain-head; see docs/EXPERIMENTS.md, Round 3
 ```
 
 Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint and candidate selection. The selected run writes `runs/e3_rainstab/best.pt`. The server loads the bundled `e3_rainstab` from `model/bundle/pralaya.pt`. It scored 51.11/70 on 2020 validation, up from 49.37 for the previous release `e3_roll8_ocean`. Its 3-seed mean is 50.85 ± 1.54; seed 1 alone (49.19) is below e3. It fine-tunes from `b3_roll4` with e3's recipe plus the shock-stability loss. 2021 was scored once after promotion, as follow-up evaluation only (S 50.72, vs 50.92 for e3). [Training recipe](docs/TRAINING.md) · [Promotion evidence](docs/EXPERIMENTS.md) · [2021 follow-up (e3_rainstab)](evaluation/results/e3_rainstab_test.md)

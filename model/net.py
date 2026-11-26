@@ -17,6 +17,8 @@ TP = 1                                # precipitation channel index
 DAY_ANGLE = 2.0 * math.pi / 365.0     # contract: doy_sincos = [sin(2 pi doy/365), cos(2 pi doy/365)]
 LAT0 = 6.5                            # southern row centre, 1 degree spacing
 SEC_PER_DAY, M_PER_DEG = 86400.0, 111_000.0
+WET_MM = 1.0                          # rain_head: a wet day is tp >= 1 mm/day
+RAIN_LOGIT_INIT = 6.0                 # rain_head: p = sigmoid(6) = 0.9975 at init, so tp starts at ~ the old tp
 
 
 def advance_sincos(sc: torch.Tensor, days: int = 1) -> torch.Tensor:
@@ -55,19 +57,24 @@ class ScaleBranch(nn.Module):
 class PralayaNet(nn.Module):
     """next_state = last_state + learned residual (in normalised space), rain clamped non-negative.
 
-    Optional experiment switches (both off by default, so older checkpoints load unchanged):
+    Optional experiment switches (all off by default, so older checkpoints load unchanged):
       ms_levels > 0: multi-scale branches on 1/2, 1/4, ... grids added to the body output.
       advect: wind-guided transport. The last state is moved back along its own u10/v10 for one day
         (semi-Lagrangian, a learned speed scale per channel) and the advective tendency is a further input.
+      rain_head: two-part rain. The existing tp output is the wet-day amount; a new 1-channel conv gives the logit
+        of p(tp >= 1 mm/day); served tp = p * amount. The new conv starts at weight 0, bias +6.
     """
 
-    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False):
+    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False,
+                 rain_head: bool = False):
         super().__init__()
         self.config = {"width": width, "blocks": blocks}
         if ms_levels:
             self.config["ms_levels"] = ms_levels
         if advect:
             self.config["advect"] = True
+        if rain_head:
+            self.config["rain_head"] = True
         mean = torch.as_tensor(mean, dtype=torch.float32).view(1, NC, 1, 1)
         std = torch.as_tensor(std, dtype=torch.float32).view(1, NC, 1, 1)
         static = torch.as_tensor(static, dtype=torch.float32)               # [2, 32, 36] land_sea_mask, orography_m
@@ -92,12 +99,20 @@ class PralayaNet(nn.Module):
             nn.init.zeros_(self.adv_stem.weight)
             nn.init.zeros_(self.adv_stem.bias)
         nn.init.zeros_(self.head.bias)
+        if rain_head:
+            self.rain_logit = nn.Conv2d(width, 1, 3, padding=1, padding_mode="replicate")
+            nn.init.zeros_(self.rain_logit.weight)
+            nn.init.constant_(self.rain_logit.bias, RAIN_LOGIT_INIT)
 
     def normalise(self, x):
         return (x - self.mean) / self.std
 
     def step(self, window: torch.Tensor, sc_target: torch.Tensor) -> torch.Tensor:
         """window [B,3,6,32,36] physical, sc_target [B,2] for the day being predicted -> [B,6,32,36] physical."""
+        return self.step_parts(window, sc_target)[0]
+
+    def step_parts(self, window: torch.Tensor, sc_target: torch.Tensor):
+        """-> (state [B,6,32,36] with served tp, wet-day amount [B,1,32,36], rain logit [B,1,32,36] or None)."""
         b = window.shape[0]
         xn = self.normalise(window.reshape(b * T_IN, NC, NLAT, NLON)).reshape(b, T_IN * NC, NLAT, NLON)
         cond = torch.cat([self.geo.unsqueeze(0).expand(b, -1, -1, -1),
@@ -108,9 +123,13 @@ class PralayaNet(nn.Module):
         h = self.body(h0)
         for br in self.branches:
             h = h + br(h0)
-        nxt = xn[:, -NC:] + self.head(F.gelu(h))
+        g = F.gelu(h)
+        nxt = xn[:, -NC:] + self.head(g)
         out = nxt * self.std + self.mean
-        return torch.cat([out[:, :TP], F.relu(out[:, TP:TP + 1]), out[:, TP + 1:]], dim=1)
+        amount = F.relu(out[:, TP:TP + 1])
+        logit = self.rain_logit(g) if hasattr(self, "rain_logit") else None
+        tp = amount if logit is None else torch.sigmoid(logit) * amount
+        return torch.cat([out[:, :TP], tp, out[:, TP + 1:]], dim=1), amount, logit
 
     def advect_tendency(self, last_phys: torch.Tensor, last_norm: torch.Tensor) -> torch.Tensor:
         """Backtrace each cell one day along the last day's 10 m wind; return advected - current (normalised)."""
@@ -132,10 +151,15 @@ class PralayaNet(nn.Module):
 
     def rollout(self, init: torch.Tensor, sc_last: torch.Tensor, steps: int) -> torch.Tensor:
         """init [B,3,6,32,36] physical (oldest first), sc_last [B,2] for init[:, -1] -> [B,steps,6,32,36] physical."""
-        window, sc, outs = init, sc_last, []
+        return self.rollout_parts(init, sc_last, steps)[0]
+
+    def rollout_parts(self, init: torch.Tensor, sc_last: torch.Tensor, steps: int):
+        """As rollout (served tp is fed back), plus amounts and logits [B,steps,1,32,36] (logits None without rain_head)."""
+        window, sc, outs, amts, logits = init, sc_last, [], [], []
         for _ in range(steps):
             sc = advance_sincos(sc, 1)
-            nxt = self.step(window, sc)
-            outs.append(nxt)
+            nxt, amt, lg = self.step_parts(window, sc)
+            outs.append(nxt); amts.append(amt); logits.append(lg)
             window = torch.cat([window[:, 1:], nxt.unsqueeze(1)], dim=1)
-        return torch.stack(outs, dim=1)
+        lg_out = torch.stack(logits, dim=1) if logits[0] is not None else None
+        return torch.stack(outs, dim=1), torch.stack(amts, dim=1), lg_out

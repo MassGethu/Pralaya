@@ -20,9 +20,10 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from evaluation.data import DEFAULT_NC, SPLITS, channel_stats, load_archive, sincos, split_mask, window_starts
-from model.net import NC, PralayaNet
+from model.net import NC, TP, WET_MM, PralayaNet
 
 ROOT = Path(__file__).resolve().parent
 VAL_LEADS = (1, 4, 8)
@@ -111,6 +112,9 @@ def main(argv=None) -> int:
     ap.add_argument("--grad-loss", type=float, default=0.0, help="weight of the spatial-gradient (structure) loss")
     ap.add_argument("--ms-levels", type=int, default=0, help="multi-scale branches (new modules start at zero)")
     ap.add_argument("--advect", action="store_true", help="wind-guided transport input (new module starts at zero)")
+    ap.add_argument("--rain-head", action="store_true",
+                    help="two-part rain: p(tp >= 1 mm) x wet-day amount (new conv starts at 0, bias +6)")
+    ap.add_argument("--occ-weight", type=float, default=1.0, help="weight of the rain-occurrence BCE (--rain-head)")
     ap.add_argument("--init", default=None, help="checkpoint to fine-tune from")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="auto")
@@ -140,16 +144,16 @@ def main(argv=None) -> int:
     if args.init:
         ck = torch.load(args.init, map_location="cpu", weights_only=True)
         arch = {**ck["config"], **({"ms_levels": args.ms_levels} if args.ms_levels else {}),
-                **({"advect": True} if args.advect else {})}
+                **({"advect": True} if args.advect else {}), **({"rain_head": True} if args.rain_head else {})}
         net = PralayaNet(ck["mean"], ck["std"], ck["static"], **arch)
         missing, unexpected = net.load_state_dict(ck["state_dict"], strict=False)
-        new = ("branches.", "adv_stem.", "adv_speed", "cos_lat")
+        new = ("branches.", "adv_stem.", "adv_speed", "cos_lat", "rain_logit.")
         if unexpected or any(not k.startswith(new) for k in missing):
             raise SystemExit(f"--init {args.init}: state mismatch missing={missing} unexpected={unexpected}")
         mean, std = ck["mean"].numpy(), ck["std"].numpy()
     else:
         net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks, ms_levels=args.ms_levels,
-                         advect=args.advect)
+                         advect=args.advect, rain_head=args.rain_head)
     net = net.to(dev).train()
 
     data = torch.from_numpy(arc.data).to(dev)
@@ -183,18 +187,29 @@ def main(argv=None) -> int:
     log(f"epoch {start_ep - 1} val_score={v0['val_score']:.4f} (rmse_norm lead1/4/8 mean over ch: "
         f"{[round(float(np.mean(r)), 4) for r in v0['rmse_norm']]})")
     for ep in range(start_ep, args.epochs + 1):
-        t0 = time.time(); tot = 0.0; stab_tot = 0.0
+        t0 = time.time(); tot = 0.0; stab_tot = 0.0; occ_tot = 0.0
         perm = tr[torch.randperm(len(tr), device=dev)]
         for chunk in torch.split(perm, args.batch):
             x, y, sc = batch(data, sc_all, chunk, args.rollout)
-            out = net.rollout(x, sc, args.rollout)
+            out, amount, logit = net.rollout_parts(x, sc, args.rollout)
             d = (out - y) / net.std.view(1, 1, NC, 1, 1)
+            occ = None
+            if logit is not None:
+                # tp term: the existing loss on the wet-day amount, wet cells only; plus BCE on occurrence
+                wet = y[:, :, TP:TP + 1] >= WET_MM
+                d_tp = torch.where(wet, (amount - y[:, :, TP:TP + 1]) / net.std.view(-1)[TP], 0.0)
+                d = torch.cat([d[:, :, :TP], d_tp, d[:, :, TP + 1:]], dim=2)
+                bce = F.binary_cross_entropy_with_logits(logit, wet.float(), reduction="none")
+                occ = args.occ_weight * (bce * w.unsqueeze(1)).mean()
             if args.heavy_rain_weight != 1.0:
                 hw = torch.ones_like(d)
                 hw[:, :, 1] = torch.where(y[:, :, 1] >= args.heavy_rain_thresh, args.heavy_rain_weight, 1.0)
                 loss = ((d ** 2) * w.unsqueeze(1) * cw * hw).mean()
             else:
                 loss = ((d ** 2) * w.unsqueeze(1) * cw).mean()
+            if occ is not None:
+                loss = loss + occ
+                occ_tot += float(occ.detach()) * len(chunk)
             if args.grad_loss:
                 gx, gy = d[..., :, 1:] - d[..., :, :-1], d[..., 1:, :] - d[..., :-1, :]
                 loss = loss + args.grad_loss * 0.5 * ((gx ** 2 * w.unsqueeze(1) * cw[..., :, 1:]).mean() + (gy ** 2 * w.unsqueeze(1)[..., 1:, :] * cw[..., 1:, :]).mean())
@@ -211,7 +226,7 @@ def main(argv=None) -> int:
             opt.step(); sched.step()
             tot += float(loss.detach()) * len(chunk)
         v = validate(net, data, sc_all, va, w, dev)
-        rec = {"epoch": ep, "train_loss": tot / len(tr), "stab_loss": stab_tot / len(tr), **v, "sec": round(time.time() - t0, 1), "lr": sched.get_last_lr()[0]}
+        rec = {"epoch": ep, "train_loss": tot / len(tr), "stab_loss": stab_tot / len(tr), "occ_loss": occ_tot / len(tr), **v, "sec": round(time.time() - t0, 1), "lr": sched.get_last_lr()[0]}
         with open(out_dir / "log.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
         save_ckpt(out_dir / "last.pt", net, {**meta, "epoch": ep, "val_score": v["val_score"]})
@@ -221,7 +236,7 @@ def main(argv=None) -> int:
             save_ckpt(out_dir / "best.pt", net, {**meta, "epoch": ep, "val_score": best})
         torch.save({"opt": opt.state_dict(), "sched": sched.state_dict(), "epoch": ep, "best": best,
                     "epochs": args.epochs, "rng": torch.get_rng_state()}, out_dir / "resume.pt")
-        log(f"epoch {ep}/{args.epochs} loss={rec['train_loss']:.4f} stab={rec['stab_loss']:.4f} val_score={v['val_score']:.4f} "
+        log(f"epoch {ep}/{args.epochs} loss={rec['train_loss']:.4f} stab={rec['stab_loss']:.4f} occ={rec['occ_loss']:.4f} val_score={v['val_score']:.4f} "
             f"lead1/4/8={[round(float(np.mean(r)), 4) for r in v['rmse_norm']]} {rec['sec']}s{tag}")
     log(f"done best val_score={best:.4f} -> {out_dir / 'best.pt'}")
     return 0
