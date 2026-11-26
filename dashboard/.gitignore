@@ -1,0 +1,6 @@
+node_modules/
+dist/
+*.local
+# Historical weather windows never go in the repo; keep demo inputs outside it.
+demo_inputs/
+*.nc
