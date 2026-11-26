@@ -96,14 +96,14 @@ def test_loader_contract():
 
 
 def test_adapter_end_to_end():
-    from inference_adapter import Inference, parse_simulation
+    from inference_adapter import Inference, prepare_simulation
 
     engine = Inference(BUNDLE, development=False)
     assert engine.model_name == "PRALAYA"
     history = _history(phase=0.7)
 
-    prime = engine.run(*parse_simulation(_body(history, None)))
-    zero = engine.run(*parse_simulation(_body(history, np.zeros(SHAPE).tolist())))
+    prime = engine.run(*prepare_simulation(_body(history, None)))
+    zero = engine.run(*prepare_simulation(_body(history, np.zeros(SHAPE).tolist())))
     assert prime.shape == (STEPS, *SHAPE)
     assert np.array_equal(prime, zero), "null and all-zero shock must give bit-identical rollouts (DECISIONS #7)"
 
@@ -111,16 +111,35 @@ def test_adapter_end_to_end():
     assert prime[:, 1].min() >= 0, "negative rain left the adapter"
     assert prime[:, 0].min() >= 233.15 and prime[:, 0].max() <= 333.15, "t2m outside 233.15-333.15 K left the adapter"
 
-    shocked = engine.run(*parse_simulation(_body(history, _warm_bay_delta(history[-1]).tolist())))
+    shocked = engine.run(*prepare_simulation(_body(history, _warm_bay_delta(history[-1]).tolist())))
     assert np.isfinite(shocked).all()
     assert np.abs(shocked - prime).max() > 0, "warm-ocean shock produced no response"
 
-    again = engine.run(*parse_simulation(_body(history, None)))
+    again = engine.run(*prepare_simulation(_body(history, None)))
     assert np.array_equal(prime, again), "Prime changed after a shocked request"
 
 
+def test_calibration_preserves_rain_and_raw_shock_response():
+    from inference_adapter import Inference, prepare_simulation
+    from model.inference import load_cpu
+
+    engine = Inference(BUNDLE, development=False)
+    raw_forecast = load_cpu(BUNDLE)
+    history = _history()
+    prime_inputs = prepare_simulation(_body(history, None))
+    branch_inputs = prepare_simulation(_body(history, _warm_bay_delta(history[-1]).tolist()))
+    raw_prime = raw_forecast(*prime_inputs[:3]).astype(np.float64)
+    raw_branch = raw_forecast(*branch_inputs[:3]).astype(np.float64)
+    prime = engine.run(*prime_inputs)
+    branch = engine.run(*branch_inputs)
+    np.testing.assert_array_equal(prime[:, 1], raw_prime[:, 1])
+    np.testing.assert_array_equal(branch[:, 1], raw_branch[:, 1])
+    np.testing.assert_allclose(branch - prime, raw_branch - raw_prime, atol=1e-10, rtol=0)
+
+
 def main() -> int:
-    tests = [test_checkpoint_is_real_and_tracked, test_loader_contract, test_adapter_end_to_end]
+    tests = [test_checkpoint_is_real_and_tracked, test_loader_contract, test_adapter_end_to_end,
+             test_calibration_preserves_rain_and_raw_shock_response]
     failed = 0
     for test in tests:
         try:

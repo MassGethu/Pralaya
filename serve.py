@@ -10,7 +10,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from inference_adapter import Inference, parse_simulation
+from inference_adapter import Inference, prepare_simulation
 
 
 ROOT = Path(__file__).resolve().parent
@@ -30,7 +30,7 @@ def create_app(inference: Inference) -> FastAPI:
         start = time.perf_counter()
         try:
             body = await request.json()
-            inputs = parse_simulation(body)
+            inputs = prepare_simulation(body)
         except (ValueError, OverflowError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 

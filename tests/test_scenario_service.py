@@ -7,7 +7,7 @@ from scripts.scenario_service import ScenarioRequest, Shock, build_delta, evalua
 
 
 class ControlledForecast:
-    def run(self, history, season, steps):
+    def run(self, history, season, steps, prime_history=None):
         # Translate an average temperature shock into a predictable rainfall deficit.
         state = history[-1].astype(np.float64)
         state[1] = 6 - (state[0].mean() - 295)

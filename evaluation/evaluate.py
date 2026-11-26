@@ -35,6 +35,7 @@ from evaluation.data import (DEFAULT_NC, clim_index, climatology, load_archive, 
                              window_starts)
 from evaluation import spatial
 from evaluation.uncertainty import ci, frac_ci, grader_draw
+from inference_adapter import Inference, apply_perturbation
 from model.forecaster import Forecaster
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -59,11 +60,25 @@ def grader_std() -> np.ndarray:
     return S.STD_DEFAULT
 
 
+class ServedForecaster:
+    def __init__(self, ckpt: str):
+        checkpoint = Path(ckpt)
+        if checkpoint.name != "pralaya.pt":
+            raise ValueError("served evaluation requires a bundle's pralaya.pt")
+        self.engine = Inference(checkpoint.parent, development=False)
+        self.model_id = self.engine.model_id
+
+    def simulate(self, history, season, steps, perturbation=None):
+        if perturbation is None or not np.any(perturbation):
+            return self.engine.run(history, season, steps)
+        return self.engine.run(apply_perturbation(history, perturbation), season, steps, history)
+
+
 def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int = 1, stride: int = 1, doy_shift: int = 0,
-             maps_png: Path | None = None) -> dict:
+             maps_png: Path | None = None, *, served: bool = False) -> dict:
     t0 = time.time()
     arc = load_archive(data_path)
-    fc = Forecaster(ckpt)
+    fc = ServedForecaster(ckpt) if served else Forecaster(ckpt)
     clim = train_climatology(arc, ROOT / "evaluation" / "results" / "clim_train.npy")
     std = grader_std()
     starts = window_starts(arc.dates, split, STEPS, stride)
@@ -289,11 +304,14 @@ def main(argv=None) -> int:
     ap.add_argument("--shock-stride", type=int, default=1, help="1 = shock every window (no sampling)")
     ap.add_argument("--doy-shift", type=int, default=0)
     ap.add_argument("--maps", action="store_true", help="write RMSE/bias/skill PNGs to evaluation/results/maps/")
+    ap.add_argument("--served", action="store_true", help="evaluate the exact adapter, including the bundle's optional calibration")
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
     tag = Path(a.ckpt).parent.name if Path(a.ckpt).parent.name != "bundle" else "bundle"
     maps = ROOT / "evaluation" / "results" / "maps" / f"{tag}_{a.split}" if a.maps else None
-    res = evaluate(a.ckpt, a.split, a.data, a.shock_stride, a.stride, a.doy_shift, maps)
+    res = evaluate(a.ckpt, a.split, a.data, a.shock_stride, a.stride, a.doy_shift, maps, served=a.served)
+    if a.served:
+        res["inference_path"] = "served"
     out = Path(a.out) if a.out else ROOT / "evaluation" / "results" / f"{res['model_id']}_{a.split}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1, default=float))

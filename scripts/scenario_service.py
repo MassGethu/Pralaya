@@ -12,7 +12,7 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, FiniteFloat, StrictInt, model_validator
 
-from inference_adapter import STATE_SHAPE, Inference, parse_simulation
+from inference_adapter import STATE_SHAPE, Inference, apply_perturbation, parse_simulation
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -160,7 +160,7 @@ def evaluate(request: ScenarioRequest, inference: Inference, land: np.ndarray, c
     results, rain = [], []
     best = None
     for index, (shock, (delta, cost)) in enumerate(zip(specs, deltas)):
-        rollout = inference.run(*parse_simulation({**body, "perturbation": delta.tolist()}))
+        rollout = inference.run(apply_perturbation(history, delta), season, steps, history)
         daily = regional_rain(rollout)
         total = float(daily.sum())
         deficit = reference_total - total
