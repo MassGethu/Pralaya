@@ -1,4 +1,41 @@
-# Climatology blend for b3_roll4
+# Climatology blend
+
+This file has two parts. The first part is the 27 Nov refit on the shipped e3_roll8_ocean model, with the mentor's ruling and the gates we fixed before scoring. The second part is the original 26 Nov experiment on b3_roll4, kept unchanged as history.
+
+## Mentor ruling (Track 2, 27 Nov ~01:30 IST)
+
+Saved verbatim:
+
+> basically yes, this is allowed. a fitted seasonal curve plus a carried-forward last day is
+> normal modelling, not a lookup table. you store only fitted numbers, no real days and no
+> dates. just check three things, because the blend can hurt them: 1. your shocks must still
+> spread outward by days 4 to 8, not just stay local. more weight on the seasonal part weakens
+> the shock. 2. day-8 variance must stay between 40% and 250% of the real. 3. a zero shock must
+> still equal the normal run. mention the blend in your brief in a line or two. the repo scan
+> is automatic, so we can't promise its result from here.
+
+## e3 refit: gates fixed before scoring
+
+Written and committed on 27 Nov at 01:37 IST, before any e3 blend score was computed.
+
+**Method (unchanged rung 4).** The reference is the seasonal normal (mean plus three annual harmonics, 7 numbers per cell and channel, fitted on 2005–2019) mixed with persistence of the request's last input day. The persistence share starts at the fitted day-1 level and falls linearly to 0 by day 9. The model weight per day, channel and land/sea region is fitted on all of 2020 val and clamped to [0.3, 1]. Rain (tp) keeps weight 1.0. Leads 11–14 are the raw model. The fit uses the rung 4 code in `scripts/clim_blend_experiment.py` with the e3 bundle's raw rollouts.
+
+**Scoring.** All scores come from `evaluation/evaluate.py` (the kit's `monsoon_r1.scoring` functions) on all 354 val 2020 windows, with both kit shocks on every window. S is the sum of the RMSE, CSI, anti-blur and causality proxy points. The unblended baseline is the same pipeline with the served clipping and no blend. The blended run applies the blend exactly as `inference_adapter.py` does, with persistence taken from the already-perturbed last input day, then clips.
+
+| Gate | Mentor point | Pass rule |
+|---|---|---|
+| G1 spread | 1 | For each kit shock (warm_ocean, monsoon_stall), the "propagates" fraction drops by at most 5 percentage points versus the unblended model. Total causality points drop by at most 1.0. |
+| G2 variance | 2 | Kit anti-blur stays 10/10. Every channel's day-8 variance ratio (kit `variance_ratio`, mean over windows as in `anti_blur_points`) is in [0.4, 2.5]. |
+| G3 null | 3 | A zero perturbation gives output bit-identical to the unperturbed run, in the evaluator and through the served adapter. |
+| G4 gain | — | Blended S ≥ unblended S + 1.0 on val 2020. |
+
+**Fallback, also fixed now.** If G1 fails, raise the model-weight floor from 0.3 to 0.5, refit once and re-check all four gates once. If any gate still fails, the blend does not ship and this branch records it as tested, not shipped.
+
+**Follow-up number.** After the gates are decided, the frozen artifact is scored once on 2021 (test). This is labelled a follow-up: it is the honest out-of-sample number, because the weights were fitted on 2020. It does not change the ship decision.
+
+**Model match.** The blend is fitted on whichever checkpoint ships. If e3_rainstab is promoted, the blend is refitted and gated on it in the same way. A blend fitted on one model is never shipped with another.
+
+# Original experiment: blend for b3_roll4 (26 Nov)
 
 The served model and checkpoint stay fixed. The blend uses a seasonal-mean prior fitted on 2005–2019 (7 coefficients per cell) for each weather channel. The coefficients describe a mean and three annual harmonics. Decode the request's last-input phase with `atan2` and advance it by one 365-day cycle step per lead. For leads 1–10, interpolate from that seasonal field (or the rung 4 reference) toward the raw model rollout with weight `a` in [0.3, 1]. Leads 11–14 use the original rollout. Apply the existing physical clipping after interpolation. The adapter applies the shock once, before the model rollout. Without `postprocess/clim_blend.pt`, the model takes the original inference path.
 
