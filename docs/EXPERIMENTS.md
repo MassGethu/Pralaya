@@ -55,3 +55,32 @@ goes through the same rule.
 
 Test 2021 was already seen, so any 2021 numbers from here on are labelled **follow-up evaluation** and never
 used for promotion.
+
+---
+## Log
+
+### Diagnosis of b3_roll4 on val (`python -m evaluation.trace`, full output in `evaluation/results/trace_b3_roll4_val.md`)
+- **First failure is ocean t2m at day 1.** Skill vs the better baseline is already negative on day 1 over the ocean,
+  in both the Bay of Bengal and Arabian Sea boxes. Over the ocean, t2m barely moves from day to day, so persistence
+  is very hard to beat there. Over land, t2m skill stays positive until day 5.
+- **Next to fail:** rain north of 28N (day 3) and highland tcwv (day 3). Then rain everywhere (day 5), and all
+  channels by days 6–8 except msl (day 8).
+- **Worst val windows:**
+  - 2020-05-04 and 2020-05-06: Bay of Bengal convection before cyclone Amphan. Rain first, from day 2–3. The model
+    gives 10 mm/day where 139 mm/day fell at 6.5N 94.5E.
+  - 2020-02-10/11: a winter western disturbance. msl over the northwest from day 1, and spurious rain in the
+    southern Arabian Sea.
+  - 2020-10-28: msl at the north-east corner.
+- **Shock instability is rain only, in the box, and comes from amplifying rain the model already forecasts.**
+  - Every >5 std case is tp. The median distance from the shock box is 0 cells.
+  - warm_ocean: 51/354 windows exceed 5 std. The first exceedance is mostly on days 5–7, building through 3 std
+    a few days earlier.
+  - monsoon_stall: 37/354 windows exceed 5 std, earlier (days 1–4). 14 of these windows are already above 3 std
+    on day 1.
+  - At the first >5 std cell, the base forecast already has 21–28 mm/day, and the shock adds about 40 mm/day.
+    Observed rain at that cell is >= 25 mm/day in only 16 % (warm) / 38 % (stall) of these cases.
+- **Heavy rain is already under-forecast.** At 25 mm/day, the frequency bias is 0.80 / 0.55 / 0.45 at days
+  1 / 4 / 8. At 50 mm/day it is 0.53 / 0.18 / 0.13. A rain-stability fix must not reduce this further; rule 4b
+  checks day-1 CSI at 25 mm/day.
+- **Spatial variance is healthy.** Day-8 variance ratio is 0.85–1.01 for every channel (kit band 0.4–2.5), and
+  90 % of windows are in band.
