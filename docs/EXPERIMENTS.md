@@ -317,3 +317,22 @@ has val_score 0.3999.
   - The winner is the highest S among runs passing 1–4, decided once b2_unet and b5_transport report (03:00).
   - If e3_rainstab wins, rule 5 needs its 3-seed mean ≥ 50.49, with
     `--init runs/b3_roll4_s{1,2}/best.pt --seed {1,2}`, run one after another (about 28 min each).
+
+**`e3_rainstab` seeds (rule 5).** Jarvis approved starting them before the 03:00 b2/b5 results. Seeds 1 and 2 ran one
+after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {1,2}`. They are compared in
+`compare_e3_rainstab_seeds_vs_e3.*`.
+
+| seed | S | paired Δ vs e3 [CI] | stable warm / stall | heavy-25 d1 CSI | day-8 in band |
+|---|---|---|---|---|---|
+| 0 | 51.11 | +0.0055 [+0.0014, +0.0097] | 92.9 / 94.9 | 0.365 | 0.885 |
+| 1 | 49.19 | +0.0021 [−0.0057, +0.0102] | 95.5 / 97.2 | 0.369 | 0.879 |
+| 2 | 52.24 | +0.0083 [+0.0007, +0.0157] | 98.9 / 98.0 | 0.371 | 0.873 |
+
+- **Rule 5 passes:** the 3-seed mean S is **50.85 ± 1.54**, at least 49.49 + 1.0 = 50.49. For reference, e3's own
+  mean is 49.49 ± 1.14.
+- **The seeds disagree a lot:**
+  - seed 1 alone is 0.18 below e3, and its CI includes 0;
+  - every seed is more stable than e3 (+4.8 to +10.5 pp);
+  - every seed has slightly better heavy-rain day-1 CSI.
+- **Status:** e3_rainstab passes rules 1–5. It is promoted only if neither `b2_unet` nor `b5_transport` passes rules 1–4
+  with a higher seed-0 S, which is decided at 03:00. `model/bundle` is unchanged until then.
