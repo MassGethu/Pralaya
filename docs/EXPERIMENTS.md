@@ -3,6 +3,8 @@
 > **Current status (added 27 Nov; the pre-registered text below is unchanged):** shipped `e3_rainstab`, sha256
 > `90605130…68d88db`, promoted in round 2 (see the end of this file). Rollback to e3: `git checkout 3578dd2 --
 > model/bundle/pralaya.pt`. The "Baseline and rollback" section below describes the state when round 1 was registered.
+>
+> A climatology blend (mentor-approved) raised val S to ~57 on e3, but failed our pre-registered shock-spread gate (G1) on both e3 and e3_rainstab, so it was not shipped. See [CLIMBLEND.md](CLIMBLEND.md).
 
 Written and committed **before** any of these runs was evaluated. The rule below decides promotion and is not edited
 afterwards; results are appended in the log at the end.

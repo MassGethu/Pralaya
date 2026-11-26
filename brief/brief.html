@@ -65,6 +65,7 @@
       <li>A window counts only if inputs and all 10 targets lie in one split. Data audit: 30/30 checks pass.</li>
       <li>First release: <span class="mono">b3_roll4</span>, chosen from six candidates (b1, b3 × 3 seeds) under a rule fixed before 2021 scoring (<span class="mono">ed10825</span>). Two later rounds of fine-tunes were pre-registered (round 2: <span class="mono">dccd2c0</span>) and judged on 2020 only. <b>e3_rainstab</b> won round 2: kit-style S 51.11 / 70 on val, paired skill gain over the previous release +0.0055 [+0.0014, +0.0097], 3-seed mean 50.85 ± 1.54 (seed 1, 49.19, is below the previous release).</li>
       <li>2021 was scored once, after promotion, as a follow-up only. Per-window skill is +0.064 on validation and +0.059 in 2021; 2021 S is 50.72, slightly below the previous release (50.92).</li>
+      <li>A climatology blend (mentor-approved) raised val S to ~57 on e3, but failed our pre-registered shock-spread gate (G1) on both e3 and e3_rainstab, so it was not shipped. See <span class="mono">docs/CLIMBLEND.md</span>.</li>
     </ul>
 
     <h2>Drift and blur: what we did and measured</h2>

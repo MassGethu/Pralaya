@@ -50,6 +50,8 @@ Self-contained: no stats.json, no climatology and no archive are needed at infer
   - `scripts/check_inference.py` passes;
   - `monsoon_r1.repo_scan`: 15/15, no flags;
   - repeated identical requests return identical forecasts (only `inference_ms` differs).
+- **Promotion numbers (round 2, val 2020):** S 51.11 / 70; paired skill gain over e3 CI [+0.0014, +0.0097];
+  3-seed mean 50.85 ± 1.54; seed 1 (49.19) is below e3 (49.37). See [EXPERIMENTS.md](EXPERIMENTS.md).
 - e3_roll8_ocean on main 385e70f measured 242 MB peak; b3_roll4 on main 0b848d4 measured 248 MB (MPS training ran alongside).
 - Same architecture and size as e3 (`{"width": 96, "blocks": 5}`, 3,470,551 bytes), so serving needs no change.
 
