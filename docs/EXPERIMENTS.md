@@ -371,3 +371,55 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - trusted Bay of Bengal −2 … +2 K and Arabian Sea wind −30 … +30 %;
   - the scenario service has an `e3_rainstab` profile with 13 defaults.
   - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.
+
+---
+## Round 3: `a3_anomaly` pre-registration (written 2026-11-27 05:25 IST, before any a3 run was evaluated)
+One experiment, seed 0, val 2020 only. Hard cutoff 06:45 IST. Branch `jarvis/a3-anomaly`; `main` and
+`model/bundle` on `main` are not touched. Training base: `origin/jarvis/model` @ `bc127f3`. The served
+evaluation and the calibration refit use `origin/codex/rainstab-demo` (the calibrated `e3_rainstab` release).
+
+### Idea (fixed)
+The net works in anomaly space. Per cell and channel, the seasonal normal is the 7-coefficient harmonic fit
+`c0 + Σ_{n=1..3} (a_n sin nθ + b_n cos nθ)`, θ = 2π·doy/365, fitted on 2005–2019 only.
+- **Coefficients: reused, not refitted.** They are the `coefficients` tensor of `main`'s
+  `model/bundle/calibration.pt` (SHA-256 `63f66f44…bda040e`, floor-0.3 fit on training years 2005–2019), read
+  from git into a scratch file. Basis order `[1, sin θ, sin 2θ, sin 3θ, cos θ, cos 2θ, cos 3θ]`, as in
+  `model/calibration.py`.
+- Inputs = the 3 input days minus their own seasonal normal (divided by the training std); target = the next
+  day's anomaly; output = normal(doy+k) + predicted anomaly, rain clipped at 0 as before.
+- The subtraction and the add-back happen inside `PralayaNet.step` (`config["anomaly"] = True`, buffer
+  `clim_coef` [7,6,32,36]), so `serve.py`, `inference_adapter.py` and `model/forecaster.py` are unchanged.
+  Checkpoints without the flag load and run exactly as before.
+- Head initialised at zero, so the untrained net is persisted anomaly.
+
+### Chain (from scratch, seed 0, e3_rainstab's recipe)
+| stage | id | recipe |
+|---|---|---|
+| 1 | `a3_onestep` | `--anomaly --clim-coef <calibration.pt> --epochs 40 --rollout 1 --lr 1e-3` |
+| 2 | `a3_roll4` | `--init runs/a3_onestep/best.pt --epochs 12 --rollout 4 --lr 3e-4` |
+| 3 | `a3_anomaly` | `--init runs/a3_roll4/best.pt --epochs 12 --rollout 8 --lr 1e-4 --ocean-t2m-weight 4 --stab-weight 1` |
+
+**Timing check (05:13–05:19):** partial-epoch probes gave ≈16 s/epoch (stage 1), ≈58 s (stage 2) and ≈235 s
+(stage 3; the non-anomaly e3 recipe measured the same 235 s/epoch on this machine now, vs 138 s at 00:30).
+Total ≈72 min, finishing ≈06:34, i.e. past the 06:15 target. Stages 2+3 alone take ≈59 min, so shortening
+stage 1 could not meet 06:15 either. **The owner chose to keep the full recipe unshortened** ("it's fine if it
+takes longer"). Started 05:20:50. If the owner later asks for a cut, it is recorded here before any scoring.
+
+### Served evaluation (fixed)
+- Raw: `python -m evaluation.evaluate --ckpt runs/a3_anomaly/best.pt --split val`.
+- Served: refit `calibration.pt` for the a3 checkpoint with the existing fit script (floor 0.3, both rain weights
+  pinned to 1 at every lead, bound to the a3 checkpoint's SHA-256), install both in a scratch bundle and run
+  `python -m evaluation.evaluate --served --split val`. The comparison base is the current served release
+  (calibrated `e3_rainstab`) scored the same way on the same 354 windows.
+
+### Gates (2020 val, served; all must hold)
+1. S ≥ **58.92**.
+2. Paired per-window skill difference vs the current served release: 95 % CI lower bound > 0.
+3. Shock propagation and shock stability (warm Bay / Arabian Sea wind): each no more than 2 pp worse than the
+   current served release.
+4. Null (zero-shock) response exact: Branch − Prime = 0.
+5. Anti-blur 10/10, and the day-8 in-band share drops by no more than 2 pp vs the current served release.
+
+Fail any gate → not promoted, with one line on why. The idea, the recipe and these gates are not changed after
+seeing val. Seeds 1/2 (whole chain with `--seed {1,2}`) run only if seed 0 passes and they fit before 06:45.
+Pass or fail is reported by 06:45 either way.
