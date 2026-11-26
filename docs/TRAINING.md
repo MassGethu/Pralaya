@@ -1,0 +1,56 @@
+# How PRALAYA is trained and evaluated
+
+## Data (see [DATA_AUDIT.md](DATA_AUDIT.md))
+`india_climate_train.nc` from the organizer kit: 2005-01-01 … 2021-12-31, daily, 6 channels on a 32 × 36 grid,
+plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 checks covering structure, units, coverage, ranges and static fields.
+
+## Chronological split: we did not train on everything
+| split | years | days | windows (3 in + 10 out) | used for |
+|---|---|---|---|---|
+| train | 2005–2019 | 5,478 | 5,472–5,475 (depends on rollout K) | weights, normalisation mean/std, climatology baseline |
+| val | 2020 | 366 | 354 | early stopping and model selection only |
+| test | 2021 | 365 | 353 | scored **once**, after the selection was committed (`ed10825`) |
+
+- A window counts only if its inputs **and** all its target days fall in the same split, so no target leaks across a year boundary.
+- Normalisation uses train years only. The kit's `stats.json` covers 2005–2021, which includes val and test, so the model does not use it.
+- The climatology baseline in evaluation is also built from train years only.
+- The grader's hidden windows are from 2023–24, outside the archive. Test 2021 is our closest stand-in for them.
+
+## Model
+`model/net.py` `PralayaNet` is a residual CNN: width 96, 5 residual blocks, replicate padding, 0.86 M parameters.
+- **Input:** 3 normalised days (18 channels), 4 geography channels (land-sea mask, orography/1000, lat, lon) and sin/cos of the target day.
+- **Output:** the next day as a residual on the last day. The head starts at zero, so an untrained model equals persistence.
+- **Rain:** ReLU, so rain is never negative.
+- **Rollout:** autoregressive, one day per step. The season encoding advances by 2π/365 per step.
+
+## Recipe (the shipped `b3_roll4`)
+| stage | command | what it does |
+|---|---|---|
+| b1 | `python train.py --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0` | one-step training from scratch |
+| b3 | `python train.py --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0` | fine-tunes through a 4-day rollout, which reduces drift and shock blow-up |
+
+- Shared settings: AdamW (wd 1e-4), OneCycle LR, batch 32, gradient clip 1.0.
+- Loss: latitude-weighted MSE in normalised units.
+- Device: Apple MPS (about 320 samples/s); the checkpoint loads on CPU.
+- Each run writes `runs/<name>/{config.json, log.jsonl, train.log, last.pt, best.pt, resume.pt}` (gitignored). Use `--resume` to continue an interrupted run.
+- `best.pt` is the epoch with the lowest training-time val score (every 2nd val window, leads 1/4/8).
+- Seeds 1 and 2 use the same commands with `--seed 1|2` and `_s1|_s2` names.
+- Release: copy the selected `runs/<id>/best.pt` to `model/bundle/pralaya.pt`. The checkpoint is self-contained (weights, config, train-only stats, static fields).
+
+## Is it overfitting?
+- **Val vs test.** On test 2021 (never used for any choice) the shipped model scores S = 46.8 / 70, against 45.9 on val. Per-window skill is +0.046 on val and +0.043 on test; the two 95% CIs overlap ([+0.029, +0.063] vs [+0.031, +0.056]). Test is no worse than val, so we see no sign of overfitting to val.
+- **Seeds.** b3 scores 45.2 ± 0.8 on val and 43.3 ± 3.4 on test (3 seeds). The gain over b1 (34.7 ± 3.5, 33.0 ± 0.6) holds on every seed and on both splits.
+- **Known weaknesses (honest).**
+  - Day-4 skill against the better baseline is about 0 (CI includes 0), and day 8 is negative (−0.11).
+  - Ocean t2m is worse than persistence at days 4 and 8.
+  - Rain causes every unstable shock response.
+  - The grader averages only 5 windows, so the expected range is wide.
+  - Details: [`evaluation/results/report_test.md`](../evaluation/results/report_test.md) and the maps in `evaluation/results/maps/`.
+
+## Selection and evaluation
+- Rule: [SELECTION.md](SELECTION.md), fixed before test.
+- Commands:
+  - `python -m evaluation.evaluate --ckpt runs/<id>/best.pt --split val|test [--maps]`
+  - `python -m evaluation.select --split val|test`
+- Tests: `python -m pytest tests/test_model.py` (24 tests).
+- Memory: `python evaluation/memprobe.py <checkout with serve.py>` (peak 248 MB of 6 GB).

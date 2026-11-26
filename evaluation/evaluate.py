@@ -14,7 +14,11 @@ Aggregation (documented local choices where the kit leaves it open):
     (closest to the grader's ss_by_window). Points proxy = 30 * clip(mean / 0.12, 0, 1).
   * CSI: tp > 10 mm/day; counts pooled over windows per lead; per-window CSI skill over leads 1, 4, 8 pooled.
   * anti-blur: kit variance_ratio at day 8 per window, kit anti_blur_points over windows.
-  * shocks: kit make_shock + causality_checks with stats.json std (the grader's scale), every --shock-stride-th window.
+  * shocks: kit make_shock + causality_checks with stats.json std (the grader's scale), on every window by default.
+  * uncertainty: 95% moving-block-bootstrap CIs (evaluation/uncertainty.py), worst windows, and a "grader draw":
+    the spread of the points proxy when only 5 random windows are averaged, as in the hidden test.
+  * spatial: RMSE / bias / skill maps per variable and lead plus a region table (evaluation/spatial.py).
+  * --doy-shift N: feed the season of (last input day + N days). Used only for the 0- vs 1-based doy sensitivity check.
 """
 from __future__ import annotations
 
@@ -29,6 +33,8 @@ from monsoon_r1.contract import BOX_ARABIAN_SEA, BOX_BAY_OF_BENGAL, CHANNELS
 
 from evaluation.data import (DEFAULT_NC, clim_index, climatology, load_archive, sincos, split_mask,
                              window_starts)
+from evaluation import spatial
+from evaluation.uncertainty import ci, frac_ci, grader_draw
 from model.forecaster import Forecaster
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -53,7 +59,8 @@ def grader_std() -> np.ndarray:
     return S.STD_DEFAULT
 
 
-def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int, stride: int) -> dict:
+def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int = 1, stride: int = 1, doy_shift: int = 0,
+             maps_png: Path | None = None) -> dict:
     t0 = time.time()
     arc = load_archive(data_path)
     fc = Forecaster(ckpt)
@@ -65,7 +72,7 @@ def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int, stride: i
     for i in starts:
         init = arc.data[i:i + 3]
         t1 = time.perf_counter()
-        out = fc.simulate(init, sincos(arc.dates[i + 2]), STEPS, None)
+        out = fc.simulate(init, sincos(arc.dates[i + 2] + np.timedelta64(doy_shift, "D")), STEPS, None)
         lat_ms.append((time.perf_counter() - t1) * 1000)
         bad = S.validity(out, STEPS)
         if bad:
@@ -75,7 +82,8 @@ def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int, stride: i
         CL.append(np.stack([clim[clim_index(arc.dates[i + 3 + k])] for k in range(STEPS)]))
     P, T, PE, CL = map(np.stack, (P, T, PE, CL))          # [W, 10, 6, 32, 36]
 
-    res: dict = {"ckpt": ckpt, "model_id": fc.model_id, "split": split, "windows": int(len(starts)),
+    init_days = [str(arc.dates[i + 2]) for i in starts]
+    res: dict = {"ckpt": ckpt, "model_id": fc.model_id, "split": split, "windows": int(len(starts)), "doy_shift": doy_shift,
                  "first_init_day": str(arc.dates[starts[0] + 2]), "last_init_day": str(arc.dates[starts[-1] + 2]),
                  "invalid_windows": invalid, "cpu_rollout_ms_median": float(np.median(lat_ms)), "leads": {}}
     for ld in LEADS:
@@ -99,10 +107,12 @@ def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int, stride: i
             "csi_skill": S.csi_skill(cnt["model"]["csi"], cnt["persistence"]["csi"], cnt["climatology"]["csi"]),
         }
     # per-window aggregation, closest to the grader's ss_by_window / csi_ss_by_window
-    ss_w, csi_w, ratios = [], [], []
+    ss_w, csi_w, ratios, ss_lead_w, d4p_w = [], [], [], [], []
     for w in range(len(starts)):
-        ss_w.append(float(np.nanmean([S.skill_vs_best_ref(P[w, ld - 1], T[w, ld - 1], PE[w, ld - 1], CL[w, ld - 1])["ss"]
-                                      for ld in LEADS])))
+        per = [S.skill_vs_best_ref(P[w, ld - 1], T[w, ld - 1], PE[w, ld - 1], CL[w, ld - 1]) for ld in LEADS]
+        ss_lead_w.append([float(np.nanmean(r["ss"])) for r in per])
+        d4p_w.append(float(np.nanmean(per[LEADS.index(4)]["ss_persist"])))
+        ss_w.append(float(np.nanmean([r["ss"] for r in per])))
         ks = [ld - 1 for ld in LEADS]
         csi_w.append(S.csi_skill(S.csi(P[w, ks, 1], T[w, ks, 1]), S.csi(PE[w, ks, 1], T[w, ks, 1]),
                                  S.csi(CL[w, ks, 1], T[w, ks, 1])))
@@ -120,9 +130,36 @@ def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int, stride: i
         "day8_variance_in_band_frac": float(((ratios >= S.BLUR_MIN_RATIO) & (ratios <= S.BLUR_MAX_RATIO)).mean()),
         "anti_blur_points_proxy": S.anti_blur_points(ratios),
     }
+    res["uncertainty"] = uncertainty(ss_w, csi_w, ss_lead_w, d4p_w, ratios, init_days)
+    m = spatial.mse_maps(P, T, PE, CL, LEADS)
+    res["spatial"] = {"regions": spatial.region_table(m, arc.static, LEADS),
+                      "weak_cells": spatial.weak_cells(m, arc.static, LEADS)}
+    if maps_png is not None:
+        spatial.plot_maps(m, LEADS, f"{fc.model_id} {split}", maps_png)
+    del P, T, PE, CL
     res["shocks"] = shock_tests(fc, arc, starts[::shock_stride], std)
     res["eval_seconds"] = round(time.time() - t0, 1)
     return res
+
+
+def uncertainty(ss_w, csi_w, ss_lead_w, d4p_w, ratios, init_days) -> dict:
+    ss_w, csi_w, ss_lead_w, d4p_w = map(np.asarray, (ss_w, csi_w, ss_lead_w, d4p_w))
+    inband = ((ratios >= S.BLUR_MIN_RATIO) & (ratios <= S.BLUR_MAX_RATIO)).mean(axis=1)
+
+    def worst(x, n=5):
+        order = np.argsort(np.where(np.isfinite(x), x, np.inf))[:n]
+        return [{"init_day": init_days[j], "value": round(float(x[j]), 4)} for j in order]
+
+    return {
+        "method": "95% moving-block bootstrap (block 10 windows, 2000 resamples); min = worst window",
+        "ss_per_window": ci(ss_w), "csi_skill_per_window": ci(csi_w),
+        "ss_by_lead": {ld: ci(ss_lead_w[:, j]) for j, ld in enumerate(LEADS)},
+        "day4_ss_persistence": ci(d4p_w), "day4_beats_persistence_frac": frac_ci(d4p_w > 0),
+        "day8_in_band_frac": ci(inband),
+        "grader_draw_forecast_points": grader_draw(lambda a, b: S.forecast_points(a, b)["points"], ss_w, csi_w),
+        "worst_windows": {"ss_per_window": worst(ss_w), "csi_skill": worst(csi_w),
+                          "day8_ss": worst(ss_lead_w[:, LEADS.index(8)]), "day4_ss_persistence": worst(d4p_w)},
+    }
 
 
 def shock_tests(fc: Forecaster, arc, starts, std) -> dict:
@@ -141,6 +178,8 @@ def shock_tests(fc: Forecaster, arc, starts, std) -> dict:
             z = np.abs((shock - base) / std[None, :, None, None])
             r["max_abs_std"] = float(z.max())
             r["day_peak_resp_std"] = [round(float(z[k].max()), 3) for k in range(STEPS)]
+            r["init_day"] = str(arc.dates[i + 2])
+            r["worst_channel"] = CHANNELS[int(np.unravel_index(z.argmax(), z.shape)[1])]
             per[name].append(r)
     for name, rs in per.items():
         def frac(key):
@@ -151,9 +190,17 @@ def shock_tests(fc: Forecaster, arc, starts, std) -> dict:
                      "near_frac_day1_min": float(np.min([r["near_frac_day1"] for r in rs])),
                      "far_frac_max": float(np.max([r["far_frac_max"] for r in rs])),
                      "max_abs_std": float(np.max([r["max_abs_std"] for r in rs])),
-                     "peak_resp_std_by_day_mean": np.mean([r["day_peak_resp_std"] for r in rs], axis=0).round(3).tolist()}
-    out["causality_points_proxy_mean"] = float(np.mean([
-        S.causality_points([per["warm_ocean"][j], per["monsoon_stall"][j]], out["null_ok"]) for j in range(len(starts))]))
+                     "peak_resp_std_by_day_mean": np.mean([r["day_peak_resp_std"] for r in rs], axis=0).round(3).tolist(),
+                     "stable_ci": frac_ci([bool(r["stable"]) for r in rs]),
+                     "propagates_ci": frac_ci([bool(r["propagates"]) for r in rs]),
+                     "unstable_by_channel": {ch: int(sum((not r["stable"]) and r["worst_channel"] == ch for r in rs))
+                                             for ch in CHANNELS},
+                     "worst": sorted(({"init_day": r["init_day"], "max_abs_std": round(r["max_abs_std"], 2),
+                                       "channel": r["worst_channel"]} for r in rs),
+                                     key=lambda d: -d["max_abs_std"])[:5]}
+    cpts = [S.causality_points([per["warm_ocean"][j], per["monsoon_stall"][j]], out["null_ok"]) for j in range(len(starts))]
+    out["causality_points_proxy_mean"] = float(np.mean(cpts))
+    out["causality_points_ci"] = ci(cpts)
     return out
 
 
@@ -183,7 +230,54 @@ def summary(res: dict) -> str:
         lines.append(f"- {name}: nonzero {r['nonzero']:.0%}, localized {r['localized']:.0%} (day-1 near frac mean "
                      f"{r['near_frac_day1_mean']:.2f}, min {r['near_frac_day1_min']:.2f}), propagates {r['propagates']:.0%}, "
                      f"stable {r['stable']:.0%} (max {r['max_abs_std']:.2f} std), far frac max {r['far_frac_max']:.3f}")
-    return "\n".join(lines)
+    return "\n".join(lines + uncertainty_lines(res) + spatial_lines(res))
+
+
+def _ci(d: dict, fmt: str = "+.3f") -> str:
+    return f"{d['mean']:{fmt}} [{d['ci95'][0]:{fmt}}, {d['ci95'][1]:{fmt}}], worst {d['min']:{fmt}}"
+
+
+def uncertainty_lines(res: dict) -> list[str]:
+    u, s = res["uncertainty"], res["shocks"]
+    g = u["grader_draw_forecast_points"]
+    out = ["", "### Uncertainty (mean [95% block-bootstrap CI], worst window)",
+           f"- per-window skill: {_ci(u['ss_per_window'])}",
+           *[f"- skill day {ld}: {_ci(u['ss_by_lead'][ld])}" for ld in LEADS],
+           f"- CSI skill per window: {_ci(u['csi_skill_per_window'])}",
+           f"- day-4 skill vs persistence: {_ci(u['day4_ss_persistence'])}; windows beating persistence "
+           f"{u['day4_beats_persistence_frac']['frac']:.0%} [{u['day4_beats_persistence_frac']['ci95'][0]:.0%}, "
+           f"{u['day4_beats_persistence_frac']['ci95'][1]:.0%}]",
+           f"- day-8 in-band fraction: {_ci(u['day8_in_band_frac'], '.2f')}",
+           f"- causality proxy per window: {_ci(s['causality_points_ci'], '.1f')}",
+           f"- grader-like draw (5 random windows), forecast points /45: p05 {g['p05']:.1f}, median {g['p50']:.1f}, "
+           f"p95 {g['p95']:.1f}"]
+    for name in SHOCK_BOX:
+        r = s[name]
+        out.append(f"- {name}: stable {r['stable_ci']['frac']:.0%} [{r['stable_ci']['ci95'][0]:.0%}, "
+                   f"{r['stable_ci']['ci95'][1]:.0%}]; unstable by channel {r['unstable_by_channel']}; worst "
+                   + ", ".join(f"{w['init_day']} {w['max_abs_std']} std ({w['channel']})" for w in r["worst"][:3]))
+    out.append("- worst windows (per-window skill): "
+               + ", ".join(f"{w['init_day']} {w['value']:+.3f}" for w in u["worst_windows"]["ss_per_window"]))
+    out.append("- worst windows (day-8 skill): "
+               + ", ".join(f"{w['init_day']} {w['value']:+.3f}" for w in u["worst_windows"]["day8_ss"]))
+    return out
+
+
+def spatial_lines(res: dict) -> list[str]:
+    reg, weak = res["spatial"]["regions"], res["spatial"]["weak_cells"]
+    out = ["", "### Skill by region (1 - RMSE / min(persistence, climatology))", "",
+           "| region | cells | lead | " + " | ".join(CHANNELS) + " |", "|---|---|---|" + "---|" * len(CHANNELS)]
+    for name, r in reg.items():
+        for ld in (4, 8):
+            out.append(f"| {name} | {r['cells']} | {ld} | " + " | ".join(f"{r['skill'][ld][ch]:+.3f}" for ch in CHANNELS) + " |")
+    out += ["", "### Weak cells (share of cells with skill < 0; worst 3 cells: lat, lon, skill, bias)"]
+    for ld in (4, 8):
+        for ch in CHANNELS:
+            w = weak[f"{ld}/{ch}"]
+            out.append(f"- day {ld} {ch}: {w['neg_skill_frac']:.0%} of cells below 0; "
+                       + "; ".join(f"({c['lat']}, {c['lon']}) {c['skill']:+.2f}, bias {c['bias']:+.3g}"
+                                   f"{' land' if c['land'] else ' sea'} {c['oro_m']} m" for c in w["worst"][:3]))
+    return out
 
 
 def main(argv=None) -> int:
@@ -192,10 +286,14 @@ def main(argv=None) -> int:
     ap.add_argument("--split", default="val", choices=["train", "val", "test"])
     ap.add_argument("--data", default=str(DEFAULT_NC))
     ap.add_argument("--stride", type=int, default=1)
-    ap.add_argument("--shock-stride", type=int, default=10)
+    ap.add_argument("--shock-stride", type=int, default=1, help="1 = shock every window (no sampling)")
+    ap.add_argument("--doy-shift", type=int, default=0)
+    ap.add_argument("--maps", action="store_true", help="write RMSE/bias/skill PNGs to evaluation/results/maps/")
     ap.add_argument("--out", default=None)
     a = ap.parse_args(argv)
-    res = evaluate(a.ckpt, a.split, a.data, a.shock_stride, a.stride)
+    tag = Path(a.ckpt).parent.name if Path(a.ckpt).parent.name != "bundle" else "bundle"
+    maps = ROOT / "evaluation" / "results" / "maps" / f"{tag}_{a.split}" if a.maps else None
+    res = evaluate(a.ckpt, a.split, a.data, a.shock_stride, a.stride, a.doy_shift, maps)
     out = Path(a.out) if a.out else ROOT / "evaluation" / "results" / f"{res['model_id']}_{a.split}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1, default=float))

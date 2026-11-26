@@ -4,4 +4,8 @@ xarray==2026.9.0
 netCDF4==1.7.5.1.post1
 pandas==3.1.1
 scipy==1.18.1
+# dev/eval only (never imported by serve.py):
+matplotlib==3.11.2
+pytest==9.2.0
+psutil==7.2.2
 # + organizer kit wheel for evaluation: pip install ../kit/monsoon_r1_kit-1.0.0-py3-none-any.whl

@@ -1,0 +1,1 @@
+{"ready_s": 2.13, "rss_after_ready_MB": 234, "peak_rss_MB": 248, "limit_MB": 6144, "headroom_x": 24.8, "http_14step_ms_median": 232, "http_14step_ms_max": 375, "checkout": "origin/main 0b848d4 (b3_roll4 bundle)", "host": "MacBook Pro M5 Pro, macOS, CPU torch 4 threads; MPS training running concurrently", "sampling": "psutil RSS of server + children every 20 ms"}

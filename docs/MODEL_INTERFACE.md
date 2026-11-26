@@ -1,7 +1,7 @@
 # Model interface (Jarvis -> Mass)
 
 Source of truth for data facts: `kit/API_CONTRACT.md` and `monsoon_r1/contract.py` (kit v1.0.0). Everything below was
-verified against `india_climate_train.nc` (sha256 `f37bdb…903b`, 122,831,709 bytes).
+verified against `india_climate_train.nc` (full audit: `docs/DATA_AUDIT.md`, `python -m evaluation.audit`) (sha256 `f37bdb…903b`, 122,831,709 bytes).
 
 ## Verified data facts
 | Item | Value |
@@ -12,7 +12,7 @@ verified against `india_climate_train.nc` (sha256 `f37bdb…903b`, 122,831,709 b
 | Grid | lat 6.5..37.5 step 1 (row 0 = SOUTH), lon 65.5..100.5 step 1 (col 0 = WEST) |
 | Static | `static` [2,32,36]: 0 `land_sea_mask` (fraction 0..1, 1 = land), 1 `orography_m` (m, -0.16..5284) |
 | `stats.json` | exactly the full-archive 2005-2021 mean/std (includes our val/test years); the model uses train-only stats |
-| doy_sincos | `[sin(2*pi*doy/365), cos(2*pi*doy/365)]` of the LAST input day; forecast step k is doy+k. We use 1-based doy (Jan 1 = 1); kit does not state 0- vs 1-based (1 day = 1 deg of phase, negligible) |
+| doy_sincos | `[sin(2*pi*doy/365), cos(2*pi*doy/365)]` of the LAST input day; forecast step k is doy+k. We use 1-based doy (Jan 1 = 1), matching `dt.dayofyear` and the kit's "forecast step k is day-of-year + k". Neither the PDF nor the kit fixes 0- vs 1-based; measured on val 2020 (b3_roll4, 354 windows), shifting the season by one day changes per-window skill by +0.0003, so it does not matter |
 
 ## Ownership of each transformation
 | Step | Owner | Where |
@@ -38,6 +38,11 @@ out = forecast(history, doy_sincos, steps)          # history already shocked by
 ## Checkpoint format (`model/bundle/pralaya.pt`, loaded with `torch.load(..., weights_only=True)`)
 `{"state_dict", "config": {"width", "blocks"}, "mean" [6], "std" [6], "static" [2,32,36], "meta": {"model_id", "train_years", ...}}`.
 Self-contained: no stats.json, no climatology and no archive are needed at inference. Expected size ~3.5 MB (no LFS needed).
+
+## Measured serve.py resources (main 0b848d4 with the b3_roll4 bundle, `evaluation/memprobe.py`)
+- Peak RSS 248 MB (server + children, sampled every 20 ms through the official validator, the 8-call check and 20
+  14-step calls). Limit 6 GB, about 25x headroom. Ready (POST /health) after 2.1 s; 14-step HTTP call median 232 ms,
+  max 375 ms (MPS training was running at the same time). Measured on macOS arm64, not the Linux grader.
 
 ## Measured (MacBook Pro M5 Pro, untrained net of the same size, 0.86 M params)
 - 10-step CPU rollout, 4 torch threads: 25 ms. `.tolist()` + JSON encode: about 13 ms, 1.28 MB.

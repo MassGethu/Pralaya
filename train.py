@@ -1,8 +1,9 @@
 """PRALAYA training entrypoint.
 
-  python train.py --data ../kit/india_climate_train.nc --name b1_onestep --epochs 30
+  python train.py --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0           # stage 1 (shipped recipe)
+  python train.py --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0
   python train.py --name b1_onestep --resume                    # continue an interrupted run
-  python train.py --name b3_roll4 --rollout 4 --init runs/b1_onestep/best.pt --epochs 15 --lr 3e-4
+  (--data defaults to ../kit/india_climate_train.nc; full recipe and split in docs/TRAINING.md)
 
 Chronological split from evaluation/data.py: train 2005-2019, val 2020 (selection), test 2021 (held out).
 Writes runs/<name>/{config.json, log.jsonl, train.log, last.pt, best.pt}. Each checkpoint is CPU-loadable by
