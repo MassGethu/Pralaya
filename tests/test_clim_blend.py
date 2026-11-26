@@ -43,3 +43,42 @@ def test_blend_rejects_model_weight_below_floor():
     alpha[-1, -1, -1] = MIN_ALPHA - 0.001
     with pytest.raises(ValueError, match="model weights"):
         ClimBlend(np.zeros((7, *STATE_SHAPE)), alpha, np.zeros(STATE_SHAPE[1:], dtype=bool), np.zeros(HORIZON))
+
+
+def _toy_blend():
+    coefficients = np.zeros((7, *STATE_SHAPE))
+    coefficients[0] = np.array([290, 3, 0, 0, 100800, 30])[:, None, None]
+    alpha = np.full((HORIZON, 6, 2), 0.5)
+    alpha[:, 1] = 1
+    persistence = np.linspace(0.5, 0, HORIZON)
+    return ClimBlend(coefficients, alpha, np.zeros(STATE_SHAPE[1:], dtype=bool), persistence)
+
+
+def test_scorer_wrapper_matches_served_adapter(monkeypatch):
+    """scripts/clim_blend_score.py must score exactly what Inference.run serves, shocked or not."""
+    from scripts.clim_blend_score import ServedForecaster
+
+    blend = _toy_blend()
+    monkeypatch.setattr(inference_adapter.ClimBlend, "load_optional", classmethod(lambda cls, path: blend))
+    engine = inference_adapter.Inference(BUNDLE, development=False)
+    wrapper = ServedForecaster(BUNDLE / "pralaya.pt", blend)
+    history, season = _history(), _season()
+    delta = np.zeros(STATE_SHAPE, dtype=np.float32)
+    delta[0, 10:14, 20:24] = 1.5
+    for perturbation in (None, np.zeros(STATE_SHAPE, dtype=np.float32), delta):
+        served_history = history.copy()
+        if perturbation is not None and np.any(perturbation):
+            served_history[-1] += perturbation
+        served = engine.run(served_history, season, 10)
+        scored = wrapper.simulate(history, season, 10, perturbation)
+        assert scored.tobytes() == served.tobytes()
+
+
+def test_zero_perturbation_is_bit_identical_with_blend(monkeypatch):
+    blend = _toy_blend()
+    monkeypatch.setattr(inference_adapter.ClimBlend, "load_optional", classmethod(lambda cls, path: blend))
+    engine = inference_adapter.Inference(BUNDLE, development=False)
+    request = {"init_states": _history().tolist(), "doy_sincos": _season().tolist(), "steps": 10}
+    base = engine.run(*inference_adapter.parse_simulation(request))
+    zero = engine.run(*inference_adapter.parse_simulation({**request, "perturbation": np.zeros(STATE_SHAPE).tolist()}))
+    assert base.tobytes() == zero.tobytes()

@@ -19,7 +19,7 @@ from evaluation.data import clim_index, climatology, doy, sincos, split_mask, wi
 from evaluation.evaluate import LEADS, SHOCK_BOX, STEPS
 from evaluation.uncertainty import ci
 from inference_adapter import clip_forecast, parse_simulation
-from model.inference import load_cpu
+from model.forecaster import Forecaster
 from postprocess.clim_blend import ClimBlend, DAY_ANGLE, MIN_ALPHA, harmonic_basis
 
 
@@ -57,12 +57,14 @@ def encode(values):
     return {"shape": list(values.shape), "b64": base64.b64encode(values.astype("<f4").tobytes()).decode()}
 
 
-def collect(path, split, std, output, include_shocks):
+def collect(path, split, std, output, include_shocks, ckpt):
     data, dates, _ = read_split(path, split)
     starts = window_starts(dates, split, STEPS)
-    forecast = load_cpu(ROOT / "model" / "bundle")
-    if forecast.model_id != "b3_roll4":
-        raise ValueError("expected the frozen b3_roll4 release")
+    model = Forecaster(ckpt)
+    print(f"collecting {split} rollouts from {model.model_id} ({ckpt})", flush=True)
+
+    def forecast(history, season, steps):
+        return model.simulate(history, season, steps, None)
     size = (len(starts), STEPS, *data.shape[1:])
     raw, truth = np.empty(size, np.float32), np.empty(size, np.float32)
     shock = {name: np.empty(size, np.float32) for name in SHOCK_BOX} if include_shocks else {}
@@ -91,7 +93,8 @@ def collect(path, split, std, output, include_shocks):
         if (row + 1) % 100 == 0:
             print(f"{split}: {row + 1}/{len(starts)} windows cached", flush=True)
     np.savez(output, raw=raw, truth=truth, last=last, seasons=seasons, indices=indices,
-             first=dates[starts], final=dates[starts + 2 + STEPS], zero_exact=exact, **shock)
+             first=dates[starts], final=dates[starts + 2 + STEPS], zero_exact=exact,
+             model_id=model.model_id, **shock)
 
 
 @dataclass
@@ -212,7 +215,7 @@ def csi_skills(candidate, reference):
     return np.array([S.csi_skill(p, r, r) for p, r in zip(candidate, reference)])
 
 
-def least_squares(windows, ids, land, rung, persistence, region):
+def least_squares(windows, ids, land, rung, persistence, region, floor=MIN_ALPHA):
     mask = np.ones_like(land, dtype=bool) if rung == 1 else (land == region)
     weights = np.broadcast_to(lat_weights()[:, None], land.shape)[mask]
     smooth = windows.smooth[ids][..., mask]
@@ -223,24 +226,24 @@ def least_squares(windows, ids, land, rung, persistence, region):
     cross = np.einsum("nkcx,nkcx,x->kc", anomaly, target, weights)
     square = np.einsum("nkcx,nkcx,x->kc", anomaly, anomaly, weights)
     if rung != 3:
-        return np.clip(np.divide(cross, square, out=np.ones_like(cross), where=square > 0), MIN_ALPHA, 1)
+        return np.clip(np.divide(cross, square, out=np.ones_like(cross), where=square > 0), floor, 1)
     # Bound the rate using the last fitted lead so every earlier weight also meets the floor.
-    max_rate = np.nextafter(-np.log(MIN_ALPHA) / STEPS, 0)
+    max_rate = np.nextafter(-np.log(floor) / STEPS, 0)
     rates = np.r_[0, np.geomspace(0.001, max_rate, 300)]
     alpha = np.exp(-np.arange(1, STEPS + 1)[:, None] * rates)
     objective = (alpha**2).T @ square - 2 * alpha.T @ cross
     return alpha[:, np.argmin(objective, axis=0)]
 
 
-def fit_rung(windows, fit, ids, rung):
+def fit_rung(windows, fit, ids, rung, floor=MIN_ALPHA):
     ref = ReferenceScores.build(windows, ids)
     raw = ref.score(windows.raw[ids])
     best = None
     mix_levels = (0.25, 0.5, 0.75, 1) if rung == 4 else (0,)
     for mix in mix_levels:
         persistence = mix * np.maximum(0, (9 - np.arange(1, STEPS + 1)) / 8)
-        ocean = least_squares(windows, ids, fit["land"], rung, persistence, 0)
-        land = least_squares(windows, ids, fit["land"], rung, persistence, 1) if rung > 1 else ocean
+        ocean = least_squares(windows, ids, fit["land"], rung, persistence, 0, floor)
+        land = least_squares(windows, ids, fit["land"], rung, persistence, 1, floor) if rung > 1 else ocean
         alpha = np.stack((ocean, land), axis=-1)
         for strength in (1, 0.75, 0.5, 0.25):
             # Temper exponential shrinkage by scaling its rate, keeping an exponential profile.
@@ -313,13 +316,13 @@ def check_rung(args, windows, fit, std, output):
     ids = np.arange(len(windows.raw))
     cutoff = np.datetime64("2020-07-01")
     halves = (ids[windows.cache["final"] < cutoff], ids[windows.cache["first"] >= cutoff])
-    results = {"rung": args.rung, "cross": {}}
+    results = {"rung": args.rung, "floor": args.floor, "model_id": str(windows.cache["model_id"]), "cross": {}}
     for label, training, held_out in zip(("Jan–Jun", "Jul–Dec"), halves[::-1], halves):
-        blend, settings = fit_rung(windows, fit, training, args.rung)
+        blend, settings = fit_rung(windows, fit, training, args.rung, args.floor)
         predicted = windows.predict(blend, held_out)
         results["cross"][label] = {**score_pair(windows, held_out, predicted), "settings": settings}
         print(f"rung {args.rung}: scored {label}", flush=True)
-    blend, settings = fit_rung(windows, fit, ids, args.rung)
+    blend, settings = fit_rung(windows, fit, ids, args.rung, args.floor)
     predicted = windows.predict(blend, ids)
     results.update(score_pair(windows, ids, predicted))
     results["settings"] = settings
@@ -343,7 +346,7 @@ def check_rung(args, windows, fit, std, output):
         "causality": after["zero_exact"] and all(after["shocks"][name][key] >= raw_shocks[name][key]
                                                for name in SHOCK_BOX for key in KEYS),
     }
-    save_artifact(output / f"rung{args.rung}.pt", blend)
+    save_artifact(output / f"rung{args.rung}_floor{args.floor:g}.pt", blend)
     return results
 
 
@@ -355,25 +358,30 @@ def main():
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--rung", type=int, choices=range(1, 5))
     parser.add_argument("--artifact", type=Path)
+    parser.add_argument("--ckpt", type=Path, default=ROOT / "model" / "bundle" / "pralaya.pt",
+                        help="checkpoint whose raw rollouts the blend is fitted to")
+    parser.add_argument("--floor", type=float, default=MIN_ALPHA, help="minimum model weight (>= 0.3)")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.is_relative_to(ROOT):
         parser.error("the experiment cache must be outside the repository")
     output.mkdir(parents=True, exist_ok=True)
+    if not MIN_ALPHA <= args.floor <= 1:
+        parser.error(f"--floor must be in [{MIN_ALPHA}, 1]")
     std = np.array(json.loads(args.stats.read_text())["std"], np.float32)
     logging.getLogger("inference_adapter").setLevel(logging.ERROR)
     train = output / "train_reference.npz"
     validation = output / "validation.npz"
     if args.phase == "prepare":
         train_reference(args.data, train)
-        collect(args.data, "val", std, validation, include_shocks=True)
+        collect(args.data, "val", std, validation, include_shocks=True, ckpt=args.ckpt)
         return
     with np.load(train) as source:
         fit = dict(source)
     if args.phase == "val":
         if args.rung is None:
             parser.error("val requires --rung")
-        report = output / f"rung{args.rung}.json"
+        report = output / f"rung{args.rung}_floor{args.floor:g}.json"
         result = check_rung(args, Windows.load(validation, fit), fit, std, output)
     else:
         report = output / "test.json"
@@ -383,7 +391,7 @@ def main():
             parser.error("a test report already exists")
         blend = ClimBlend.load_optional(args.artifact)
         test = output / "test_windows.npz"
-        collect(args.data, "test", std, test, include_shocks=False)
+        collect(args.data, "test", std, test, include_shocks=False, ckpt=args.ckpt)
         windows = Windows.load(test, fit)
         ids = np.arange(len(windows.raw))
         result = score_pair(windows, ids, windows.predict(blend, ids))
