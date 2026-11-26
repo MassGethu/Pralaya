@@ -1,6 +1,7 @@
 /**
  * Opening film: "pralaya" in twelve Indian scripts over rain and ripples, resolving into the PRALAYA title, then the
- * dashboard. Runs over the app while it loads; any key, click or Skip jumps to the end. ?nointro disables it.
+ * dashboard. Runs over the app while it loads and never blocks it: Skip, Esc, Enter or Space close it at once; other keys or a click
+ * jumps to the title. With prefers-reduced-motion it shows only the still title for a moment. ?nointro disables it.
  * Spellings should be checked by native speakers before the demo.
  */
 const WORDS: { w: string; lang: string; font: string }[] = [
@@ -19,15 +20,17 @@ const WORDS: { w: string; lang: string; font: string }[] = [
 ];
 
 const HOLD_AFTER_TITLE_MS = 2200;
+const HOLD_REDUCED_MS = 1400; // reduced motion: still title only, then straight to the app
+const EXIT_MS = 380; // exits are quicker than the ~1 s entrances
 
 export function playIntro(): void {
   document.querySelector(".intro")?.remove();
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const perWord = reduce ? 650 : 820;
+  const perWord = 820;
   const root = document.createElement("div");
   root.className = "intro";
   root.setAttribute("role", "dialog");
-  root.setAttribute("aria-label", "PRALAYA intro. Press any key to skip.");
+  root.setAttribute("aria-label", "PRALAYA intro. Press Escape or Enter to skip.");
   root.innerHTML = `<canvas class="intro-rain"></canvas><div class="intro-vignette"></div><div class="intro-halo"></div>
     <div class="intro-stage"></div><div class="intro-ticker"></div>
     <button class="intro-skip" type="button">Skip ▸</button>`;
@@ -66,7 +69,8 @@ export function playIntro(): void {
   frame();
 
   WORDS.forEach((x) => { const s = document.createElement("span"); s.textContent = x.lang; ticker.append(s); });
-  WORDS.forEach((x, i) => later(400 + i * perWord, () => {
+  if (reduce) { root.classList.add("reduced"); later(0, () => finale()); }
+  else WORDS.forEach((x, i) => later(400 + i * perWord, () => {
     const prev = stage.lastElementChild;
     if (prev) { prev.classList.remove("in"); prev.classList.add("out"); later(520, () => prev.remove()); }
     const el = document.createElement("div");
@@ -78,7 +82,7 @@ export function playIntro(): void {
     [...ticker.children].forEach((s, j) => (s.className = j < i ? "done" : j === i ? "on" : ""));
     intensity = 0.35 + (i / WORDS.length) * 0.9; // the storm builds with each language
   }));
-  later(400 + WORDS.length * perWord, () => finale());
+  if (!reduce) later(400 + WORDS.length * perWord, () => finale());
 
   function finale() {
     if (finaleShown) return;
@@ -101,17 +105,28 @@ export function playIntro(): void {
     t.innerHTML = `<span class="t">PRALAYA</span><span class="line"></span><span class="intro-tag">Monsoon multiverse</span>`;
     stage.append(t);
     requestAnimationFrame(() => t.classList.add("in"));
-    window.setTimeout(close, HOLD_AFTER_TITLE_MS);
+    window.setTimeout(close, reduce ? HOLD_REDUCED_MS : HOLD_AFTER_TITLE_MS);
   }
 
+  let closing = false;
   function close() {
+    if (closing) return;
+    closing = true;
+    timers.forEach(clearTimeout);
+    removeEventListener("keydown", onKey, true); // the app takes keys again as soon as the fade starts
     root.classList.add("leaving");
-    window.setTimeout(() => { running = false; removeEventListener("resize", size); removeEventListener("keydown", onKey, true); root.remove(); }, 650);
+    window.setTimeout(() => { running = false; removeEventListener("resize", size); root.remove(); }, reduce ? 0 : EXIT_MS);
   }
 
-  const onKey = (e: KeyboardEvent) => { e.stopPropagation(); e.preventDefault(); if (finaleShown) close(); else finale(); };
+  const onKey = (e: KeyboardEvent) => {
+    e.stopPropagation(); e.preventDefault();
+    if (finaleShown || ["Escape", "Enter", " "].includes(e.key)) close(); else finale();
+  };
   addEventListener("keydown", onKey, true);
   root.addEventListener("click", () => (finaleShown ? close() : finale()));
+  const skip = root.querySelector<HTMLButtonElement>(".intro-skip")!;
+  skip.addEventListener("click", (e) => { e.stopPropagation(); close(); });
+  skip.focus({ preventScroll: true });
 }
 
 export const introEnabled = (): boolean => !new URLSearchParams(location.search).has("nointro");

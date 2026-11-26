@@ -44,7 +44,7 @@
       <div class="map-host" id="map-host">
         <canvas id="map-main"></canvas>
         <canvas id="map-flow" aria-hidden="true"></canvas>
-        <div id="hud" class="hud" aria-live="polite"></div>
+        <div id="hud" class="hud"></div>
       </div>
 
       <!-- Top centre: what the map shows + view switch (HUD pill) -->
@@ -114,6 +114,7 @@
             <button id="zero-check" class="btn btn-quiet" disabled title="Send an all-zero perturbation and compare with Prime">Zero check</button>
             <button id="reset-shock" class="btn btn-quiet">Reset</button>
           </div>
+          <p id="why-branch" class="why"></p>
           <div id="branch-info" class="info"></div>
         </section>
 
@@ -198,9 +199,10 @@
         </section>
         <section class="tab-panel" data-panel="setup" role="tabpanel" hidden>
           <div class="btn-row">
-            <label class="btn btn-primary file-btn">Load state<input id="file-input" type="file" accept=".json,application/json" /></label>
+            <label id="load-btn" class="btn btn-primary file-btn">Load state<input id="file-input" type="file" accept=".json,application/json" /></label>
             <button id="run-prime" class="btn btn-primary" disabled>Run Prime</button>
           </div>
+          <p id="why-prime" class="why"></p>
           <div id="prime-err" class="info"></div>
           <div class="chart-card"><h4>Input</h4><div id="input-info" class="info"></div><p class="hint"><code>perturbation: null</code> · <span id="steps-label">10</span> forecast days</p></div>
           <div class="chart-card"><h4>Runs</h4><div id="prime-info" class="info"></div></div>
@@ -228,6 +230,8 @@
       </div>
     </main>
     <div id="tooltip" class="tooltip" hidden></div>
+    <!-- Screen-reader announcements for finished runs and errors (the visible text lives in the panels). -->
+    <div id="announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

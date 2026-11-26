@@ -236,6 +236,10 @@ function setupControls() {
   flowToggle.checked = !WindFlow.reducedMotion();
   flow.setEnabled(flowToggle.checked);
   flowToggle.addEventListener("change", () => flow.setEnabled(flowToggle.checked));
+  // If the OS switches to reduced motion mid-demo, stop the wind particles too (they can be turned back on in Setup).
+  matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", (e) => {
+    if (e.matches) { flowToggle.checked = false; flow.setEnabled(false); }
+  });
   $<HTMLInputElement>("tg-terrain").addEventListener("change", (e) => mapMain.setOptions({ terrain: (e.target as HTMLInputElement).checked }));
   $<HTMLInputElement>("tg-smooth").addEventListener("change", (e) => mapMain.setOptions({ smooth: (e.target as HTMLInputElement).checked }));
   const step = (d: number) => {
@@ -323,11 +327,23 @@ function scenarioContext() {
   return { input, prime: prime.rollout, land: S.land, primeRun: prime.runNo };
 }
 
+/** Why the scenario search is unavailable, in the order the user can fix it. */
+function scenarioWhy(): string {
+  const engine = currentEngine();
+  if (!S.input) return "Load an input and run Prime first.";
+  if (!engine) return "The model server is not answering. Start it, then run the search.";
+  if (engine.kind !== "live" || engine.model !== "PRALAYA") return "Scenario search needs the trained PRALAYA server, not the fixture engine.";
+  if (!S.prime || S.prime.inputId !== S.input.id || !sameEngine(S.prime.engine, engine)) return "Run Prime first.";
+  return "";
+}
+
 async function pollHealth() {
   if (S.fixtureEngine) { renderStatus(); return; }
+  const wasReady = !!S.health?.ready;
   S.health = await health();
-  renderStatus();
-  renderButtons();
+  // A change in server readiness changes the next step, the HUD buttons and the "why disabled" lines too.
+  if (wasReady !== S.health.ready) renderAll();
+  else { renderStatus(); renderButtons(); }
 }
 
 async function execute(perturbation: Float32Array | null, slot: "prime" | "branch"): Promise<{ r: Rollout; ms: number | null; wall: number; engine: Engine } | null> {
@@ -356,12 +372,14 @@ async function runPrime() {
     const out = await execute(null, "prime");
     if (seq !== S.seq.prime || S.input?.id !== inputId || !out) return; // superseded
     S.prime = { rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter };
+    announce(`Prime run ${S.prime.runNo} ready: ${out.r.steps}-day forecast.`);
     if (!S.branch) S.mapView = "prime";
     if (S.branch && !sameEngine(S.branch.engine, out.engine)) S.branch = null;
     S.day = Math.min(S.day, out.r.steps);
   } catch (e) {
     if (seq !== S.seq.prime || (e instanceof ApiError && e.kind === "aborted")) return;
     S.primeErr = (e as Error).message;
+    announce(`Prime failed: ${S.primeErr}`);
   } finally {
     if (seq === S.seq.prime) S.busy.prime = false;
     renderAll();
@@ -394,6 +412,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
     S.mapView = "diff"; // the shock's effect is the point of the demo
+    announce(zero ? `Zero-shock check run ${S.branch.runNo} finished.` : `Branch run ${S.branch.runNo} ready. The map now shows Branch minus Prime.`);
     if (replay) {
       $<HTMLInputElement>("agri-d0").value = String(replay.dayStart);
       $<HTMLInputElement>("agri-d1").value = String(replay.dayEnd);
@@ -404,6 +423,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
     S.branchErr = (e as Error).message;
+    announce(`Branch failed: ${S.branchErr}`);
   } finally {
     if (seq === S.seq.branch) S.busy.branch = false;
     renderAll();
@@ -463,6 +483,20 @@ function diffFieldsRaw(): Float32Array[] {
 const varInfo = () => VIEW_VARS.find((v) => v.id === S.view)!;
 
 // ---------------- rendering ----------------
+/** Busy buttons keep their label, gain a spinner and tell assistive tech they are working. */
+function setBusy(b: HTMLElement, busy: boolean) {
+  b.classList.toggle("is-busy", busy);
+  b.setAttribute("aria-busy", String(busy));
+}
+
+/** Say finished runs and errors out loud once (the #announce live region), without re-announcing on every redraw. */
+let lastAnnounce = "";
+function announce(text: string) {
+  if (!text || text === lastAnnounce) return;
+  lastAnnounce = text;
+  $("announce").textContent = text;
+}
+
 function renderAll() {
   renderStepper();
   renderHudNow();
@@ -568,21 +602,34 @@ function renderShockControls() {
 
 function renderButtons() {
   const engine = currentEngine();
-  scenarioPanel?.update(scenarioContext(), S.impactBox);
+  scenarioPanel?.update(scenarioContext(), S.impactBox, scenarioWhy());
+  const hasPrime = !!S.input && !!S.prime && S.prime.inputId === S.input.id;
+  const ok = hasPrime && !!engine;
+  const serverWhy = S.health ? "the model server is not answering (see the status at the top right)" : "the model server has not answered yet";
+
+  // One primary button per stage: Load until there is input, then Prime, then Branch (amber, in the Shock tab).
+  $("load-btn").classList.toggle("btn-primary", !S.input);
   const primeBtn = $<HTMLButtonElement>("run-prime");
   primeBtn.disabled = !S.input || S.busy.prime || !engine;
   primeBtn.textContent = S.busy.prime ? "Running Prime…" : S.prime ? "Re-run Prime" : "Run Prime";
-  const ok = !!S.input && !!S.prime && S.prime.inputId === S.input.id && !!engine;
-  $<HTMLButtonElement>("run-branch").disabled = !ok || S.busy.branch;
-  $<HTMLButtonElement>("run-branch").textContent = S.busy.branch ? "Running Branch…" : "Run Branch";
+  primeBtn.classList.toggle("btn-primary", !!S.input && !hasPrime);
+  setBusy(primeBtn, S.busy.prime);
+  $("why-prime").textContent = S.busy.prime ? "" : !S.input ? "Run Prime unlocks after you load a three-day input." : !engine ? `Run Prime is off because ${serverWhy}.` : "";
+
+  const branchBtn = $<HTMLButtonElement>("run-branch");
+  branchBtn.disabled = !ok || S.busy.branch;
+  branchBtn.textContent = S.busy.branch ? "Running Branch…" : "Run Branch";
+  setBusy(branchBtn, S.busy.branch);
   $<HTMLButtonElement>("zero-check").disabled = !ok || S.busy.branch;
+  $("why-branch").textContent = S.busy.branch ? "" : !S.input ? "Load an input, then run Prime: Branch is compared against it."
+    : !hasPrime ? "Run Prime first: Branch is compared against it." : !engine ? `Run Branch is off because ${serverWhy}.` : "";
 
   const pi = $("prime-info");
   $("prime-err").innerHTML = S.primeErr ? `<p class="err">Prime failed: ${escapeHtml(S.primeErr)}</p>` : "";
   if (S.primeErr) pi.innerHTML = "";
   else if (S.busy.prime) pi.innerHTML = `<p class="hint pulse">Waiting for /simulate…</p>`;
   else {
-    const down = !engine && S.input ? `<p class="err">Server not ready (${escapeHtml(S.health?.detail ?? "no answer")}). Start it with <code>python serve.py --port 8000</code>; results below stay tied to their run numbers.</p>` : "";
+    const down = !engine && S.input ? `<p class="err">Server not ready (${escapeHtml(S.health?.detail ?? "no answer")}). Start it with <code>python serve.py</code> (port from <code>PRALAYA_API_URL</code>); results below stay tied to their run numbers.</p>` : "";
     const last = S.prime ? `<p class="ok">Run #${S.prime.runNo} · ${engineLabel(S.prime.engine)} · ${S.prime.rollout.steps} days · ${S.prime.ms != null ? `${fmt(S.prime.ms, 0)} ms server` : ""} ${fmt(S.prime.wallMs, 0)} ms round trip</p>` : "";
     pi.innerHTML = down + last;
   }
@@ -736,7 +783,7 @@ function renderHudNow() {
     title: S.shock.label, sub: comp, rows: peak, pin: b && !b.zero ? `#${b.runNo}` : "Draft", onOpen: () => openDrawer("shock"),
     actions: [
       { label: "Edit", onClick: () => openDrawer("shock") },
-      { label: S.busy.branch ? "Running…" : "Run Branch", primary: true, disabled: !ready || S.busy.branch, onClick: () => void runBranch(false) },
+      { label: S.busy.branch ? "Running…" : "Run Branch", primary: !b || b.zero || stale, busy: S.busy.branch, disabled: !ready || S.busy.branch, onClick: () => void runBranch(false) },
     ],
   };
   const imp = currentImpact();
@@ -745,7 +792,7 @@ function renderHudNow() {
   const farm: HudTag = {
     box: f, kind: "farm", kicker: "Farm region", state: imp && !imp.empty ? "live" : "empty",
     title: "Farm region",
-    sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(0)}–${latOf(f.r1).toFixed(0)}°N · ${lonOf(f.c0).toFixed(0)}–${lonOf(f.c1).toFixed(0)}°E`,
+    sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(1)}–${latOf(f.r1).toFixed(1)}°N · ${lonOf(f.c0).toFixed(1)}–${lonOf(f.c1).toFixed(1)}°E`,
     rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–", onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
   };
   renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: null });
@@ -792,7 +839,8 @@ function renderMaps() {
     const ds = divergingScale(S.view, m);
     content = { kind: "single", field: diffs![S.day - 1], scale: ds };
     caption = m === 0 ? `Branch − Prime · day ${S.day} · identical everywhere` : `Branch − Prime · day ${S.day} · max |Δ| ${fmt(maxAbs(diffs![S.day - 1]), 2)} ${vi.deltaUnit}`;
-    leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, fixed across days");
+    leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, same scale every day",
+      { title: `${vi.label} change, Branch − Prime`, day: S.day, ends: S.view === "tp" ? ["drier", "wetter"] : ["lower", "higher"] });
   }
   mapMain.draw(content, ov);
   $("map-host").dataset.view = mode;
@@ -806,6 +854,7 @@ function renderMaps() {
     const v = b.dataset.view as MapMode;
     b.setAttribute("aria-pressed", String(v === mode));
     b.disabled = v === "prime" ? !pf : !bf;
+    b.title = b.disabled ? (v === "prime" ? "Run Prime to see this view" : "Run Branch to compare with Prime") : "";
   });
 
   // Initial shock footprint (day 0)

@@ -5,8 +5,15 @@ import type { Scale } from "./render";
 
 export type AgriMode = "abs" | "change";
 
-export function legendHtml(sc: Scale | null, unit: string, note: string): string {
+export interface LegendHead { title: string; day: number; ends: [string, string] }
+
+export function legendHtml(sc: Scale | null, unit: string, note: string, head?: LegendHead): string {
   if (!sc) return "";
+  // Hero (difference) legend: a title with units and day, plain-language ends, then the bar and ticks.
+  const top = head
+    ? `<div class="legend-head"><b>${escapeHtml(head.title)}</b><span class="mono">${escapeHtml(unit)} · day ${head.day}</span></div>
+       <div class="legend-ends"><span>← ${escapeHtml(head.ends[0])}</span><span>${escapeHtml(head.ends[1])} →</span></div>`
+    : "";
   if (sc.classes) {
     const css = (c: number[]) => `rgb(${c.map(Math.round).join(",")})`;
     return `<div class="legend-steps">${sc.classes.map((k, i) => `<div class="step-cell"><i style="background:${css(k.color)}"></i><span class="mono">${i === 0 ? "0" : k.lo}</span></div>`).join("")}</div>
@@ -19,9 +26,9 @@ export function legendHtml(sc: Scale | null, unit: string, note: string): string
     const v = sc.lo + t * span;
     return sc.kind === "div" ? (t === 0.5 ? "0" : signed(v, digits)) : fmt(v, digits);
   });
-  return `<div class="legend-bar" style="background:${sc.gradient}"></div>
+  return `${top}<div class="legend-bar" style="background:${sc.gradient}"></div>
     <div class="legend-ticks mono">${ticks.map((t) => `<span>${t}</span>`).join("")}</div>
-    <div class="legend-note">${escapeHtml(unit)}${note ? ` · ${escapeHtml(note)}` : ""}</div>`;
+    <div class="legend-note">${head ? "" : `${escapeHtml(unit)}${note ? " · " : ""}`}${escapeHtml(note)}</div>`;
 }
 
 /** Bars: share of cells outside the shock box whose |Δ| exceeds the threshold, per forecast day. */

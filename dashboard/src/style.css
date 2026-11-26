@@ -703,3 +703,73 @@ button.hud-hero { cursor: pointer; }
 .intro-title .intro-tag { font: 600 17px var(--sans); letter-spacing: 0.42em; padding-left: 0.42em; color: #e6eef8; text-transform: uppercase; text-shadow: 0 0 18px rgba(0,0,0,0.95), 0 0 2px rgba(0,0,0,0.9); }
 .intro-skip { position: absolute; top: 18px; right: 20px; font: 600 12px var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-2); background: rgba(255,255,255,0.06); border: 0; border-radius: 999px; padding: 9px 16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14); cursor: pointer; }
 @media (prefers-reduced-motion: reduce) { .intro-word.in, .intro-word.out, .intro-title.in { animation-duration: 1ms; } .intro { transition: none; } }
+
+/* ================= UI polish (Nov 2026): legibility, next step, progress, hero legend, motion, keyboard ================= */
+/* Muted text meets WCAG AA (≥ 4.5:1) on the panels: ink-3 ≈ 5.9:1, ink-4 ≈ 4.6–5.1:1 on --raised / --raised-2. */
+:root {
+  --ink-3: #8a96a4;
+  --ink-4: #808c9a;
+  --ease-in: cubic-bezier(0.7, 0, 0.84, 0); /* exits */
+}
+
+/* 12 px floor for text people need to read (labels, units, legend, ticks, HUD, tables). Brand lockup stays as drawn. */
+.hint, .err, .ok, .unit, .check, .grid4 label, .agri-params label, .scenario-grid label, .kpi-k, .tag, .tag-shock, .tag-impact,
+.ev-kicker, .cap-engine, .legend-ticks, .legend-note, .step-cell span, .hud-k, .hud-sub, .hud-tag.compact .hud-k, .cmd-group,
+.method p, .vt-ctl > span, .scenario-chart-key, .day-date, .cmd-k { font-size: 12px; }
+table.mini { font-size: 12px; }
+.tl-date { font-size: 12px; }
+svg .svg-tick { font-size: 11.5px; } /* inside a viewBox that renders ≥ 1:1 in the drawer */
+svg .callout { font-size: 12px; }
+.hud-k { letter-spacing: 0.1em; }
+
+/* One clear next step: secondary buttons read as secondary, disabled ones say why underneath. */
+#load-btn:not(.btn-primary), #run-prime:not(.btn-primary) { background: transparent; }
+.why { font-size: 12px; color: var(--ink-3); }
+.why:empty { display: none; }
+.btn-shock:disabled { background: rgba(255, 176, 32, 0.22); color: #ffd28a; opacity: 1; box-shadow: inset 0 0 0 1px rgba(255, 176, 32, 0.35); }
+.file-btn:focus-within { outline: 2px solid var(--signal-2); outline-offset: 2px; }
+#view-seg .seg-btn:disabled { opacity: 0.55; }
+
+/* Progress: a running button keeps its width, shows a spinner and stays readable (not faded like "disabled"). */
+.btn.is-busy, .hud-btn.is-busy { opacity: 1; cursor: progress; }
+.btn.is-busy::before, .hud-btn.is-busy::before {
+  content: ""; width: 12px; height: 12px; border-radius: 50%; flex: none;
+  border: 2px solid currentColor; border-right-color: transparent; animation: spin 700ms linear infinite; /* spinner = progress, so linear */
+}
+.hud-btn.is-busy::before { display: inline-block; margin-right: 6px; vertical-align: -2px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Hero: the Difference map legend carries a title, units, day and plain-language ends. */
+.map-host[data-view="diff"] ~ .legend { width: 376px; padding: 11px 13px 10px; }
+.legend-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
+.legend-head b { font-size: 13px; font-weight: 600; color: var(--ink); }
+.legend-head .mono { color: var(--ink-2); white-space: nowrap; }
+.legend-ends { display: flex; justify-content: space-between; font-size: 12px; color: var(--ink-2); margin-bottom: 4px; }
+.legend-ends span:first-child { color: #fdba74; }
+.legend-ends span:last-child { color: #67e8f9; }
+.map-host[data-view="diff"] ~ .legend .legend-bar { height: 12px; }
+.legend-ticks { color: var(--ink); }
+
+/* Drawer: enters with ease-out (260 ms), leaves faster with ease-in (180 ms); hidden drawers drop out of the tab order. */
+.drawer[data-open="false"] { visibility: hidden; transition: transform 180ms var(--ease-in), opacity 160ms var(--ease-in), visibility 0s linear 180ms; }
+.drawer[data-open="true"] { visibility: visible; transition: transform 260ms var(--ease-out), opacity 200ms var(--ease-out), visibility 0s; }
+.cmd-panel { animation-duration: 140ms; }
+
+/* Keyboard: the day slider and the intro skip are focusable and show it. */
+.tl-svg:focus-visible { outline: 2px solid var(--signal-2); outline-offset: 4px; border-radius: 6px; }
+.intro-skip:focus-visible { outline: 2px solid var(--signal-2); outline-offset: 2px; }
+.intro.leaving { transition: opacity 380ms var(--ease-in); }
+.intro.reduced *, .intro.reduced { transition: none !important; animation-duration: 1ms !important; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.is-busy::before, .hud-btn.is-busy::before { animation-duration: 2.4s; } /* still shows work is happening, calmly */
+  .drawer[data-open="false"], .drawer[data-open="true"] { transition: visibility 0s; }
+}
+
+/* The map makes room for the open drawer instead of hiding the shock tag under it (map re-fits via ResizeObserver). */
+@media (min-width: 1081px) {
+  .stage:has(.drawer[data-open="true"]) .map-host,
+  .stage:has(.drawer[data-open="true"]) .caption-row { right: calc(var(--right-w) + var(--gap) * 2); }
+}

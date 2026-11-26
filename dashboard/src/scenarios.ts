@@ -133,6 +133,7 @@ export class ScenarioPanel {
   private readonly form = document.querySelector<HTMLFormElement>("#scenario-form")!;
   private readonly submit = document.querySelector<HTMLButtonElement>("#run-scenarios")!;
   private readonly feedback = document.querySelector<HTMLElement>("#scenario-feedback")!;
+  private why = "";
   private readonly results = document.querySelector<HTMLElement>("#scenario-results")!;
 
   constructor(onDraw: () => void, private onReplay: (replay: ScenarioReplay) => Promise<void>) {
@@ -145,8 +146,9 @@ export class ScenarioPanel {
     this.form.addEventListener("submit", (event) => { event.preventDefault(); void this.run(); });
   }
 
-  update(context: Context | null, region: Box) {
-    const key = JSON.stringify([context?.input.id, context?.primeRun, region]);
+  update(context: Context | null, region: Box, why = "") {
+    this.why = why;
+    const key = JSON.stringify([context?.input.id, context?.primeRun, region, why]);
     if (key === this.key) return;
     this.key = key;
     this.context = context;
@@ -161,9 +163,11 @@ export class ScenarioPanel {
     this.results.replaceChildren();
     this.results.hidden = true;
     this.submit.textContent = "Run scenario search";
+    this.submit.classList.remove("is-busy");
+    this.submit.setAttribute("aria-busy", "false");
     this.submit.disabled = !this.context;
     this.feedback.className = "hint";
-    this.feedback.textContent = this.context ? "" : "Load a history and run Prime on the trained server.";
+    this.feedback.textContent = this.context ? "" : this.why || "Load a history and run Prime on the trained server.";
   }
 
   private async run() {
@@ -196,6 +200,8 @@ export class ScenarioPanel {
     this.pending = pending;
     this.submit.disabled = true;
     this.submit.textContent = "Running search…";
+    this.submit.classList.add("is-busy");
+    this.submit.setAttribute("aria-busy", "true");
     this.feedback.textContent = "Forecasting the selected shocks.";
     try {
       const report = parseReport(await postScenario(body, pending.signal));
@@ -223,6 +229,8 @@ export class ScenarioPanel {
         this.pending = null;
         this.submit.disabled = false;
         this.submit.textContent = "Run scenario search";
+        this.submit.classList.remove("is-busy");
+        this.submit.setAttribute("aria-busy", "false");
       }
     }
   }
