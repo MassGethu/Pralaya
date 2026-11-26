@@ -786,3 +786,7 @@ svg .callout { font-size: 12px; }
 /* Farm tag matches its quiet box until a Branch gives it results. */
 .hud-tag.farm[data-state="empty"] { box-shadow: 0 0 0 1px rgba(163,230,53,0.25), 0 10px 30px rgba(0,0,0,0.55); }
 .hud-line.farm { background: rgba(163,230,53,0.55); box-shadow: none; }
+
+/* Input rows: when one label wraps to two lines (e.g. "Dry < mm/day"), every input still sits on the same baseline. */
+.agri-params label, .grid4 label { justify-content: flex-end; }
+.scenario-grid label { align-content: end; }
