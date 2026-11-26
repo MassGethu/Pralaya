@@ -2,7 +2,7 @@
 
 PRALAYA forecasts daily weather over India and lets users compare an unperturbed forecast with a forecast that starts from a localized atmospheric shock. The dashboard shows how the forecasts differ and calculates regional agricultural weather-stress indicators from the same rollouts.
 
-**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact. It describes the shipped `e3_rainstab`; its 2021 numbers were scored once after promotion, as a follow-up only.
+**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact. The brief reports 2021 follow-up results for the bundled `e3_rainstab` with paired calibration.
 
 ## Train
 
@@ -17,7 +17,7 @@ python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 
 python train.py --data /path/to/india_climate_train.nc --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1
 ```
 
-Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint and candidate selection. The selected run writes `runs/e3_rainstab/best.pt`. The server loads the bundled `e3_rainstab` from `model/bundle/pralaya.pt`. It scored 51.11/70 on 2020 validation, up from 49.37 for the previous release `e3_roll8_ocean`. Its 3-seed mean is 50.85 ± 1.54; seed 1 alone (49.19) is below e3. It fine-tunes from `b3_roll4` with e3's recipe plus the shock-stability loss. The 2021 comparison was run only for e3, as follow-up evaluation. [Training recipe](docs/TRAINING.md) · [Promotion evidence](docs/EXPERIMENTS.md) · [2021 follow-up (e3)](evaluation/results/e3_roll8_ocean_test.md)
+Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint selection. The server loads `e3_rainstab` from `model/bundle/pralaya.pt`. The raw model scored 51.11/70 on 2020 validation, up from 49.37 for `e3_roll8_ocean`. Its three-seed mean is 50.85 ± 1.54. The bundled calibration improves Prime's non-rain fields while retaining the model's response to each shock. The served path scored 57.92/70 on 2020 validation and 56.92/70 on the 2021 follow-up, with unchanged rain scores and shock propagation rates. These are local estimates using the kit scoring functions. [Training recipe](docs/TRAINING.md) · [Calibration evidence](docs/CALIBRATION.md)
 
 ## Serve and validate
 
