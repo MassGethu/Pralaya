@@ -10,10 +10,11 @@ From the repo root, run:
 
 ```sh
 python -m pip install -r requirements-train.txt
-python train.py --data /path/to/india_climate_train.nc --name pralaya --epochs 30 --rollout 1 --device auto
+python train.py --data /path/to/india_climate_train.nc --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0
+python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0
 ```
 
-Training writes the best validation checkpoint to `runs/pralaya/best.pt`. The server's default bundle loads `model/bundle/pralaya.pt`.
+Training uses 2005–2019 for fitting and normalization, 2020 for checkpoint and candidate selection, and 2021 for evaluation after selection. The selected run writes `runs/b3_roll4/best.pt`. The server's default bundle loads `model/bundle/pralaya.pt`. [Training recipe](docs/TRAINING.md) · [Selection rule](docs/SELECTION.md) · [2021 evaluation](evaluation/results/report_test.md)
 
 ## Serve and validate
 
@@ -28,6 +29,7 @@ In a second terminal from the repo root, run:
 
 ```sh
 python -m monsoon_r1.schema_validator http://localhost:8000
+python tests/test_contract.py
 python scripts/check_inference.py http://localhost:8000 --stats /path/to/stats.json
 python -c "from monsoon_r1.repo_scan import scan; import json; print(json.dumps(scan('.'), indent=1))"
 ```
@@ -45,6 +47,10 @@ npm run dev
 ```
 
 Open `http://localhost:5317`. The development proxy forwards API calls to `http://localhost:8000`. Use the [dashboard instructions](dashboard/README.md) to generate a local demo input and run Prime and Branch.
+
+## Run scenario analysis
+
+Start the local scenario service from the repository root with `python -m scripts.scenario_service --port 8001`. It loads the same checkpoint bundle and provides bounded inverse rainfall-deficit search, ensemble summaries, and agricultural water-shortfall comparisons. [Scenario API contract](docs/CONTRACTS.md#local-scenario-service)
 
 ## Data attribution
 
