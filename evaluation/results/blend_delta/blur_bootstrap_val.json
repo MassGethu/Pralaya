@@ -1,0 +1,92 @@
+{
+ "split": "val",
+ "draws": 20000,
+ "windows_per_draw": 5,
+ "candidates": {
+  "shipped seed 0": {
+   "mean_ratio": {
+    "t2m": 1.011,
+    "tp": 0.608,
+    "u10": 0.796,
+    "v10": 0.826,
+    "msl": 0.981,
+    "tcwv": 0.901
+   },
+   "tp_frac_windows_below_0.4": 0.486,
+   "tp_median": 0.416,
+   "anti_blur_all_windows": 10.0,
+   "5win_expected_points": 9.906,
+   "5win_p_below_10": 0.276,
+   "5win_p05_points": 9.423,
+   "5win_worst_points": 8.333
+  },
+  "step-2 blend": {
+   "mean_ratio": {
+    "t2m": 1.008,
+    "tp": 0.46,
+    "u10": 0.741,
+    "v10": 0.734,
+    "msl": 0.948,
+    "tcwv": 0.885
+   },
+   "tp_frac_windows_below_0.4": 0.644,
+   "tp_median": 0.305,
+   "anti_blur_all_windows": 10.0,
+   "5win_expected_points": 9.764,
+   "5win_p_below_10": 0.541,
+   "5win_p05_points": 9.183,
+   "5win_worst_points": 8.609
+  },
+  "step-2, rain unblended": {
+   "mean_ratio": {
+    "t2m": 1.008,
+    "tp": 0.608,
+    "u10": 0.741,
+    "v10": 0.734,
+    "msl": 0.948,
+    "tcwv": 0.885
+   },
+   "tp_frac_windows_below_0.4": 0.486,
+   "tp_median": 0.416,
+   "anti_blur_all_windows": 10.0,
+   "5win_expected_points": 9.906,
+   "5win_p_below_10": 0.279,
+   "5win_p05_points": 9.433,
+   "5win_worst_points": 8.333
+  },
+  "ensemble raw": {
+   "mean_ratio": {
+    "t2m": 0.996,
+    "tp": 0.492,
+    "u10": 0.799,
+    "v10": 0.774,
+    "msl": 0.909,
+    "tcwv": 0.859
+   },
+   "tp_frac_windows_below_0.4": 0.576,
+   "tp_median": 0.347,
+   "anti_blur_all_windows": 10.0,
+   "5win_expected_points": 9.823,
+   "5win_p_below_10": 0.45,
+   "5win_p05_points": 9.254,
+   "5win_worst_points": 8.333
+  },
+  "ensemble + blend 0.3": {
+   "mean_ratio": {
+    "t2m": 1.002,
+    "tp": 0.492,
+    "u10": 0.76,
+    "v10": 0.735,
+    "msl": 0.908,
+    "tcwv": 0.87
+   },
+   "tp_frac_windows_below_0.4": 0.576,
+   "tp_median": 0.347,
+   "anti_blur_all_windows": 10.0,
+   "5win_expected_points": 9.822,
+   "5win_p_below_10": 0.452,
+   "5win_p05_points": 9.25,
+   "5win_worst_points": 8.594
+  }
+ }
+}

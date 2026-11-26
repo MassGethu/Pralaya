@@ -83,6 +83,20 @@ null bit-identical; tp day-8 variance ratio 0.759 → 0.591.
 - tp's day-8 variance ratio on val is 0.460, close to the 0.4 floor. If the hidden 2023–24 windows push it below 0.4, part
   of the anti-blur points would be lost. In 2021 it was 0.591. The share of windows with all six ratios in band falls
   from 88.5% to 84.7% on val.
+  **Checked against 5 judge windows** (`python -m scripts.blur_bootstrap`, 20,000 random draws of 5 val 2020 windows,
+  kit anti-blur scoring unchanged; `evaluation/results/blend_delta/blur_bootstrap_val.json`). The kit averages the ratio
+  over the windows before applying the 0.4 floor and gives partial credit below it, so this is not a cliff:
+
+  | Val 2020, unshocked | tp ratio (mean / median) | Windows with tp < 0.4 | Expected anti-blur, 5 windows | P(below 10) | 5th pct / worst |
+  |---|---|---|---|---|---|
+  | Shipped seed 0 | 0.608 / 0.416 | 49 % | 9.91 | 28 % | 9.42 / 8.33 |
+  | **Step-2 blend** | 0.460 / 0.305 | 64 % | **9.76** | 54 % | 9.18 / 8.61 |
+  | Step 2, rain unblended | 0.608 / 0.416 | 49 % | 9.91 | 28 % | 9.43 / 8.33 |
+  | Ensemble + blend (floor 0.3) | 0.492 / 0.347 | 58 % | 9.82 | 45 % | 9.25 / 8.59 |
+
+  The blend's expected cost is about 0.14 anti-blur points over leaving rain unblended, far less than that option's
+  −0.93 S, so the step-2 blend stays the candidate. Caveat: the draws sample 2020 evenly; the judge's dates (after
+  2023-01-10) are unknown, and a set of dry-season windows sits nearer the worst case.
 - CSI points fall slightly (val 11.07 → 10.81, 2021 11.84 → 11.43): blending rain toward the seasonal normal costs some
   heavy-rain hits. The RMSE gain is far larger.
 - A shocked request runs the model twice. G5 measures that cost once the serving change exists.
