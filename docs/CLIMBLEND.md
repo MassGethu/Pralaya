@@ -1,5 +1,9 @@
 # Climatology blend
 
+> The blend was not shipped, so its code and result files named below (`scripts/clim_blend_*`,
+> `postprocess/`, `tests/test_clim_blend.py`, `evaluation/results/clim_blend_*`) live only on branch
+> `mass/clim-blend-e3` at commit `bd573d1`, not on main.
+
 This file has two parts. The first part is the 27 Nov refit on the shipped e3_roll8_ocean model, with the mentor's ruling and the gates we fixed before scoring. The second part is the original 26 Nov experiment on b3_roll4, kept unchanged as history.
 
 ## Mentor ruling (Track 2, 27 Nov ~01:30 IST)
