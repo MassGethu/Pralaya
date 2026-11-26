@@ -78,7 +78,7 @@ python -m scripts.clim_blend_score --split val --data "$data" --out "$score/raw.
 
 ## e3_rainstab refit (shipping model): result — TESTED, NOT SHIPPED
 
-e3_rainstab replaced e3 as the shipping model on jarvis/model@f563bf2 (bundle SHA-256 `90605130265bb9282ee0e2bdd5fec698c0f3ac4b2df8802f0a8be94eb68d88db`, checked). The blend was refitted on that bundle's raw rollouts and gated with the same pre-registered G1–G4 and the same single 0.5-floor fallback. The bundle was read from the commit into a scratch file. `model/bundle` on this branch was not changed. Scored 27 Nov at about 02:30 IST. The unblended row reproduces Jarvis's recorded val S of 51.11 and shock stability (93%/95%). Reports are in `evaluation/results/clim_blend_rainstab/`.
+e3_rainstab replaced e3 as the shipping model on jarvis/model@f563bf2 (bundle SHA-256 `90605130265bb9282ee0e2bdd5fec698c0f3ac4b2df8802f0a8be94eb68d88db`, checked). The blend was refitted on that bundle's raw rollouts and gated with the same pre-registered G1–G4 and the same single 0.5-floor fallback. The bundle was read from the commit into a scratch file. `model/bundle` on this branch was not changed. Scored 27 Nov 02:22–02:25 IST. The unblended row reproduces Jarvis's recorded val S of 51.11 and shock stability (93%/95%). Reports are in `evaluation/results/clim_blend_rainstab/`.
 
 | Run | RMSE /30 | CSI /15 | Blur /10 | Causality /15 | **S** |
 |---|---:|---:|---:|---:|---:|
