@@ -95,6 +95,8 @@ export function sampleBilinear(f: Float32Array, col: number, row: number): numbe
 export interface Overlays {
   shockBox?: Box | null;
   impactBox?: Box | null;
+  /** Farm region has results (a current, non-zero Branch). Until then it is drawn quietly: it is context, not the story. */
+  impactLive?: boolean;
   draftBox?: Box | null;
   draftKind?: "shock" | "impact";
   hoverCell?: number | null;
@@ -285,7 +287,10 @@ export class MapView {
     this.drawCoast();
     this.drawGraticule();
     this.drawCities();
-    if (ov.impactBox) this.drawBox(ov.impactBox, "#a3e635", []);
+    if (ov.impactBox) {
+      if (ov.impactLive) this.drawBox(ov.impactBox, "#a3e635", [], 2, "rgba(163,230,53,0.07)");
+      else this.drawBox(ov.impactBox, "rgba(163,230,53,0.55)", [], 1.25, "rgba(163,230,53,0.04)", 0);
+    }
     if (ov.shockBox) this.drawBox(ov.shockBox, "#ffb020", [6, 4]);
     if (ov.draftBox) this.drawBox(ov.draftBox, ov.draftKind === "impact" ? "#a3e635" : "#ffb020", [2, 2], 2);
     if (ov.hoverCell != null) {
@@ -422,13 +427,15 @@ export class MapView {
     }
   }
 
-  private drawBox(b: Box, color: string, dash: number[], width = 2) {
+  private drawBox(b: Box, color: string, dash: number[], width = 2, fill?: string, glow = 8) {
     const g = this.ctx, k = this.cell;
     const r0 = Math.min(b.r0, b.r1), r1 = Math.max(b.r0, b.r1), c0 = Math.min(b.c0, b.c1), c1 = Math.max(b.c0, b.c1);
+    const rx = this.x(c0), ry = this.y(r1), rw = (c1 - c0 + 1) * k, rh = (r1 - r0 + 1) * k;
     g.save();
-    g.shadowColor = color; g.shadowBlur = 8;
+    if (fill) { g.fillStyle = fill; g.fillRect(rx, ry, rw, rh); }
+    g.shadowColor = color; g.shadowBlur = glow;
     g.strokeStyle = color; g.lineWidth = width; g.setLineDash(dash);
-    g.strokeRect(this.x(c0), this.y(r1), (c1 - c0 + 1) * k, (r1 - r0 + 1) * k);
+    g.strokeRect(rx, ry, rw, rh);
     g.restore();
   }
 }

@@ -812,7 +812,8 @@ function renderEventHead() {
 
 function renderMaps() {
   const vi = varInfo();
-  const ov = { shockBox: S.shock.box, impactBox: S.impactBox, draftBox: S.draft, draftKind: S.brush, hoverCell: S.hover };
+  const impactLive = comparable() && !!S.branch && !S.branch.zero;
+  const ov = { shockBox: S.shock.box, impactBox: S.impactBox, impactLive, draftBox: S.draft, draftKind: S.brush, hoverCell: S.hover };
   const scale = absScale();
   const pf = S.prime ? displayField(S.prime.rollout, S.day, S.view) : null;
   const bf = S.branch && comparable() ? displayField(S.branch.rollout, S.day, S.view) : null;

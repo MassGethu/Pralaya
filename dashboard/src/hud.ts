@@ -54,11 +54,15 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
     const r = boxRect(t.box, g);
     const cx = r.x + r.w / 2, cy = r.y + r.h / 2;
 
-    // radar ring around the region
-    const d = Math.max(36, Math.min(150, Math.min(r.w, r.h) * 0.95));
-    const ring = el("div", `hud-ring ${t.kind}`);
-    Object.assign(ring.style, { left: `${cx - d / 2}px`, top: `${cy - d / 2}px`, width: `${d}px`, height: `${d}px` });
-    host.append(ring);
+    // Radar ring only on the shock (the thing being changed). The farm region is just its box: a second ring on a
+    // large box read as decoration and doubled the outline.
+    const ringed = t.kind === "shock";
+    const d = ringed ? Math.max(36, Math.min(150, Math.min(r.w, r.h) * 0.95)) : 0;
+    if (ringed) {
+      const ring = el("div", `hud-ring ${t.kind}`);
+      Object.assign(ring.style, { left: `${cx - d / 2}px`, top: `${cy - d / 2}px`, width: `${d}px`, height: `${d}px` });
+      host.append(ring);
+    }
 
     // tag: to the right of the box, or the left if it would leave the map; nudged down if it hits another tag
     const tag = el(compact ? "button" : "div", `hud-tag ${t.kind}${compact ? " compact" : ""}`);
@@ -112,14 +116,16 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
     placed.push(rect);
     Object.assign(tag.style, { left: `${x}px`, top: `${y}px`, width: `${TAG_W}px` });
 
-    // leader line from the ring edge to the tag's near side
+    // leader line from the ring edge (or, with no ring, the box edge) to the tag's near side
     const tx = x > cx ? x : x + TAG_W, ty = y + 18;
-    const len = Math.hypot(tx - cx, ty - cy) - d / 2;
-    if (len > 6) {
-      const ang = Math.atan2(ty - cy, tx - cx);
+    const ang = Math.atan2(ty - cy, tx - cx);
+    const dx = Math.abs(Math.cos(ang)), dy = Math.abs(Math.sin(ang));
+    const start = ringed ? d / 2 : Math.min(dx > 1e-6 ? r.w / 2 / dx : Infinity, dy > 1e-6 ? r.h / 2 / dy : Infinity);
+    const len = Math.hypot(tx - cx, ty - cy) - start;
+    if (len > 6 && !(tx > r.x && tx < r.x + r.w && ty > r.y && ty < r.y + r.h)) {
       const line = el("div", `hud-line ${t.kind}`);
       Object.assign(line.style, {
-        left: `${cx + Math.cos(ang) * (d / 2)}px`, top: `${cy + Math.sin(ang) * (d / 2)}px`, width: `${len}px`, transform: `rotate(${ang}rad)`,
+        left: `${cx + Math.cos(ang) * start}px`, top: `${cy + Math.sin(ang) * start}px`, width: `${len}px`, transform: `rotate(${ang}rad)`,
       });
       host.append(line);
     }
