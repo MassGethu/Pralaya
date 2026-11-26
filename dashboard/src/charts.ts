@@ -58,16 +58,21 @@ export function agriChartSvg(res: Extract<ImpactResult, { empty: false }>, mode:
   const cum = (a: number[]) => a.reduce<number[]>((o, v) => (o.push((o.at(-1) ?? 0) + v), o), []);
   const pc = cum(res.prime.dailyRain), bc = cum(res.branch.dailyRain);
   const series = mode === "abs" ? { ref: pc, main: bc } : { ref: pc.map(() => 0), main: bc.map((v, i) => v - pc[i]) };
-  const lo = Math.min(0, ...series.ref, ...series.main);
-  let hi = Math.max(...series.ref, ...series.main);
-  if (hi - lo < 1) hi = lo + 1;
+  // Round axis steps (1, 2, 2.5 or 5 × 10ⁿ) so the gridlines read as 0 / 25 / 50 / 75, not 0 / 34 / 67.
+  const rawLo = Math.min(0, ...series.ref, ...series.main);
+  let rawHi = Math.max(...series.ref, ...series.main);
+  if (rawHi - rawLo < 1e-9) rawHi = rawLo + 1;
+  const step = niceStep((rawHi - rawLo) / 3);
+  const lo = Math.floor(rawLo / step - 1e-9) * step, hi = Math.ceil(rawHi / step - 1e-9) * step;
+  const stepDigits = (String(Number(step.toPrecision(6))).split(".")[1] ?? "").length; // 25 -> 0, 2.5 -> 1, 0.25 -> 2
   const n = res.days.length;
   const x = (i: number) => pl + (n === 1 ? (W - pl - pr) / 2 : (i * (W - pl - pr)) / (n - 1));
   const y = (v: number) => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
   const path = (a: number[]) => a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
   let s = "";
-  for (const t of [lo, (lo + hi) / 2, hi]) {
-    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${pl - 6}" y="${y(t) + 3}" text-anchor="end" class="svg-tick">${fmt(t, Math.abs(hi - lo) < 10 ? 1 : 0)}</text>`;
+  for (let t = lo; t <= hi + step / 2; t += step) {
+    const v = Math.abs(t) < step / 1e6 ? 0 : t;
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(v)}" y2="${y(v)}" class="grid"/><text x="${pl - 6}" y="${y(v) + 3}" text-anchor="end" class="svg-tick">${fmt(v, stepDigits)}</text>`;
   }
   if (lo < 0) s += `<line x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}" class="axis"/>`;
   s += `<path d="${path(series.ref)}" class="ln-ref"/>`;
@@ -90,6 +95,13 @@ export function agriChartSvg(res: Extract<ImpactResult, { empty: false }>, mode:
   s += `<text x="${pl}" y="14" class="svg-tick">${mode === "abs" ? "mm, cumulative" : "Branch − Prime, mm"} · <tspan class="lg-branch">━ Branch</tspan> <tspan class="lg-prime">┅ Prime</tspan></text>`;
   s += `<text x="${pl}" y="${H - 3}" class="svg-tick">Dry day (&lt; ${dry} mm/day): <tspan class="lg-prime">▬</tspan> Prime <tspan class="lg-branch">▬</tspan> Branch</text>`;
   return s;
+}
+
+/** A round step near `raw`: 1, 2, 2.5 or 5 times a power of ten. */
+export function niceStep(raw: number): number {
+  const p = 10 ** Math.floor(Math.log10(raw));
+  const m = raw / p;
+  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
 }
 
 /**

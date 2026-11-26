@@ -4,7 +4,7 @@ import { boxFromFields } from "../src/boxinput";
 import { boxFromDegrees } from "../src/region";
 import { buildPerturbation } from "../src/shock";
 import { componentSummary, rainCap } from "../src/shocklabel";
-import { calloutSpot } from "../src/charts";
+import { calloutSpot, niceStep } from "../src/charts";
 
 describe("typed shock box (bug 1: invalid coordinates must not fail silently)", () => {
   const T = (latMin: number, latMax: number, lonMin: number, lonMax: number) => ({ latMin, latMax, lonMin, lonMax });
@@ -106,4 +106,13 @@ describe("chart callout placement (never on a line)", () => {
       }
     });
   }
+});
+
+describe("chart axis steps", () => {
+  it("rounds to 1, 2, 2.5 or 5 times a power of ten", () => {
+    expect(niceStep(66.2 / 3)).toBe(25); // cumulative rain up to 66.2 mm -> 0 / 25 / 50 / 75
+    expect(niceStep(0.3 / 3)).toBe(0.1);
+    expect(niceStep(1.4)).toBe(2);
+    expect(niceStep(7)).toBe(10);
+  });
 });
