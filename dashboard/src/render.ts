@@ -295,15 +295,8 @@ export class MapView {
     }
     if (ct.kind === "swipe") this.drawDivider(ct);
     if (ct.kind === "empty" && ct.text) {
-      // A pill near the top of the map (over the Himalaya/Tibet edge), clear of the shock and farm boxes and their tags.
-      g.save();
-      g.font = "500 14px Tomorrow, ui-sans-serif, -apple-system, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-      const tw = g.measureText(ct.text).width, ph = 32, pw = tw + 32, px = mx + mw / 2 - pw / 2, py = my + Math.min(28, mh * 0.06);
-      g.fillStyle = "rgba(8,12,18,0.82)"; g.strokeStyle = "rgba(255,255,255,0.14)"; g.lineWidth = 1;
-      g.beginPath(); g.roundRect(px, py, pw, ph, ph / 2); g.fill(); g.stroke();
-      g.fillStyle = "rgba(234,240,247,0.95)";
-      g.fillText(ct.text, mx + mw / 2, py + ph / 2 + 1);
-      g.restore();
+      g.fillStyle = "rgba(225,232,240,0.85)"; g.font = "500 14px ui-sans-serif, -apple-system, sans-serif"; g.textAlign = "center";
+      g.fillText(ct.text, mx + mw / 2, my + mh / 2);
     }
   }
 
