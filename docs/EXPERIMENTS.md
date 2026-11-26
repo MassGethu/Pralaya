@@ -271,3 +271,78 @@ tuning on val, and no inner-holdout retrain. `model/bundle` is not touched and n
 - 03:00: seed-0 results for all runs are pushed.
 - 05:30: seeds s1 and s2 for the single winner, run one after another.
 - Anything late or failing is "not promoted", with one line on why.
+
+---
+## Round 2 result: `b5_transport` (Hridhin, `hridhin/b5-transport`), val 2020, seed 0
+Run as pre-registered, from `dccd2c0`, on an Apple-silicon Mac (MPS), Python 3.12.15, torch 2.15.0. The three
+commands from the pre-registration were run one after another with `--advect` on every stage. The chain trained
+00:11–00:57 IST: stage 1 took 10 min, K=4 took 12 min and K=8 took 24 min.
+
+**Outcome: not promoted.** S beats e3 by +2.98, but the paired per-window CI includes 0 (rule 3), and the
+warm-ocean stable fraction is 2.5 pp lower (rule 4a, limit 2 pp). Seeds s1/s2 were not run, because only a run
+that passes rules 1–4 gets seeds.
+
+### Results vs `e3_roll8_ocean` (`compare_b5_transport_vs_e3.md`)
+| | e3_roll8_ocean | b5_transport | rule | pass |
+|---|---|---|---|---|
+| SELECTION gates | all pass | all pass | 1 | yes |
+| S /70 | 49.37 | **52.35** (+2.98) | 2: ≥ 50.37 | yes |
+| S points rmse / csi / blur / causal | 14.75 / 10.92 / 10.0 / 13.70 | 15.93 / 12.69 / 10.0 / 13.73 | | |
+| paired Δ per-window skill [95 % CI] | – | +0.0047 [−0.0021, +0.0132] | 3: lower bound > 0 | **no** |
+| stable warm_ocean / monsoon_stall | 88.1 % / 88.4 % | 85.6 % / 89.3 % | 4a: each ≥ e3 − 2 pp | **no** (warm −2.5 pp) |
+| heavy 25 mm/day day-1 CSI / POD | 0.364 / 0.478 | 0.372 / 0.485 | 4b: ≥ 0.9 × e3 | yes |
+| heavy 25 mm/day day-8 CSI / POD | 0.080 / 0.106 | 0.069 / 0.088 | reported | |
+| heavy 50 mm/day day-1 CSI / POD | 0.235 / 0.289 | 0.236 / 0.288 | reported | |
+| heavy 50 mm/day day-8 CSI / POD | 0.002 / 0.003 | 0.001 / 0.001 | reported | |
+| day-8 in-band fraction | 0.897 | 0.895 | 4c: ≥ e3 − 0.02 | yes |
+| worst window | 2020-10-28 −0.241 | 2020-02-11 −0.382 | reported | |
+| windows > 5σ, warm / stall | 42 / 41 | 51 / 38 | reported | |
+
+- **Skill by lead** (mean over channels): equal to e3 at day 1 (+0.294). It is better at every later lead, by
+  +0.003 to +0.009, and the zero crossing moves from day 7 to day 8.
+- **By channel**, days 4 and 8 improve most for u10, v10, tcwv and rain. Ocean-weighted t2m is slightly worse at
+  day 8 (−0.08 vs −0.06).
+
+### Intermediate stages (val; e3 is the K=8 final, so the fair reference is the matching CNN stage)
+| stage | B5 S | CNN same stage S | training-time val score B5 / CNN |
+|---|---|---|---|
+| K=1 (`b5_transport_b1` vs `b1_onestep`) | 31.12 (rmse points 0.0) | 38.67 | 0.4267 / 0.4213 |
+| K=4 (`b5_transport_b3` vs `b3_roll4`) | 45.64 | 45.92 | 0.4081 / 0.4094 |
+| K=8 (`b5_transport` vs `e3_roll8_ocean`) | 52.35 | 49.37 | 0.4010 / 0.4041 |
+
+The comparisons against e3 for the two early stages are in `compare_b5_transport_b{1,3}_vs_e3.md`. Both fail
+rules 2–4, as expected for un-fine-tuned stages.
+
+### Was the transport input used? Yes, unlike round 1's `h3_transport`
+| after stage | `adv_stem` weight norm | `adv_speed` (t2m, tp, u10, v10, msl, tcwv) |
+|---|---|---|
+| init | 0 | 0.5 for all channels |
+| b5_transport_b1 | 4.758 | 0.589, 0.330, 0.446, 0.457, 0.662, 0.595 |
+| b5_transport_b3 | 4.727 | 0.590, 0.330, 0.454, 0.463, 0.663, 0.604 |
+| b5_transport | 4.719 | 0.590, 0.330, 0.453, 0.465, 0.663, 0.603 |
+
+h3's new output layer had norm 0.18. Trained from scratch, the transport stem reaches about 4.7 in stage 1 and
+keeps it through the fine-tunes. The speed scales also separate per channel: rain is moved at about a third of the
+10 m wind speed, and msl and tcwv at about two thirds. Almost all of this is learned in stage 1, at lr 1e-3.
+
+### In plain language
+Giving the network an explicit "where would the air have come from, one day ago, along the surface wind"
+input made the final model better on average. It scores 52.4 against 49.4 out of 70, mostly through lower error
+and better rain-event detection after day 2. The network clearly used the new input.
+
+The gain is not consistent from forecast to forecast. On a per-window basis, the improvement is too small to rule
+out zero. The model also holds a warm-ocean shock without blowing up slightly less often than the shipped model.
+It fails the 2-point allowance by half a point.
+
+The worst single forecast is the February western-disturbance case, and it got worse (−0.38 vs −0.24). By the
+pre-registered rules, it does not replace e3.
+
+### Notes on the setup (no change to the recipe)
+- **Worktree.** Run in a separate worktree, `../Pralaya-b5`, on branch `hridhin/b5-transport` made from
+  `dccd2c0`, with `kit/` in the shared parent folder.
+- **Run names.** The names follow the pre-registration (`b5_transport_b1`, `b5_transport_b3`, `b5_transport`).
+- **Test dependencies.** `tests/test_scenario_service.py` imports `fastapi` and `uvicorn`, and
+  `requirements-train.txt` does not list them. They were installed unpinned (fastapi 0.165.0, uvicorn 0.54.0) so
+  the full `pytest` could run. All 32 tests passed. Training and evaluation do not import them.
+- **Smoke run.** A 1-epoch `--advect` smoke run was made before the chain and then deleted. It is not part of
+  the results.
