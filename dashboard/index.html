@@ -3,7 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PRALAYA · Multiverse Studio</title>
+    <title>PRALAYA · Monsoon Command</title>
+    <!-- Tomorrow (SIL OFL). Loaded from Google Fonts for now; falls back to the system font offline. Bundle locally before the venue. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Michroma&family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Tamil:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Kannada:wght@800&family=Noto+Sans+Malayalam:wght@800&family=Noto+Sans+Gujarati:wght@800&family=Noto+Sans+Gurmukhi:wght@800&family=Noto+Sans+Oriya:wght@800&family=Noto+Nastaliq+Urdu:wght@700&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -11,48 +15,80 @@
       DEVELOPMENT FIXTURE ACTIVE: synthetic data and/or toy engine, not the trained model. Do not use for the demo.
     </div>
 
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-name">PRALAYA</span>
-        <span class="brand-sub">Multiverse Studio</span>
+    <header class="bar cmd-bar">
+      <div class="brand logo-lock" aria-label="PRALAYA, monsoon multiverse">
+        <span class="logo-t">PRALAYA</span>
+        <span class="logo-line" aria-hidden="true"></span>
+        <span class="logo-tag">Monsoon multiverse</span>
       </div>
-      <ol class="stepper" aria-label="Demo steps">
-        <li id="st-input" data-state="todo"><span class="st-dot">1</span>Load state</li>
-        <li id="st-prime" data-state="todo"><span class="st-dot">2</span>Run Prime</li>
-        <li id="st-shock" data-state="todo"><span class="st-dot">3</span>Pick a shock</li>
-        <li id="st-branch" data-state="todo"><span class="st-dot">4</span>Run Branch</li>
-      </ol>
+      <div class="cmd-wrap">
+        <div id="cmd-field" class="cmd-field" role="combobox" aria-haspopup="listbox" aria-expanded="false" tabindex="0" aria-label="Next action and command list">
+          <span class="cmd-k">⌘K</span>
+          <span class="cmd-steps" aria-hidden="true"><i id="st-input" data-state="todo"></i><i id="st-prime" data-state="todo"></i><i id="st-shock" data-state="todo"></i><i id="st-branch" data-state="todo"></i></span>
+          <span id="cmd-text" class="cmd-text">Next: <b>Load state</b></span>
+          <button id="cmd-go" class="cmd-go" type="button">Enter ↵</button>
+        </div>
+        <div id="cmd-panel" class="cmd-panel" hidden>
+          <input id="cmd-input" class="cmd-input" type="text" placeholder="Type an action: prime, branch, rain, swipe, preset…" aria-label="Filter actions" autocomplete="off" />
+          <ul id="cmd-list" class="cmd-list" role="listbox"></ul>
+        </div>
+      </div>
       <div class="status-row">
         <span id="engine-pill" class="pill" data-state="unknown">Checking server…</span>
         <span id="input-pill" class="pill" data-state="idle">No initial state</span>
+        <span id="clock" class="chip-clock mono"></span>
       </div>
     </header>
 
-    <div class="app">
-      <!-- Left: the scenario, in demo order -->
-      <aside class="scenario glass" id="scenario" aria-label="Scenario">
-        <p id="next-hint" class="next-hint"></p>
+    <main class="stage" aria-label="Forecast map">
+      <div class="map-host" id="map-host">
+        <canvas id="map-main"></canvas>
+        <canvas id="map-flow" aria-hidden="true"></canvas>
+        <div id="hud" class="hud" aria-live="polite"></div>
+      </div>
 
-        <section class="card" id="step-input">
-          <h2><span class="step-n">1</span>Initial state</h2>
-          <label class="btn btn-primary btn-block file-btn">Load input JSON<input id="file-input" type="file" accept=".json,application/json" /></label>
-          <p class="hint">Three days, oldest first, physical units: <code>init_states</code> [3,6,32,36] + <code>doy_sincos</code>.</p>
-          <div id="input-info" class="info"></div>
-        </section>
+      <!-- Top centre: what the map shows + view switch (HUD pill) -->
+      <div class="float caption-row">
+        <div id="view-seg" class="seg hud-seg" role="radiogroup" aria-label="Map view">
+          <button class="seg-btn" data-view="prime">Prime</button>
+          <button class="seg-btn" data-view="branch">Branch</button>
+          <button class="seg-btn" data-view="diff">Difference</button>
+          <button class="seg-btn" data-view="swipe">Swipe</button>
+        </div>
+        <div id="map-caption" class="caption"></div>
+      </div>
+      <p id="pod-hint" class="float hint-pill" hidden></p>
 
-        <section class="card" id="step-prime">
-          <h2><span class="step-n">2</span>Timeline Prime</h2>
-          <button id="run-prime" class="btn btn-primary btn-block" disabled>Run Prime</button>
-          <p class="hint"><code>perturbation: null</code> · <span id="steps-label">10</span> forecast days</p>
-          <div id="prime-info" class="info"></div>
-        </section>
+      <!-- Left: slim icon rail of weather layers -->
+      <nav class="rail" aria-label="Weather layer">
+        <div id="var-seg" class="rail-list" role="radiogroup" aria-label="Weather variable"></div>
+        <button id="open-setup" class="rail-gear" title="Setup: input, run info, display" aria-label="Open setup">⚙</button>
+      </nav>
 
-        <section class="card card-shock" id="step-shock">
-          <h2><span class="step-n">3</span>Shock</h2>
+
+      <div class="float legend" id="legend-main"></div>
+
+      <!-- Right: Tempest-style scenario event card (1); Impact tab uses Climate Pulse cards (10) -->
+      <aside class="panel event drawer" id="drawer" data-open="false" aria-label="Scenario details">
+        <button id="drawer-close" class="btn btn-icon drawer-close" aria-label="Close details">×</button>
+        <header class="ev-head">
+          <div class="ev-kicker"><span class="ev-dot" id="ev-dot"></span><span id="ev-status">No scenario yet</span></div>
+          <h2 id="ev-title">Scenario</h2>
+          <p id="next-hint" class="next-hint"></p>
+          <div id="scenario-line" class="scenario-line"></div>
+        </header>
+        <div class="tabs" role="tablist" aria-label="Scenario sections">
+          <button class="tab" role="tab" data-tab="shock" aria-selected="true">Shock</button>
+          <button class="tab" role="tab" data-tab="impact" aria-selected="false">Impact</button>
+          <button class="tab" role="tab" data-tab="ripple" aria-selected="false">Ripple</button>
+          <button class="tab" role="tab" data-tab="setup" aria-selected="false">Setup</button>
+        </div>
+
+        <section class="tab-panel" data-panel="shock" role="tabpanel">
           <select id="preset" class="select-block" aria-label="Shock preset">
             <option value="">Start from a preset…</option>
           </select>
-          <div class="seg seg-block" role="radiogroup" aria-label="What dragging on the map draws">
+          <div class="seg seg-2" role="radiogroup" aria-label="What dragging on the map draws">
             <button class="seg-btn" data-brush="shock" aria-pressed="true">Draw shock box</button>
             <button class="seg-btn" data-brush="impact" aria-pressed="false">Draw farm region</button>
           </div>
@@ -76,66 +112,27 @@
           <div id="branch-info" class="info"></div>
         </section>
 
-        <details class="card dev">
-          <summary>Developer fixture</summary>
-          <p class="hint">For UI work while the trained server is down. Explicit only: server errors never switch to it.</p>
-          <button id="load-fixture" class="btn btn-quiet btn-small">Load synthetic input</button>
-          <label class="check"><input id="fixture-engine" type="checkbox" /> Use toy fixture engine instead of the server</label>
-        </details>
-      </aside>
-
-      <!-- Centre: one full-size map -->
-      <main class="stage" aria-label="Forecast map">
-        <div class="map-host" id="map-host"><canvas id="map-main"></canvas></div>
-
-        <div class="float view-switch">
-          <div id="view-seg" class="seg glass" role="radiogroup" aria-label="Map view">
-            <button class="seg-btn" data-view="prime">Prime</button>
-            <button class="seg-btn" data-view="swipe">Swipe</button>
-            <button class="seg-btn" data-view="branch">Branch</button>
-            <button class="seg-btn" data-view="diff">Difference</button>
+        <section class="tab-panel" data-panel="impact" role="tabpanel" hidden>
+          <div class="pulse-band">
+            <h3>Impact on farmland</h3>
+            <p class="source" id="agri-source">Runs after Prime and Branch exist for the same input.</p>
           </div>
-          <div id="map-caption" class="map-caption glass"></div>
-        </div>
-
-        <div class="float var-rail glass" id="var-seg" role="radiogroup" aria-label="Weather variable"></div>
-
-        <div class="float legend-float glass" id="legend-main"></div>
-
-        <div id="scenario-line" class="float scenario-chip glass"></div>
-
-        <div class="float timeline glass">
-          <button id="day-play" class="btn btn-icon btn-play" aria-label="Play forecast days" aria-pressed="false">▶</button>
-          <button id="day-prev" class="btn btn-icon" aria-label="Previous day">‹</button>
-          <div id="day-strip" class="day-strip" role="radiogroup" aria-label="Forecast day"></div>
-          <button id="day-next" class="btn btn-icon" aria-label="Next day">›</button>
-          <output id="day-out" class="mono day-out">Day 1</output>
-        </div>
-      </main>
-
-      <!-- Right: what the shock did (Climate Pulse-style cards) -->
-      <aside class="impact" id="impact" aria-label="Impact">
-        <header class="impact-head">
-          <h2>Impact on farmland</h2>
-          <p class="source" id="agri-source">Runs after Prime and Branch exist for the same input.</p>
-        </header>
-
-        <div id="outcome" class="outcome"></div>
-
-        <section class="card" id="panel-agri">
-          <div class="agri-head">
-            <h3>Cumulative regional rainfall</h3>
-            <div class="seg seg-sm" role="radiogroup" aria-label="Chart mode">
-              <button class="seg-btn" data-agri-mode="abs" aria-pressed="true">Absolute</button>
-              <button class="seg-btn" data-agri-mode="change" aria-pressed="false">Change</button>
+          <div id="outcome" class="outcome"></div>
+          <div class="chart-card">
+            <div class="chart-head">
+              <h4>Cumulative regional rainfall</h4>
+              <div class="seg seg-sm" role="radiogroup" aria-label="Chart mode">
+                <button class="seg-btn" data-agri-mode="abs" aria-pressed="true">Absolute</button>
+                <button class="seg-btn" data-agri-mode="change" aria-pressed="false">Change</button>
+              </div>
             </div>
+            <svg id="agri-chart" viewBox="0 0 380 180" role="img" aria-label="Cumulative regional rainfall, Prime vs Branch"></svg>
           </div>
-          <svg id="agri-chart" viewBox="0 0 380 180" role="img" aria-label="Cumulative regional rainfall, Prime vs Branch"></svg>
           <div class="agri-params">
             <label>From day<input id="agri-d0" type="number" min="1" max="10" value="1" /></label>
             <label>To day<input id="agri-d1" type="number" min="1" max="10" value="7" /></label>
-            <label>Dry if &lt; mm/day<input id="agri-dry" type="number" min="0" step="0.5" value="2.5" /></label>
-            <label>Heavy if ≥ mm/day<input id="agri-heavy" type="number" min="1" step="1" value="10" /></label>
+            <label>Dry &lt; mm/day<input id="agri-dry" type="number" min="0" step="0.5" value="2.5" /></label>
+            <label>Heavy ≥ mm/day<input id="agri-heavy" type="number" min="1" step="1" value="10" /></label>
           </div>
           <p id="agri-region" class="hint"></p>
           <details class="more">
@@ -149,20 +146,50 @@
           </details>
         </section>
 
-        <section class="card" id="panel-ripple">
-          <h3>Ripple reach</h3>
-          <p class="hint" id="ripple-hint"></p>
-          <svg id="ripple-chart" viewBox="0 0 300 120" role="img" aria-label="Ripple reach by day"></svg>
+        <section class="tab-panel" data-panel="ripple" role="tabpanel" hidden>
+          <div class="chart-card">
+            <h4>Ripple reach by day</h4>
+            <p class="hint" id="ripple-hint"></p>
+            <svg id="ripple-chart" viewBox="0 0 300 120" role="img" aria-label="Ripple reach by day"></svg>
+          </div>
+          <div class="chart-card">
+            <h4>Initial shock · day 0</h4>
+            <p class="hint">The delta added once to the last input day. Not a forecast.</p>
+            <div class="mini-map"><canvas id="map-shock"></canvas></div>
+            <div id="legend-shock" class="legend-inline"></div>
+          </div>
         </section>
-
-        <section class="card" id="panel-shock">
-          <h3>Initial shock · day 0</h3>
-          <p class="hint">The delta added once to the last input day. Not a forecast.</p>
-          <div class="mini-map"><canvas id="map-shock"></canvas></div>
-          <div id="legend-shock" class="legend"></div>
+        <section class="tab-panel" data-panel="setup" role="tabpanel" hidden>
+          <div class="btn-row">
+            <label class="btn btn-primary file-btn">Load state<input id="file-input" type="file" accept=".json,application/json" /></label>
+            <button id="run-prime" class="btn btn-primary" disabled>Run Prime</button>
+          </div>
+          <div id="prime-err" class="info"></div>
+          <div class="chart-card"><h4>Input</h4><div id="input-info" class="info"></div><p class="hint"><code>perturbation: null</code> · <span id="steps-label">10</span> forecast days</p></div>
+          <div class="chart-card"><h4>Runs</h4><div id="prime-info" class="info"></div></div>
+          <div class="chart-card"><h4>Display</h4>
+            <label class="switch"><input type="checkbox" id="tg-flow" /><span class="knob"></span>Wind flow</label>
+            <label class="switch"><input type="checkbox" id="tg-terrain" checked /><span class="knob"></span>Terrain</label>
+            <label class="switch"><input type="checkbox" id="tg-smooth" checked /><span class="knob"></span>Smooth display</label>
+            <p class="hint">Smooth only changes the drawing; hover shows the true 1° cell values.</p>
+          </div>
+          <details class="chart-card"><summary>Developer fixture</summary>
+            <p class="hint">For UI work while the trained server is down. Explicit only: server errors never switch to it.</p>
+            <button id="load-fixture" class="btn btn-quiet btn-small">Load synthetic input</button>
+            <label class="check"><input id="fixture-engine" type="checkbox" /> Use toy fixture engine</label>
+          </details>
         </section>
       </aside>
-    </div>
+
+      <!-- Bottom: kepler-style docked day histogram (3) with labelled dates (8) -->
+      <div class="dock vt" aria-label="Forecast days">
+        <div class="vt-ctl"><button id="day-prev" class="vt-circle" aria-label="Previous day">⏮</button><span>Previous</span></div>
+        <div class="vt-ctl"><button id="day-play" class="vt-circle vt-play" aria-label="Play forecast days" aria-pressed="false">▶</button><span>Play</span></div>
+        <div class="vt-ctl vt-datebox"><output id="day-out" class="vt-date">Day 1</output><span>Forecast day</span></div>
+        <div id="day-strip" class="day-strip"></div>
+        <div class="vt-ctl"><button id="day-next" class="vt-circle" aria-label="Next day">⏭</button><span>Next</span></div>
+      </div>
+    </main>
     <div id="tooltip" class="tooltip" hidden></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

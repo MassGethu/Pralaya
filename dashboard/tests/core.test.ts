@@ -198,3 +198,28 @@ describe("coastline contour", () => {
     expect(coastline(new Float32Array(NCELL))).toHaveLength(0);
   });
 });
+
+describe("display helpers", () => {
+  it("bilinear sampling returns exact values at cell centres and blends between them", async () => {
+    const { sampleBilinear } = await import("../src/render");
+    const f = new Float32Array(NCELL);
+    f[cellIndex(5, 5)] = 10; f[cellIndex(5, 6)] = 20;
+    expect(sampleBilinear(f, 5, 5)).toBe(10);
+    expect(sampleBilinear(f, 5.5, 5)).toBeCloseTo(15, 9);
+    expect(sampleBilinear(f, -3, -3)).toBe(0); // clamped at the edge, no wrap-around
+  });
+
+  it("labels forecast days from the last input day, across a month end", async () => {
+    const { forecastDateLabel } = await import("../src/ui");
+    expect(forecastDateLabel("2021-07-22", 1)).toBe("23 Jul");
+    expect(forecastDateLabel("2021-07-22", 10)).toBe("1 Aug");
+    expect(forecastDateLabel(undefined, 1)).toBe("");
+  });
+
+  it("makes dry rain and zero difference fully transparent", async () => {
+    const { classedRainScale, divergingScale } = await import("../src/render");
+    expect(classedRainScale().alpha(0.05)).toBe(0);
+    expect(divergingScale("tp", 10).alpha(0)).toBe(0);
+    expect(divergingScale("tp", 10).alpha(10)).toBeGreaterThan(0.9);
+  });
+});
