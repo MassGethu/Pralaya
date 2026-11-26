@@ -9,6 +9,8 @@ from threading import Lock
 
 import numpy as np
 
+from postprocess.clim_blend import BLEND_PATH, ClimBlend
+
 
 STATE_SHAPE = (6, 32, 36)
 HISTORY_SHAPE = (3, *STATE_SHAPE)
@@ -78,6 +80,7 @@ class Inference:
         self._lock = Lock()
         self.model_name = DEVELOPMENT_NAME if development else "PRALAYA"
         self._forecast: Forecast = _persistence if development else self._load(bundle_dir)
+        self._blend = None if development else ClimBlend.load_optional(BLEND_PATH)
         # Exercise the actual 10-step inference path before starting the listener.
         air = np.array([295, 4, 2, 1, 100500, 35], dtype=np.float32)
         history = np.broadcast_to(air[None, :, None, None], HISTORY_SHAPE).copy()
@@ -100,17 +103,25 @@ class Inference:
             rollout = np.array(self._forecast(history, season, steps), dtype=np.float64)
         if rollout.shape != (steps, *STATE_SHAPE):
             raise ValueError(f"forecast returned an unexpected shape: {rollout.shape}")
-        if not np.isfinite(rollout).all():
-            raise ValueError("forecast returned nonfinite values")
-        temperature = rollout[:, 0]
-        rain = rollout[:, 1]
-        clipped_temperature = np.count_nonzero((temperature < 233.15) | (temperature > 333.15))
-        clipped_rain = np.count_nonzero(rain < 0)
-        np.clip(temperature, 233.15, 333.15, out=temperature)
-        np.maximum(rain, 0, out=rain)
-        if clipped_temperature or clipped_rain:
-            LOGGER.warning(
-                "Clipped %d forecast cells (t2m=%d, tp=%d)",
-                clipped_temperature + clipped_rain, clipped_temperature, clipped_rain,
-            )
-        return rollout
+        if self._blend is not None:
+            self._blend.apply(rollout, history[-1], season)
+        return clip_forecast(rollout)
+
+
+def clip_forecast(rollout: np.ndarray) -> np.ndarray:
+    # Keep the finite verdict before clipping can hide an infinity.
+    finite = np.isfinite(rollout).all()
+    temperature = rollout[:, 0]
+    rain = rollout[:, 1]
+    clipped_temperature = np.count_nonzero((temperature < 233.15) | (temperature > 333.15))
+    clipped_rain = np.count_nonzero(rain < 0)
+    np.clip(temperature, 233.15, 333.15, out=temperature)
+    np.maximum(rain, 0, out=rain)
+    if finite and (clipped_temperature or clipped_rain):
+        LOGGER.warning(
+            "Clipped %d forecast cells (t2m=%d, tp=%d)",
+            clipped_temperature + clipped_rain, clipped_temperature, clipped_rain,
+        )
+    if not finite:
+        raise ValueError("forecast returned nonfinite values")
+    return rollout
