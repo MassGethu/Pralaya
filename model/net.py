@@ -17,6 +17,7 @@ TP = 1                                # precipitation channel index
 DAY_ANGLE = 2.0 * math.pi / 365.0     # contract: doy_sincos = [sin(2 pi doy/365), cos(2 pi doy/365)]
 LAT0 = 6.5                            # southern row centre, 1 degree spacing
 SEC_PER_DAY, M_PER_DEG = 86400.0, 111_000.0
+N_HARM = 3                            # seasonal normal: mean + 3 sin/cos harmonics = 7 coefficients per cell
 
 
 def advance_sincos(sc: torch.Tensor, days: int = 1) -> torch.Tensor:
@@ -24,6 +25,13 @@ def advance_sincos(sc: torch.Tensor, days: int = 1) -> torch.Tensor:
     a = DAY_ANGLE * days
     s, c = sc[:, 0], sc[:, 1]
     return torch.stack([s * math.cos(a) + c * math.sin(a), c * math.cos(a) - s * math.sin(a)], dim=1)
+
+
+def harmonic_basis(sc: torch.Tensor) -> torch.Tensor:
+    """[B,2] (sin, cos) of the day angle -> [B,7] basis [1, sin(n a), ..., cos(n a), ...], n = 1..3.
+    Same ordering as model/calibration.py's coefficients."""
+    a = torch.atan2(sc[:, 0], sc[:, 1]).unsqueeze(1) * torch.arange(1, N_HARM + 1, device=sc.device, dtype=sc.dtype)
+    return torch.cat([torch.ones_like(a[:, :1]), torch.sin(a), torch.cos(a)], dim=1)
 
 
 class ResBlock(nn.Module):
@@ -59,11 +67,22 @@ class PralayaNet(nn.Module):
       ms_levels > 0: multi-scale branches on 1/2, 1/4, ... grids added to the body output.
       advect: wind-guided transport. The last state is moved back along its own u10/v10 for one day
         (semi-Lagrangian, a learned speed scale per channel) and the advective tendency is a further input.
+      anomaly: the net works in anomaly space. Each input day has its per-cell seasonal normal (7-coefficient
+        harmonic fit, buffer `clim_coef` [7,6,32,36]) subtracted; the net predicts the next day's anomaly and the
+        normal for that day is added back. With the zero-init head, step 0 is persisted anomaly.
     """
 
-    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False):
+    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False,
+                 anomaly: bool = False, clim_coef=None):
         super().__init__()
         self.config = {"width": width, "blocks": blocks}
+        if anomaly:
+            self.config["anomaly"] = True
+            coef = torch.zeros(2 * N_HARM + 1, NC, NLAT, NLON) if clim_coef is None else \
+                torch.as_tensor(clim_coef, dtype=torch.float32)
+            if coef.shape != (2 * N_HARM + 1, NC, NLAT, NLON):
+                raise ValueError(f"clim_coef shape {tuple(coef.shape)} != {(2 * N_HARM + 1, NC, NLAT, NLON)}")
+            self.register_buffer("clim_coef", coef)
         if ms_levels:
             self.config["ms_levels"] = ms_levels
         if advect:
@@ -96,10 +115,19 @@ class PralayaNet(nn.Module):
     def normalise(self, x):
         return (x - self.mean) / self.std
 
+    def normal(self, sc: torch.Tensor) -> torch.Tensor:
+        """Seasonal normal [B,6,32,36] (physical) for days with (sin, cos) sc [B,2]."""
+        return torch.einsum("bk,kchw->bchw", harmonic_basis(sc), self.clim_coef)
+
     def step(self, window: torch.Tensor, sc_target: torch.Tensor) -> torch.Tensor:
         """window [B,3,6,32,36] physical, sc_target [B,2] for the day being predicted -> [B,6,32,36] physical."""
         b = window.shape[0]
-        xn = self.normalise(window.reshape(b * T_IN, NC, NLAT, NLON)).reshape(b, T_IN * NC, NLAT, NLON)
+        anom = hasattr(self, "clim_coef")
+        if anom:                                   # input day j has sc_target rotated back by T_IN - j days
+            norms = torch.stack([self.normal(advance_sincos(sc_target, j - T_IN)) for j in range(T_IN)], dim=1)
+            xn = ((window - norms) / self.std.unsqueeze(1)).reshape(b, T_IN * NC, NLAT, NLON)
+        else:
+            xn = self.normalise(window.reshape(b * T_IN, NC, NLAT, NLON)).reshape(b, T_IN * NC, NLAT, NLON)
         cond = torch.cat([self.geo.unsqueeze(0).expand(b, -1, -1, -1),
                           sc_target.view(b, 2, 1, 1).expand(b, 2, NLAT, NLON)], dim=1)
         h0 = self.stem(torch.cat([xn, cond], dim=1))
@@ -109,7 +137,7 @@ class PralayaNet(nn.Module):
         for br in self.branches:
             h = h + br(h0)
         nxt = xn[:, -NC:] + self.head(F.gelu(h))
-        out = nxt * self.std + self.mean
+        out = nxt * self.std + (self.normal(sc_target) if anom else self.mean)
         return torch.cat([out[:, :TP], F.relu(out[:, TP:TP + 1]), out[:, TP + 1:]], dim=1)
 
     def advect_tendency(self, last_phys: torch.Tensor, last_norm: torch.Tensor) -> torch.Tensor:

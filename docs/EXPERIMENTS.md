@@ -373,7 +373,7 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.
 
 ---
-## Round 3: `a3_anomaly` pre-registration (written 2026-11-27 05:25 IST, before any a3 run was evaluated)
+## Round 3: `a3_anomaly` pre-registration (written 2026-11-27 05:21 IST, before any a3 run was evaluated)
 One experiment, seed 0, val 2020 only. Hard cutoff 06:45 IST. Branch `jarvis/a3-anomaly`; `main` and
 `model/bundle` on `main` are not touched. Training base: `origin/jarvis/model` @ `bc127f3`. The served
 evaluation and the calibration refit use `origin/codex/rainstab-demo` (the calibrated `e3_rainstab` release).

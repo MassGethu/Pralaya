@@ -21,6 +21,8 @@ Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint 
 
 A climatology blend (mentor-approved) raised val S from 51.11 to 58.3 on e3_rainstab (and 49.37 to 57.3 on e3), but failed our pre-registered shock-spread gate (G1) on both e3 and e3_rainstab, so it was not shipped. See [docs/CLIMBLEND.md](docs/CLIMBLEND.md).
 
+Experiment `a3_anomaly` (branch `jarvis/a3-anomaly`, [pre-registration](docs/EXPERIMENTS.md#round-3-a3_anomaly-pre-registration-written-2026-11-27-0521-ist-before-any-a3-run-was-evaluated)) trains the same chain in anomaly space: `python train.py --name a3_onestep --anomaly --clim-coef /path/to/calibration.pt --epochs 40 --rollout 1 --lr 1e-3 --seed 0`, then the K=4 and K=8 stages above with `--init`. The checkpoint stores the 7-coefficient seasonal fit as a buffer, so serving code is unchanged. `--max-batches N` cuts each epoch short for timing probes.
+
 ## Serve and validate
 
 The organizer's offline environment provides CPU PyTorch, NumPy, FastAPI and Uvicorn. For a local run, install PyTorch and the verified wheel with the server extra before launching from the repo root:

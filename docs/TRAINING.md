@@ -33,7 +33,7 @@ plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 chec
 | **e3_rainstab (shipped)** | `python train.py --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1` | e3's recipe plus the shock-stability hinge (`--stab-tau 3` default), also from b3 (best epoch 3) |
 
 How e3 and e3_rainstab were chosen, and the other experiments, are in [EXPERIMENTS.md](EXPERIMENTS.md). Optional `train.py` flags
-used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--stab-tau`, `--grad-loss`, `--ms-levels`, `--advect`.
+used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--stab-tau`, `--grad-loss`, `--ms-levels`, `--advect`, `--anomaly/--clim-coef` (a3_anomaly), `--max-batches` (timing probes).
 
 - Shared settings: AdamW (wd 1e-4), OneCycle LR, batch 32, gradient clip 1.0.
 - Loss: latitude-weighted MSE in normalised units.

@@ -111,6 +111,11 @@ def main(argv=None) -> int:
     ap.add_argument("--grad-loss", type=float, default=0.0, help="weight of the spatial-gradient (structure) loss")
     ap.add_argument("--ms-levels", type=int, default=0, help="multi-scale branches (new modules start at zero)")
     ap.add_argument("--advect", action="store_true", help="wind-guided transport input (new module starts at zero)")
+    ap.add_argument("--anomaly", action="store_true",
+                    help="anomaly-space model (from scratch only; coefficients from --clim-coef)")
+    ap.add_argument("--clim-coef", default=None,
+                    help="file with a [7,6,32,36] 'coefficients' tensor fitted on 2005-2019 (e.g. a calibration.pt)")
+    ap.add_argument("--max-batches", type=int, default=0, help="timing probe: stop each epoch after N batches")
     ap.add_argument("--init", default=None, help="checkpoint to fine-tune from")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="auto")
@@ -148,8 +153,13 @@ def main(argv=None) -> int:
             raise SystemExit(f"--init {args.init}: state mismatch missing={missing} unexpected={unexpected}")
         mean, std = ck["mean"].numpy(), ck["std"].numpy()
     else:
+        coef = None
+        if args.anomaly:
+            if not args.clim_coef:
+                raise SystemExit("--anomaly needs --clim-coef")
+            coef = torch.load(args.clim_coef, map_location="cpu", weights_only=True)["coefficients"].float()
         net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks, ms_levels=args.ms_levels,
-                         advect=args.advect)
+                         advect=args.advect, anomaly=args.anomaly, clim_coef=coef)
     net = net.to(dev).train()
 
     data = torch.from_numpy(arc.data).to(dev)
@@ -185,7 +195,9 @@ def main(argv=None) -> int:
     for ep in range(start_ep, args.epochs + 1):
         t0 = time.time(); tot = 0.0; stab_tot = 0.0
         perm = tr[torch.randperm(len(tr), device=dev)]
-        for chunk in torch.split(perm, args.batch):
+        for bi, chunk in enumerate(torch.split(perm, args.batch)):
+            if args.max_batches and bi >= args.max_batches:
+                break
             x, y, sc = batch(data, sc_all, chunk, args.rollout)
             out = net.rollout(x, sc, args.rollout)
             d = (out - y) / net.std.view(1, 1, NC, 1, 1)
