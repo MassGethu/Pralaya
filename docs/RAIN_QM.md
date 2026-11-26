@@ -44,6 +44,35 @@ also fails, step 4 is recorded as tested, nothing ships, and the step-2 blend st
 **Shipping needs** the step-2 blend to ship first, the mentor's OK for an extra rain post-processing step, and Mass's
 agreement. Nothing in the served path changes here.
 
-## Results
+## Results — TESTED, NOT SHIPPED (primary and fallback both fail)
 
-(appended after scoring)
+Scored 27 Nov 03:54–04:02 IST on all 354 val 2020 windows, both kit shocks on every window. Reports:
+`evaluation/results/rain_qm/`. The step-2 shock-preserving blend stays the candidate.
+
+| Val 2020 | Step-2 blend (baseline) | Primary: + rain quantile map | Fallback: rain unblended |
+|---|---|---|---|
+| **S / 70** | **58.85** | 53.36 | 57.92 |
+| RMSE / 30 | 24.10 | 18.59 | 22.92 |
+| CSI / 15 | 10.81 | 12.48 | 11.07 |
+| Anti-blur / 10 | 10.0 | 10.0 | 10.0 |
+| Causality / 15 | 13.95 | 12.29 | 13.92 |
+| Propagates warm_ocean / monsoon_stall | 97.7 % / 57.3 % | 91.2 % / 49.7 % | 97.7 % / 57.1 % |
+| tp day-8 variance ratio | 0.460 | 1.109 | 0.608 |
+
+| Gate | Primary (quantile map) | Fallback (rain unblended) |
+|---|---|---|
+| G1 spread | −6.5 pp / −7.4 pp vs unblended, causality −1.63. **FAIL** | 0.0 pp / 0.0 pp, causality 0.00. PASS |
+| G2 variance | 10/10, all ratios in band. PASS | 10/10, all ratios in band. PASS |
+| G3 null | bit-identical. PASS | bit-identical. PASS |
+| G4 gain | −5.49 S. **FAIL** (CSI rose) | −0.93 S. **FAIL** (CSI rose to 11.07) |
+| G6 held-out | Jan–Jun 28.68 → 26.19, Jul–Dec 41.24 → 34.30 forecast points. **FAIL** | n/a |
+
+**Why the map failed.** Stretching rain back to the observed distribution adds hits above 10 mm/day (CSI +1.67) but
+also misplaced heavy rain, which costs far more RMSE (−5.5) than CSI gains; sharper rain also makes the shocked
+forecasts spread less often. The held-out halves show the same loss, so it is not a fitting artefact.
+
+**Fallback note.** Leaving rain unblended keeps tp's day-8 variance ratio at 0.608 instead of 0.460 (a wider margin
+over the 0.4 floor) for −0.93 S. It failed G4 as registered, so it is not chosen; it is recorded here in case the team
+prefers that margin, which would be a new, separately recorded decision.
+
+Following the stop rule, 2021 was not scored for either setting.

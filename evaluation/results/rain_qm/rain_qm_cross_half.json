@@ -1,0 +1,35 @@
+{
+ "blend": "/private/tmp/claude-501/-Users-jarvis-Desktop-Yuganthaar/138f97dd-17f4-4bf7-b097-d63d614da4ee/scratchpad/delta/fit/rung4_floor0.3.pt",
+ "artifact": "/private/tmp/claude-501/-Users-jarvis-Desktop-Yuganthaar/138f97dd-17f4-4bf7-b097-d63d614da4ee/scratchpad/delta/qm/rain_qm.npz",
+ "cross_half": {
+  "jan_jun": {
+   "windows": 179,
+   "blend": {
+    "rmse": 21.523322577666246,
+    "csi": 7.160692877274649,
+    "forecast": 28.684015454940894
+   },
+   "blend_qm": {
+    "rmse": 18.489264061219366,
+    "csi": 7.701683476005074,
+    "forecast": 26.19094753722444
+   },
+   "pass": false
+  },
+  "jul_dec": {
+   "windows": 175,
+   "blend": {
+    "rmse": 26.729047009718123,
+    "csi": 14.51292833187613,
+    "forecast": 41.241975341594255
+   },
+   "blend_qm": {
+    "rmse": 19.29737721024096,
+    "csi": 15.0,
+    "forecast": 34.29737721024096
+   },
+   "pass": false
+  }
+ },
+ "G6_pass": false
+}
