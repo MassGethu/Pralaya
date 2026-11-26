@@ -27,8 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 class DeltaForecaster:
     """Blend the unshocked rollout; add the raw model's shock response on top."""
 
-    def __init__(self, ckpt, blend: ClimBlend):
+    def __init__(self, ckpt, blend: ClimBlend, rain_qm=None):
         self._fc = Forecaster(ckpt)
+        self._rain_qm = rain_qm
         self.model_id = self._fc.model_id
         self.meta = self._fc.meta
         self._blend = blend
@@ -48,7 +49,17 @@ class DeltaForecaster:
         if perturbation is not None and np.any(perturbation):
             shocked = np.array(self._fc.simulate(init_states, doy_sincos, steps, perturbation), dtype=np.float64)
             out += shocked - base
-        return clip_forecast(out)
+        out = clip_forecast(out)
+        if self._rain_qm is not None:
+            self._rain_qm.apply(out)  # monotone map of rain values, output stays >= 0
+        return out
+
+
+def pin_tp(blend: ClimBlend) -> ClimBlend:
+    """Same blend with rain (tp) at model weight 1.0, i.e. rain left unblended (docs/RAIN_QM.md fallback)."""
+    alpha = blend.alpha.copy()
+    alpha[:, 1, :] = 1.0
+    return ClimBlend(blend.coefficients, alpha, blend.land, blend.persistence)
 
 
 def main(argv=None) -> int:
@@ -58,15 +69,24 @@ def main(argv=None) -> int:
     ap.add_argument("--split", default="val", choices=["val", "test"])
     ap.add_argument("--data", default=str(DEFAULT_NC))
     ap.add_argument("--out", required=True, type=Path)
+    ap.add_argument("--rain-qm", type=Path, help="rain quantile-mapping artifact from scripts.rain_qm")
+    ap.add_argument("--pin-tp", action="store_true", help="leave rain unblended (model weight 1.0)")
     a = ap.parse_args(argv)
     logging.getLogger("inference_adapter").setLevel(logging.ERROR)
     blend = ClimBlend.load_optional(a.blend)
     if blend is None:
         ap.error(f"blend artifact not found: {a.blend}")
-    E.Forecaster = lambda ckpt: DeltaForecaster(ckpt, blend)  # evaluate() builds its forecaster by name
+    if a.pin_tp:
+        blend = pin_tp(blend)
+    rain_qm = None
+    if a.rain_qm is not None:
+        from scripts.rain_qm import RainQM
+        rain_qm = RainQM.load(a.rain_qm)
+    E.Forecaster = lambda ckpt: DeltaForecaster(ckpt, blend, rain_qm)  # evaluate() builds its forecaster by name
     res = E.evaluate(a.ckpt, a.split, a.data)
     res["blend"] = str(a.blend)
-    res["method"] = "shock-preserving delta"
+    res["method"] = "shock-preserving delta" + (" + pinned tp" if a.pin_tp else "") + (" + rain QM" if rain_qm else "")
+    res["rain_qm"] = str(a.rain_qm) if a.rain_qm else None
     res["points"] = points(res)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(res, indent=1, default=float))
