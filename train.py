@@ -111,6 +111,9 @@ def main(argv=None) -> int:
     ap.add_argument("--grad-loss", type=float, default=0.0, help="weight of the spatial-gradient (structure) loss")
     ap.add_argument("--ms-levels", type=int, default=0, help="multi-scale branches (new modules start at zero)")
     ap.add_argument("--advect", action="store_true", help="wind-guided transport input (new module starts at zero)")
+    ap.add_argument("--arch", choices=["cnn", "unet"], default=None,
+                    help="network body: cnn (default, width/blocks) or unet (compact U-Net, experiment B2). "
+                         "With --init the checkpoint's own arch is used; a different --arch is an error")
     ap.add_argument("--init", default=None, help="checkpoint to fine-tune from")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="auto")
@@ -139,6 +142,10 @@ def main(argv=None) -> int:
         args.epochs = resume_state["epochs"]                 # the LR schedule is fixed by the original run length
     if args.init:
         ck = torch.load(args.init, map_location="cpu", weights_only=True)
+        ck_arch = ck["config"].get("arch", "cnn")
+        if args.arch is not None and args.arch != ck_arch:
+            raise SystemExit(f"--arch {args.arch} but --init {args.init} is arch {ck_arch}")
+        args.arch = ck_arch
         arch = {**ck["config"], **({"ms_levels": args.ms_levels} if args.ms_levels else {}),
                 **({"advect": True} if args.advect else {})}
         net = PralayaNet(ck["mean"], ck["std"], ck["static"], **arch)
@@ -148,8 +155,12 @@ def main(argv=None) -> int:
             raise SystemExit(f"--init {args.init}: state mismatch missing={missing} unexpected={unexpected}")
         mean, std = ck["mean"].numpy(), ck["std"].numpy()
     else:
-        net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks, ms_levels=args.ms_levels,
-                         advect=args.advect)
+        args.arch = args.arch or "cnn"
+        if args.arch == "unet":
+            net = PralayaNet(mean, std, arc.static, arch="unet", ms_levels=args.ms_levels, advect=args.advect)
+        else:
+            net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks, ms_levels=args.ms_levels,
+                             advect=args.advect)
     net = net.to(dev).train()
 
     data = torch.from_numpy(arc.data).to(dev)
@@ -166,7 +177,8 @@ def main(argv=None) -> int:
     cfg = {**vars(args), "device": str(dev), "splits": SPLITS, "train_windows": len(tr), "val_windows": len(va),
            "params": sum(p.numel() for p in net.parameters()), "norm_mean": mean.tolist(), "norm_std": std.tolist()}
     (out_dir / "config.json").write_text(json.dumps(cfg, indent=1))
-    log(f"start {args.name}: device={dev} train_windows={len(tr)} val_windows={len(va)} params={cfg['params']}")
+    log(f"start {args.name}: device={dev} arch={args.arch} {net.config} train_windows={len(tr)} "
+        f"val_windows={len(va)} params={cfg['params']}")
 
     opt = torch.optim.AdamW(net.parameters(), lr=args.lr, weight_decay=args.wd)
     steps_per_epoch = math.ceil(len(tr) / args.batch)

@@ -52,32 +52,78 @@ class ScaleBranch(nn.Module):
         return self.out(F.interpolate(z, size=h.shape[-2:], mode="bilinear", align_corners=False))
 
 
+UNET_WIDTHS = (48, 96, 128)          # channels on the 32x36, 16x18 and 8x9 grids (experiment B2)
+
+
+class UNetCore(nn.Module):
+    """Compact U-Net body: 32x36 -> 16x18 -> 8x9 and back up, with skip connections and replicate padding.
+
+    One residual block per level on the way down, one at the bottom, one per level on the way up. Downsampling is a
+    stride-2 3x3 conv; upsampling is bilinear, then a 1x1 conv fuses [upsampled, skip]. Returns full-grid features
+    with widths[0] channels; PralayaNet's zero-initialised head turns them into the residual.
+    """
+
+    def __init__(self, cin: int, widths=UNET_WIDTHS):
+        super().__init__()
+        c1, c2, c3 = widths
+        pad = dict(padding=1, padding_mode="replicate")
+        self.stem = nn.Conv2d(cin, c1, 3, **pad)
+        self.enc1 = ResBlock(c1)
+        self.down1 = nn.Conv2d(c1, c2, 3, stride=2, **pad)
+        self.enc2 = ResBlock(c2)
+        self.down2 = nn.Conv2d(c2, c3, 3, stride=2, **pad)
+        self.bottom = ResBlock(c3)
+        self.fuse2 = nn.Conv2d(c3 + c2, c2, 1)
+        self.dec2 = ResBlock(c2)
+        self.fuse1 = nn.Conv2d(c2 + c1, c1, 1)
+        self.dec1 = ResBlock(c1)
+
+    @staticmethod
+    def _up(z, like):
+        return F.interpolate(z, size=like.shape[-2:], mode="bilinear", align_corners=False)
+
+    def forward(self, x):
+        s1 = self.enc1(self.stem(x))                         # [B, c1, 32, 36]
+        s2 = self.enc2(self.down1(F.gelu(s1)))               # [B, c2, 16, 18]
+        z = self.bottom(self.down2(F.gelu(s2)))              # [B, c3, 8, 9]
+        d2 = self.dec2(self.fuse2(torch.cat([self._up(z, s2), s2], dim=1)))
+        return self.dec1(self.fuse1(torch.cat([self._up(d2, s1), s1], dim=1)))
+
+
 class PralayaNet(nn.Module):
     """next_state = last_state + learned residual (in normalised space), rain clamped non-negative.
 
-    Optional experiment switches (both off by default, so older checkpoints load unchanged):
+    Optional experiment switches (all off by default, so older checkpoints load unchanged):
+      arch="unet": the residual comes from a compact U-Net (UNetCore) instead of the full-grid CNN body. Written to
+        the config only when set, so a checkpoint without "arch" rebuilds the original CNN exactly.
       ms_levels > 0: multi-scale branches on 1/2, 1/4, ... grids added to the body output.
       advect: wind-guided transport. The last state is moved back along its own u10/v10 for one day
         (semi-Lagrangian, a learned speed scale per channel) and the advective tendency is a further input.
     """
 
-    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False):
+    def __init__(self, mean, std, static, width: int = 96, blocks: int = 5, ms_levels: int = 0, advect: bool = False,
+                 arch: str = "cnn", widths=UNET_WIDTHS):
         super().__init__()
+        if arch not in ("cnn", "unet"):
+            raise ValueError(f"unknown arch {arch!r}")
+        if arch == "unet":
+            if ms_levels or advect:
+                raise ValueError("arch='unet' does not combine with ms_levels or advect")
+            widths = [int(c) for c in widths]
+            self.config = {"arch": "unet", "widths": widths}
+            self._register_inputs(mean, std, static)
+            self.unet = UNetCore(T_IN * NC + self.geo.shape[0] + 2, widths)
+            self.head = nn.Conv2d(widths[0], NC, 3, padding=1, padding_mode="replicate")
+            nn.init.zeros_(self.head.weight)                                 # start exactly at persistence
+            nn.init.zeros_(self.head.bias)
+            return
         self.config = {"width": width, "blocks": blocks}
         if ms_levels:
             self.config["ms_levels"] = ms_levels
         if advect:
             self.config["advect"] = True
-        mean = torch.as_tensor(mean, dtype=torch.float32).view(1, NC, 1, 1)
-        std = torch.as_tensor(std, dtype=torch.float32).view(1, NC, 1, 1)
-        static = torch.as_tensor(static, dtype=torch.float32)               # [2, 32, 36] land_sea_mask, orography_m
-        lat = torch.linspace(-1, 1, NLAT).view(NLAT, 1).expand(NLAT, NLON)
-        lon = torch.linspace(-1, 1, NLON).view(1, NLON).expand(NLAT, NLON)
-        geo = torch.stack([static[0], static[1] / 1000.0, lat, lon])         # [4, 32, 36]
-        self.register_buffer("mean", mean)
-        self.register_buffer("std", std)
-        self.register_buffer("static", static)
-        self.register_buffer("geo", geo)
+        self._register_inputs(mean, std, static)
+        geo = self.geo
         cin = T_IN * NC + geo.shape[0] + 2
         self.stem = nn.Conv2d(cin, width, 3, padding=1, padding_mode="replicate")
         self.body = nn.Sequential(*[ResBlock(width) for _ in range(blocks)])
@@ -93,6 +139,19 @@ class PralayaNet(nn.Module):
             nn.init.zeros_(self.adv_stem.bias)
         nn.init.zeros_(self.head.bias)
 
+    def _register_inputs(self, mean, std, static) -> None:
+        """Normalisation constants and static geography as buffers, so a checkpoint is self-contained."""
+        mean = torch.as_tensor(mean, dtype=torch.float32).view(1, NC, 1, 1)
+        std = torch.as_tensor(std, dtype=torch.float32).view(1, NC, 1, 1)
+        static = torch.as_tensor(static, dtype=torch.float32)               # [2, 32, 36] land_sea_mask, orography_m
+        lat = torch.linspace(-1, 1, NLAT).view(NLAT, 1).expand(NLAT, NLON)
+        lon = torch.linspace(-1, 1, NLON).view(1, NLON).expand(NLAT, NLON)
+        geo = torch.stack([static[0], static[1] / 1000.0, lat, lon])         # [4, 32, 36]
+        self.register_buffer("mean", mean)
+        self.register_buffer("std", std)
+        self.register_buffer("static", static)
+        self.register_buffer("geo", geo)
+
     def normalise(self, x):
         return (x - self.mean) / self.std
 
@@ -102,6 +161,10 @@ class PralayaNet(nn.Module):
         xn = self.normalise(window.reshape(b * T_IN, NC, NLAT, NLON)).reshape(b, T_IN * NC, NLAT, NLON)
         cond = torch.cat([self.geo.unsqueeze(0).expand(b, -1, -1, -1),
                           sc_target.view(b, 2, 1, 1).expand(b, 2, NLAT, NLON)], dim=1)
+        if hasattr(self, "unet"):
+            nxt = xn[:, -NC:] + self.head(F.gelu(self.unet(torch.cat([xn, cond], dim=1))))
+            out = nxt * self.std + self.mean
+            return torch.cat([out[:, :TP], F.relu(out[:, TP:TP + 1]), out[:, TP + 1:]], dim=1)
         h0 = self.stem(torch.cat([xn, cond], dim=1))
         if hasattr(self, "adv_stem"):
             h0 = h0 + self.adv_stem(self.advect_tendency(window[:, -1], xn[:, -NC:]))
