@@ -10,7 +10,7 @@ Needs Node 20+.
 
 ```bash
 cd dashboard
-npm install
+npm ci
 npm run dev                # http://localhost:5317, proxies /api/* to http://127.0.0.1:8000
 ```
 
@@ -25,7 +25,7 @@ Start the scenario service in a separate terminal from the same repo root: `pyth
 
 The browser only talks to its own origin, so the official server needs no CORS change.
 
-After loading a history and running Prime on the trained server, open **Scenarios** in the drawer or **Scenario analysis** in the command palette. Draw a farm region or keep the current one, pick a rainfall target and day range, and run the search. The tab shows the lowest-cost qualifying shock, the ensemble's cumulative rainfall spread, and the average, worst, and per-scenario water shortfalls for the chosen supplements. **Replay as Branch** sends the winning physical delta through the forecast server and verifies the resulting rollout against the search result. The rainfall spread and crossing count describe the shocks tested. [Scenario contract](../docs/CONTRACTS.md#local-scenario-service)
+After loading a history and running Prime on the trained server, open **Scenarios** in the drawer or **Scenario analysis** in the command palette. Draw a farm region or keep the current one. Choose a deficit relative to Prime or a total rainfall threshold, set the day range, and run the search. The default search runs nine recommended shocks. **Include larger plausible shocks** expands it to 16 and labels magnitudes outside the recommended range. Under **Preparedness assumptions**, set the water target and two daily supplements. The tab reports the lowest-cost qualifying shock, the cumulative rainfall spread across the tested scenarios, and average, worst, and per-scenario water shortfalls. **Replay as Branch** sends the winning physical delta through the forecast server, checks the returned rollout, and opens Impact for the same days. [Scenario contract](../docs/CONTRACTS.md#local-scenario-service)
 
 ```bash
 npm test                   # unit tests: grid orientation, shock tensor, impact formulas, zero difference
@@ -51,7 +51,7 @@ Demo windows come from 2021, the held-out test year: no 2021 data trained the mo
 
 ## Demo flow
 
-The screen is a dark "command" map with three floating panels. On the left are the selectors (initial state, Prime, what to show, weather layer, display switches). On the right is the scenario card with Shock · Impact · Ripple tabs. Along the bottom, a dock holds one stop per forecast day, with its date and that day's ripple reach as a bar. The step tracker in the header (Load state → Run Prime → Pick a shock → Run Branch) is clickable, and the scenario card always says what to do next.
+The command bar guides Load state → Run Prime → Pick a shock → Run Branch. The left rail selects the weather layer and opens Setup. The right drawer has Shock, Impact, Ripple, Scenarios, and Setup tabs. The bottom timeline scrubs forecast days and displays ripple reach.
 
 1. **Load input JSON.** The panel shows the last input day, `doy_sincos`, and shape and unit checks. The dock labels the forecast days with real dates from the input's metadata.
 2. **Run Prime.** Sends `perturbation: null` with `steps: 10`.
@@ -60,6 +60,8 @@ The screen is a dark "command" map with three floating panels. On the left are t
 5. **Show:** Prime, Branch, Difference or Swipe (drag the divider, or press `[` / `]`). **Weather layer** picks the variable. Step through days with the dock (click, ← / →, or ▶).
 6. **Draw farm region** sets the agricultural region separately from the shock box. The Impact tab shows the headline cards, the cumulative rainfall chart (Absolute / Change) and all indicators. The Ripple tab shows reach per day and the initial shock at day 0.
 7. **Zero check** sends an all-zero tensor and reports the max |Branch − Prime| per channel against the contract tolerance (1e-3 × channel std).
+
+To reproduce the inverse-search demo, generate another input with `--last-day 2020-06-30`. After Prime, draw the coastal Odisha farm box (17°–23°N, 82°–88°E), choose **Total reaches threshold**, set **115 mm** over days **1–7**, and include larger plausible shocks. With `b3_roll4`, the +1.5 K Bay of Bengal shock moves seven-day rainfall from 105.64 to 115.12 mm. The result is labelled outside the recommended model range. Set a very high target such as 10,000 mm to exercise the no-match path. [Range evidence](../docs/SHOCK_RANGES.md)
 
 Display switches: **Wind flow** animates particles through the displayed day's own `u10`/`v10` (off by default when the system asks for reduced motion, and dimmed in the Difference view). **Terrain** shades land from the kit's `orography_m`. **Smooth display** interpolates values between cell centres for drawing only; hovering always reports the true 1° cell values.
 
@@ -95,4 +97,4 @@ For each forecast day: the share of cells outside the shock box where |Branch �
 
 ## Attribution
 
-Design references (patterns only, no assets): Tempest storm-map concept (dark command layout, layer panel, event card), kepler.gl (docked time histogram), earth.nullschool (wind particles), Ventusky (icon layer list, stepped rain legend, play control), Zoom Earth (shaded land, glass panels), Copernicus Interactive Climate Atlas (selector panel, labelled timeline) and Copernicus Climate Pulse (headline cards, coloured header, highlighted series over a dashed reference). Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. The dashboard needs no map tiles or other network assets.
+Design references (patterns only, no assets): Tempest storm-map concept (dark command layout, layer panel, event card), kepler.gl (docked time histogram), earth.nullschool (wind particles), Ventusky (icon layer list, stepped rain legend, play control), Zoom Earth (shaded land, glass panels), Copernicus Interactive Climate Atlas (selector panel, labelled timeline) and Copernicus Climate Pulse (headline cards, coloured header, highlighted series over a dashed reference). Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. Maps and forecasts use local assets and services. The dashboard requests Google Fonts for typography and uses system fallbacks when offline.

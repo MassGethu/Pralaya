@@ -77,7 +77,7 @@ For the release rehearsal, mount a clean checkout read-only in a CPU container w
 
 ## Local scenario service
 
-Run `python -m scripts.scenario_service --port 8001` from the repo root. `--bundle` can select the same staged bundle as the forecast server. The service listens on `127.0.0.1` in a separate process. For dashboard integration, proxy a same-origin `POST /scenario-api/scenarios` to `POST http://127.0.0.1:8001/scenarios`.
+Run `python -m scripts.scenario_service --port 8001` from the repo root. If staging a checkpoint, use the same `--bundle` directory for this service and the forecast server. Both Vite dev and preview proxy same-origin `POST /scenario-api/scenarios` to the service's `POST /scenarios` on `127.0.0.1:8001` by default. Override the scenario target with `PRALAYA_SCENARIO_URL`. The dashboard compares the returned regional Prime rainfall with its live Prime run and checks a winning shock's rollout when replayed. [Dashboard runbook](../dashboard/README.md)
 
 Send `init_states`, `doy_sincos` and `steps` in the official format. Include `impact_box` as `[south, north, west, east]` in degrees and `day_start` and `day_end` as inclusive 1-based leads. Supply exactly one threshold, either `deficit_mm` for a positive cumulative deficit relative to Prime or `rainfall_at_least_mm` for crossing a positive absolute rainfall total from below. `baseline_meets_threshold` identifies an absolute target already reached by Prime. Default horizon and days are 10 and 1–7, respectively. The chosen impact box must contain at least one land cell.
 

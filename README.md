@@ -46,11 +46,11 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5317`. The development proxy forwards API calls to `http://localhost:8000`. Use the [dashboard instructions](dashboard/README.md) to generate a local demo input and run Prime and Branch.
+Open `http://localhost:5317`. Vite forwards forecast calls to `http://127.0.0.1:8000`. Use the [dashboard instructions](dashboard/README.md) to generate a local demo input and run Prime and Branch.
 
 ## Run scenario analysis
 
-Start the local scenario service from the repository root with `python -m scripts.scenario_service --port 8001`. After running Prime on the trained server, open **Scenarios** in the dashboard drawer for inverse rainfall search, rainfall ensemble summaries, and agricultural water-shortfall comparisons. [Scenario API contract](docs/CONTRACTS.md#local-scenario-service)
+In a separate terminal from the repository root, run `python -m scripts.scenario_service --port 8001`. Use the same checkpoint bundle for both servers. After running Prime, open **Scenarios** in the dashboard drawer for inverse rainfall search, ensemble summaries, and agricultural water-shortfall comparisons. [Scenario API contract](docs/CONTRACTS.md#local-scenario-service)
 
 ## Data attribution
 
