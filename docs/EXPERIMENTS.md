@@ -292,3 +292,28 @@ val_score than the b3 starting point (0.4094).
   - day-1 heavy rain is unchanged.
 - **Conclusion:** a flat loss weight on wet cells trades many false alarms for a few extra heavy-rain hits. It does
   not beat e3.
+
+**`e3_rainstab`: passes rules 1–4 (seed 0).** It ran because b4 finished at 00:16, before 02:00. The best checkpoint
+has val_score 0.3999.
+- Rule 2: S 51.11 (ΔS +1.74 ≥ 1.0).
+- Rule 3: paired Δ skill +0.0055 [+0.0014, +0.0097].
+- Rule 4:
+  - stable 92.9 / 94.9 % vs 88.1 / 88.4 %;
+  - heavy-25 d1 CSI 0.365 vs 0.364;
+  - day-8 in band 0.885 vs 0.897 (−0.012, within 0.02).
+
+| vs e3 | S | paired Δ [CI] | stable warm / stall | CSI 25 d1 / d8 | POD 25 d1 / d8 | CSI 50 d1 / d8 | POD 50 d1 / d8 | day-8 tp var ratio | day-8 in band |
+|---|---|---|---|---|---|---|---|---|---|
+| e3_roll8_ocean | 49.37 | – | 88.1 / 88.4 | 0.364 / 0.080 | 0.478 / 0.106 | 0.235 / 0.002 | 0.289 / 0.003 | 0.72 | 0.897 |
+| e3_rainstab | 51.11 | +0.0055 [+0.0014, +0.0097] | 92.9 / 94.9 | 0.365 / 0.078 | 0.477 / 0.095 | 0.236 / 0.009 | 0.285 / 0.009 | 0.61 | 0.885 |
+
+- **Where the gain comes from:**
+  - The causal part: shocked forecasts stay stable much more often (+4.8 / +6.5 pp).
+  - Slightly better late-lead skill: day 8 −0.015 vs −0.029; tp day 8 −0.03 vs −0.06.
+- **Cost:**
+  - Heavy rain gets rarer at longer leads: 25 mm/day frequency bias at day 8 is 0.31 vs 0.43, and POD falls 0.106 → 0.095.
+  - The day-8 tp field is smoother (variance ratio 0.61 vs 0.72), but still inside the kit band.
+- **Status:** a candidate, not yet promoted.
+  - The winner is the highest S among runs passing 1–4, decided once b2_unet and b5_transport report (03:00).
+  - If e3_rainstab wins, rule 5 needs its 3-seed mean ≥ 50.49, with
+    `--init runs/b3_roll4_s{1,2}/best.pt --seed {1,2}`, run one after another (about 28 min each).
