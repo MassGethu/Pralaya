@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PRALAYA · Multiverse Studio</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div id="fixture-banner" class="fixture-banner" hidden>
+      DEVELOPMENT FIXTURE ACTIVE — synthetic data and/or toy engine, not the trained model. Do not use for the demo.
+    </div>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">PRALAYA</span>
+        <span class="brand-sub">Multiverse Studio · Track 2</span>
+      </div>
+      <div class="status-row">
+        <span id="engine-pill" class="pill" data-state="unknown">Checking server…</span>
+        <span id="input-pill" class="pill" data-state="idle">No initial state</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="rail">
+        <section class="step" id="step-input">
+          <h2><span class="step-n">1</span>Initial state</h2>
+          <p class="hint">Three consecutive days, oldest first, physical units. JSON with <code>init_states</code> [3,6,32,36] and <code>doy_sincos</code>.</p>
+          <div class="btn-row">
+            <label class="btn btn-primary file-btn">Load input JSON<input id="file-input" type="file" accept=".json,application/json" /></label>
+          </div>
+          <div id="input-info" class="info"></div>
+        </section>
+
+        <section class="step" id="step-prime">
+          <h2><span class="step-n">2</span>Timeline Prime</h2>
+          <p class="hint"><code>perturbation: null</code>, <span id="steps-label">10</span> forecast days.</p>
+          <button id="run-prime" class="btn btn-primary" disabled>Run Prime</button>
+          <div id="prime-info" class="info"></div>
+        </section>
+
+        <section class="step" id="step-shock">
+          <h2><span class="step-n">3</span>Localized shock</h2>
+          <div class="seg" role="radiogroup" aria-label="Map brush target">
+            <button class="seg-btn" data-brush="shock" aria-pressed="true">Draw shock box</button>
+            <button class="seg-btn" data-brush="impact" aria-pressed="false">Draw impact region</button>
+          </div>
+          <p class="hint">Drag on any map. Box selects cells whose centres fall inside.</p>
+          <div class="grid4">
+            <label>Lat min<input id="shock-lat0" type="number" step="1" /></label>
+            <label>Lat max<input id="shock-lat1" type="number" step="1" /></label>
+            <label>Lon min<input id="shock-lon0" type="number" step="1" /></label>
+            <label>Lon max<input id="shock-lon1" type="number" step="1" /></label>
+          </div>
+          <div id="components"></div>
+          <div class="btn-row">
+            <button id="add-comp" class="btn btn-quiet">+ Variable</button>
+            <select id="preset" class="btn btn-quiet" aria-label="Contract presets">
+              <option value="">Presets…</option>
+            </select>
+          </div>
+          <div id="shock-preview" class="preview"></div>
+          <div class="btn-row sticky-actions">
+            <button id="run-branch" class="btn btn-shock" disabled>Run Branch</button>
+            <button id="zero-check" class="btn btn-quiet" disabled title="Send an all-zero perturbation and compare with Prime">Zero-shock check</button>
+            <button id="reset-shock" class="btn btn-quiet">Reset</button>
+          </div>
+          <div id="branch-info" class="info"></div>
+        </section>
+
+        <details class="step dev">
+          <summary>Developer fixture</summary>
+          <p class="hint">For UI work while the trained server is down. Explicit only — server errors never switch to it.</p>
+          <div class="btn-row">
+            <button id="load-fixture" class="btn btn-quiet">Load synthetic input</button>
+          </div>
+          <label class="check"><input id="fixture-engine" type="checkbox" /> Use toy fixture engine instead of the server</label>
+        </details>
+      </aside>
+
+      <main class="stage">
+        <div class="toolbar">
+          <div id="var-seg" class="seg" role="radiogroup" aria-label="Weather variable"></div>
+        </div>
+
+        <div class="day-ctl">
+          <span class="day-label" id="day-label">Forecast day</span>
+          <button id="day-play" class="btn btn-icon btn-play" aria-label="Play forecast days" aria-pressed="false">▶</button>
+          <button id="day-prev" class="btn btn-icon" aria-label="Previous day">‹</button>
+          <div id="day-strip" class="day-strip" role="radiogroup" aria-labelledby="day-label"></div>
+          <button id="day-next" class="btn btn-icon" aria-label="Next day">›</button>
+          <output id="day-out" class="mono day-out">Day 1</output>
+        </div>
+
+        <div id="scenario-line" class="scenario-line"></div>
+        <div id="outcome" class="outcome" hidden></div>
+
+        <div class="maps">
+          <figure class="map map-hero">
+            <figcaption><span class="cap-title">Branch − Prime</span><span id="cap-diff" class="cap-meta"></span></figcaption>
+            <canvas id="map-diff"></canvas>
+            <div id="legend-diff" class="legend"></div>
+          </figure>
+          <div class="map-stack">
+            <figure class="map">
+              <figcaption><span class="cap-title">Timeline Prime</span><span id="cap-prime" class="cap-meta"></span></figcaption>
+              <canvas id="map-prime"></canvas>
+            </figure>
+            <figure class="map">
+              <figcaption><span class="cap-title">Branch</span><span id="cap-branch" class="cap-meta"></span></figcaption>
+              <canvas id="map-branch"></canvas>
+            </figure>
+            <div id="legend-abs" class="legend"></div>
+          </div>
+        </div>
+
+        <div class="lower">
+          <section class="panel" id="panel-shock">
+            <h3>Initial shock · day 0</h3>
+            <p class="hint">The delta added once to the last input day. Not a forecast.</p>
+            <canvas id="map-shock"></canvas>
+            <div id="legend-shock" class="legend"></div>
+          </section>
+
+          <section class="panel" id="panel-ripple">
+            <h3>Ripple reach</h3>
+            <p class="hint" id="ripple-hint"></p>
+            <svg id="ripple-chart" viewBox="0 0 300 120" role="img" aria-label="Ripple reach by day"></svg>
+          </section>
+
+          <section class="panel panel-agri" id="panel-agri">
+            <div class="agri-head">
+              <div>
+                <h3>Agricultural weather stress</h3>
+                <p class="source" id="agri-source">Data: live /simulate rollouts · regional land mean</p>
+              </div>
+              <div class="seg seg-sm" role="radiogroup" aria-label="Chart mode">
+                <button class="seg-btn" data-agri-mode="abs" aria-pressed="true">Absolute</button>
+                <button class="seg-btn" data-agri-mode="change" aria-pressed="false">Change vs Prime</button>
+              </div>
+            </div>
+            <div class="agri-params">
+              <label>Days<input id="agri-d0" type="number" min="1" max="10" value="1" /></label>
+              <label>to<input id="agri-d1" type="number" min="1" max="10" value="7" /></label>
+              <label>Dry day &lt;<input id="agri-dry" type="number" min="0" step="0.5" value="2.5" /> mm/day</label>
+              <label>Heavy ≥<input id="agri-heavy" type="number" min="1" step="1" value="10" /> mm/day</label>
+            </div>
+            <div id="agri-region" class="hint"></div>
+            <div id="agri-out"></div>
+            <svg id="agri-chart" viewBox="0 0 440 170" role="img" aria-label="Cumulative regional rainfall, Prime vs Branch"></svg>
+            <details class="method">
+              <summary>Method</summary>
+              <p>Region = impact box ∩ land cells (kit <code>land_sea_mask</code> ≥ 0.5). Regional daily rainfall = cos(latitude)-weighted mean of <code>tp</code> over those cells. Cumulative rainfall = sum of those daily means over the selected days. A dry day is a day whose regional mean is below the dry threshold; the longest dry spell is the longest run of dry days. Heavy-rain exposure = share of (cell, day) pairs with <code>tp</code> at or above the heavy threshold. Temperature is the regional mean of the daily-mean 2 m temperature.</p>
+              <p>Both timelines use the same region, days and thresholds. Changes are relative to Timeline Prime, not to a seasonal normal. These are weather-stress indicators from a coarse 1° daily model; they are not crop yield, loss or drought declarations.</p>
+            </details>
+          </section>
+        </div>
+      </main>
+    </div>
+    <div id="tooltip" class="tooltip" hidden></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
