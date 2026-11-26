@@ -84,3 +84,24 @@ used for promotion.
   checks day-1 CSI at 25 mm/day.
 - **Spatial variance is healthy.** Day-8 variance ratio is 0.85–1.01 for every channel (kit band 0.4–2.5), and
   90 % of windows are in band.
+
+### First results (val; full table `evaluation/results/compare_val.md`)
+| id | S (Δ vs b3) | paired Δ skill vs b3 [CI] | stable warm / stall | verdict |
+|---|---|---|---|---|
+| c0_cont4 (control) | 44.14 (−1.78) | −0.0035 [−0.0087, +0.0015] | 77.4 % / 84.5 % | not promoted |
+| b4_roll8 | 47.11 (+1.19) | +0.0059 [−0.0002, +0.0136] | 87.0 % / 92.1 % | not promoted (rule 3: CI lower bound −0.0002) |
+| e1_ocean | 44.87 (−1.05) | −0.0004 [−0.0051, +0.0045] | 78.0 % / 84.5 % | not promoted |
+
+- **Attribution against the control:**
+  - Continuing K=4 training at low lr *hurts*. Shock stability drops by 8 and 5 pp, and S drops by 1.8.
+  - **K=8** reverses this. It gains +3.0 S over the control, with days 5–10 better by +0.01 to +0.04 and both
+    shocks more stable than b3.
+  - **The ocean weight** fixes what it targets. Ocean t2m skill goes from −0.069 to **+0.011** at day 1, −0.247 to
+    −0.115 at day 4, and −0.579 to −0.361 at day 8; the Bay of Bengal box at day 8 goes from −0.575 to −0.376.
+    Other channels are unchanged.
+  - Its stability loss equals the control's, so that loss comes from the extra K=4 training, not from the weight.
+
+### Pre-registered follow-up (written before it ran): `e3_roll8_ocean`
+K=8 and ocean t2m weight 4 together: `--rollout 4` → `--rollout 8`, plus `--ocean-t2m-weight 4`. Same base, lr
+and epochs. These are the two changes that each improved their target. It is a new candidate under the same
+promotion rule.
