@@ -47,7 +47,7 @@ It needs `numpy`, `xarray` and `netCDF4`. The output is `{"init_states": [3,6,32
 2. **Run Prime.** Sends `perturbation: null` with `steps: 10`.
 3. **Shock.** Drag a box on any map (with **Draw shock box** selected) or type latitude and longitude. Pick variables, each as an additive physical delta or as a percent of the final input day. Presets reproduce the contract's warm Bay of Bengal and weaker Arabian Sea wind shocks. The preview table shows the exact Δ per channel before you send it.
 4. **Run Branch.** Sends the same input, `doy_sincos` and `steps` as Prime, plus the `[6,32,36]` delta. The delta is non-zero only in the selected cells and channels.
-5. Read **Branch − Prime** using the day strip (click a day, or use ← / →). The amber bar under each day shows that day's ripple reach, scaled to the largest day; the tooltip gives the absolute share. The outcome ribbon above the maps links the shock, the selected day's reach and the farm-region rainfall change. **Initial shock · day 0** shows the delta itself, kept separate from the forecast.
+5. Read **Branch − Prime** using the day strip (click a day, or use ← / →). The amber bar under each day shows that day's ripple reach, scaled to the largest day; the tooltip gives the absolute share. ▶ plays through the days (any manual day change stops it). The outcome ribbon above the maps links the shock, the selected day's reach and the farm-region rainfall change. **Initial shock · day 0** shows the delta itself, kept separate from the forecast.
 6. **Draw impact region** sets a separate agricultural region, for example a shock over the ocean with impact read over land.
 7. **Zero-shock check** sends an all-zero tensor and reports the max |Branch − Prime| per channel against the contract tolerance (1e-3 × channel std).
 
@@ -57,7 +57,7 @@ It needs `numpy`, `xarray` and `netCDF4`. The output is `{"init_states": [3,6,32
 - Channels: `t2m` K, `tp` mm/day, `u10` and `v10` m/s, `msl` Pa, `tcwv` kg/m². Conversions happen only for display: °C, and hPa for pressure. Wind speed is derived per timeline from `u10` and `v10` before differencing.
 - Boxes select cells whose centres fall inside them, the same rule as the kit's `box_mask`.
 - A negative rain shock is capped so the shocked state stays at or above 0 mm/day.
-- Prime and Branch share one absolute colour scale (1st–99th percentile over both timelines and all days). The difference uses a zero-centred diverging scale, fixed across days.
+- Rainfall maps use fixed classes (0, 0.1, 0.5, 1, 2, 5, 10, 20, 50 mm/day) with a stepped legend, as on operational rain maps; 10 mm/day is the contract's heavy-rain level. Other variables share one continuous absolute scale across Prime and Branch (1st–99th percentile over both timelines and all days). The difference uses a zero-centred diverging scale, fixed across days.
 - Race safety: each run has a run number. A late response from a superseded request is dropped. Loading a new input or switching engine clears all results. Editing the shock after a run flags the maps as showing the earlier Branch.
 
 ## Agricultural weather-stress indicators (`src/impact.ts`)
@@ -73,10 +73,12 @@ All indicators use the same region, days and thresholds for both timelines:
 
 These are weather-stress indicators that compare two simulated timelines. A change relative to Timeline Prime is not a climatological deficit, and none of these numbers is a crop yield, a loss estimate or a drought declaration. The 1° daily grid cannot resolve farm-scale conditions.
 
+The panel chart shows cumulative regional rainfall with Branch highlighted over a dashed Prime reference ("Absolute"), or Branch − Prime cumulative ("Change vs Prime"), with a callout on the selected forecast day and dry-day marks per timeline.
+
 ## Ripple reach (`src/ripple.ts`)
 
 For each forecast day: the share of cells outside the shock box where |Branch − Prime| exceeds a variable-specific threshold. Thresholds: rain 1 mm/day, temperature 0.5 K, wind 0.5 m/s, pressure 0.5 hPa, moisture 1 kg/m². It describes the model's response, not physical causation, and it is not an official score.
 
 ## Attribution
 
-Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. The dashboard needs no map tiles or other network assets.
+Design references (patterns only, no assets): Ventusky (classed rain legend, timeline play control) and Copernicus Climate Pulse (highlighted series over a dashed reference, selected-point callout, absolute/anomaly toggle). Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. The dashboard needs no map tiles or other network assets.

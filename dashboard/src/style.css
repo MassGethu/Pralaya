@@ -196,6 +196,17 @@ svg .thresh { stroke: var(--ink-3); stroke-dasharray: 3 3; }
 svg .bar { fill: #3a4a5a; }
 svg .bar-on { fill: var(--shock); }
 svg .bar-prime { fill: #5b7a99; }
+svg .grid { stroke: var(--rule); }
+svg .ln-ref { fill: none; stroke: #8796a6; stroke-width: 1.5; stroke-dasharray: 4 3; }
+svg .ln-main { fill: none; stroke: var(--shock); stroke-width: 2.25; stroke-linejoin: round; }
+svg .pt-main { fill: var(--shock); }
+svg .pt-focus { fill: var(--night); stroke: var(--shock); stroke-width: 2; }
+svg .cursor { stroke: var(--rule-strong); }
+svg .callout { fill: var(--ink); font: 600 11.5px var(--sans); paint-order: stroke; stroke: var(--deck); stroke-width: 4px; }
+svg .area-neg { fill: rgba(215, 154, 82, 0.18); }
+svg .area-pos { fill: rgba(63, 193, 176, 0.18); }
+svg .dry-prime { fill: #8796a6; }
+svg .dry-branch { fill: var(--shock); }
 svg .bar-branch { fill: var(--shock); }
 svg .svg-tick { fill: var(--ink-3); font: 10.5px var(--mono); }
 svg .svg-empty { fill: var(--ink-4); font: 11px var(--sans); }
@@ -223,7 +234,21 @@ svg .lg-branch { fill: var(--shock); }
   .pulse { animation: none; }
   .day-stop, .day-bar i { transition: none; }
 }
-#agri-chart { max-height: 170px; }
+#agri-chart { max-height: 220px; }
+.agri-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.source { color: var(--ink-3); font-size: 12px; margin: 2px 0 0; }
+.seg-sm .seg-btn { padding: 5px 9px; font-size: 12px; }
+.seg-btn { display: inline-flex; align-items: center; gap: 6px; }
+.vi { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.seg-btn[data-var="tp"] .vi { fill: currentColor; stroke: none; }
+.btn-play { color: var(--monsoon); font-size: 13px; }
+.btn-play[aria-pressed="true"] { background: var(--deck-raised); box-shadow: 0 0 0 1px var(--rule-strong); }
+.legend-steps { display: grid; grid-template-columns: repeat(9, 1fr); gap: 1px; }
+.step-cell { display: grid; gap: 3px; }
+.step-cell i { display: block; height: 10px; box-shadow: 0 0 0 1px var(--rule); }
+.step-cell:first-child i { border-radius: 3px 0 0 3px; }
+.step-cell:last-child i { border-radius: 0 3px 3px 0; }
+.step-cell span { color: var(--ink-2); font-size: 11px; }
 #ripple-chart { max-height: 150px; }
 @media (max-width: 600px) {
   .day-label, .day-out { display: none; }

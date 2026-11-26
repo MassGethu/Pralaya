@@ -31,6 +31,25 @@ export interface Scale {
   hi: number;
   color: (v: number) => RGB;
   gradient: string; // CSS gradient for the legend
+  classes?: { lo: number; color: RGB }[]; // set for classed (stepped) scales
+}
+
+/**
+ * Classed daily-rainfall scale (mm/day), stepped like operational rain maps so values read directly off the colour.
+ * 10 mm/day is the contract's heavy-rain level and is where the palette turns from blue-green to yellow.
+ */
+const RAIN_CLASSES: [number, string][] = [
+  [0, "#151c24"], [0.1, "#1d3443"], [0.5, "#1f5068"], [1, "#1f6f86"], [2, "#2a9aa8"],
+  [5, "#5fc4a8"], [10, "#b5dd7a"], [20, "#f2c14e"], [50, "#ef6a50"],
+];
+export function classedRainScale(): Scale {
+  const classes = RAIN_CLASSES.map(([lo, c]) => ({ lo, color: hex(c) }));
+  return {
+    kind: "seq", lo: 0, hi: 50,
+    color: (x) => { let c = classes[0].color; for (const k of classes) if (x >= k.lo) c = k.color; return c; },
+    gradient: "",
+    classes,
+  };
 }
 
 const css = (c: RGB) => `rgb(${c.map(Math.round).join(",")})`;

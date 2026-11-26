@@ -85,6 +85,7 @@
 
         <div class="day-ctl">
           <span class="day-label" id="day-label">Forecast day</span>
+          <button id="day-play" class="btn btn-icon btn-play" aria-label="Play forecast days" aria-pressed="false">▶</button>
           <button id="day-prev" class="btn btn-icon" aria-label="Previous day">‹</button>
           <div id="day-strip" class="day-strip" role="radiogroup" aria-labelledby="day-label"></div>
           <button id="day-next" class="btn btn-icon" aria-label="Next day">›</button>
@@ -128,7 +129,16 @@
           </section>
 
           <section class="panel panel-agri" id="panel-agri">
-            <h3>Agricultural weather stress</h3>
+            <div class="agri-head">
+              <div>
+                <h3>Agricultural weather stress</h3>
+                <p class="source" id="agri-source">Data: live /simulate rollouts · regional land mean</p>
+              </div>
+              <div class="seg seg-sm" role="radiogroup" aria-label="Chart mode">
+                <button class="seg-btn" data-agri-mode="abs" aria-pressed="true">Absolute</button>
+                <button class="seg-btn" data-agri-mode="change" aria-pressed="false">Change vs Prime</button>
+              </div>
+            </div>
             <div class="agri-params">
               <label>Days<input id="agri-d0" type="number" min="1" max="10" value="1" /></label>
               <label>to<input id="agri-d1" type="number" min="1" max="10" value="7" /></label>
@@ -137,7 +147,7 @@
             </div>
             <div id="agri-region" class="hint"></div>
             <div id="agri-out"></div>
-            <svg id="agri-chart" viewBox="0 0 420 130" role="img" aria-label="Regional daily rainfall, Prime vs Branch"></svg>
+            <svg id="agri-chart" viewBox="0 0 440 170" role="img" aria-label="Cumulative regional rainfall, Prime vs Branch"></svg>
             <details class="method">
               <summary>Method</summary>
               <p>Region = impact box ∩ land cells (kit <code>land_sea_mask</code> ≥ 0.5). Regional daily rainfall = cos(latitude)-weighted mean of <code>tp</code> over those cells. Cumulative rainfall = sum of those daily means over the selected days. A dry day is a day whose regional mean is below the dry threshold; the longest dry spell is the longest run of dry days. Heavy-rain exposure = share of (cell, day) pairs with <code>tp</code> at or above the heavy threshold. Temperature is the regional mean of the daily-mean 2 m temperature.</p>
