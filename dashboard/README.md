@@ -47,7 +47,7 @@ It needs `numpy`, `xarray` and `netCDF4`. The output is `{"init_states": [3,6,32
 2. **Run Prime.** Sends `perturbation: null` with `steps: 10`.
 3. **Shock.** Drag a box on any map (with **Draw shock box** selected) or type latitude and longitude. Pick variables, each as an additive physical delta or as a percent of the final input day. Presets reproduce the contract's warm Bay of Bengal and weaker Arabian Sea wind shocks. The preview table shows the exact Δ per channel before you send it.
 4. **Run Branch.** Sends the same input, `doy_sincos` and `steps` as Prime, plus the `[6,32,36]` delta. The delta is non-zero only in the selected cells and channels.
-5. Read **Branch − Prime** on the day slider. **Initial shock · day 0** shows the delta itself, kept separate from the forecast.
+5. Read **Branch − Prime** using the day strip (click a day, or use ← / →). The amber bar under each day shows that day's ripple reach, scaled to the largest day; the tooltip gives the absolute share. The outcome ribbon above the maps links the shock, the selected day's reach and the farm-region rainfall change. **Initial shock · day 0** shows the delta itself, kept separate from the forecast.
 6. **Draw impact region** sets a separate agricultural region, for example a shock over the ocean with impact read over land.
 7. **Zero-shock check** sends an all-zero tensor and reports the max |Branch − Prime| per channel against the contract tolerance (1e-3 × channel std).
 

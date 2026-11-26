@@ -159,11 +159,24 @@ function setupControls() {
     b.addEventListener("click", () => { S.view = v.id; renderAll(); });
     seg.append(b);
   }
-  $<HTMLInputElement>("day").addEventListener("input", (e) => {
-    S.day = Number((e.target as HTMLInputElement).value);
-    renderAll();
+  const step = (d: number) => {
+    const steps = S.prime?.rollout.steps ?? S.steps;
+    const next = Math.min(steps, Math.max(1, S.day + d));
+    if (next !== S.day) { S.day = next; renderAll(); }
+  };
+  $("day-prev").addEventListener("click", () => step(-1));
+  $("day-next").addEventListener("click", () => step(1));
+  $("day-strip").addEventListener("click", (e) => {
+    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-day]");
+    if (b) { S.day = Number(b.dataset.day); renderAll(); }
   });
-  for (const id of ["agri-d0", "agri-d1", "agri-dry", "agri-heavy"]) $(id).addEventListener("input", renderAgri);
+  // ← / → step through forecast days unless the user is typing in a field.
+  document.addEventListener("keydown", (e) => {
+    if ((e.target as HTMLElement).closest("input, select, textarea")) return;
+    if (e.key === "ArrowLeft") { step(-1); e.preventDefault(); }
+    if (e.key === "ArrowRight") { step(1); e.preventDefault(); }
+  });
+  for (const id of ["agri-d0", "agri-d1", "agri-dry", "agri-heavy"]) $(id).addEventListener("input", () => { renderAgri(); renderOutcome(); });
 }
 
 async function onFile(e: Event) {
@@ -274,6 +287,7 @@ async function runBranch(zero: boolean) {
       rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter,
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
+    flash(document.querySelector(".map-hero"));
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
     S.branchErr = (e as Error).message;
@@ -476,10 +490,9 @@ function renderButtons() {
 function renderToolbar() {
   document.querySelectorAll<HTMLButtonElement>("#var-seg .seg-btn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.var === S.view)));
   const steps = S.prime?.rollout.steps ?? S.steps;
-  const day = $<HTMLInputElement>("day");
-  day.max = String(steps);
-  day.value = String(S.day);
+  renderDayStrip(steps);
   $("day-out").textContent = `Day ${S.day} of ${steps}`;
+  renderOutcome();
 
   const line = $("scenario-line");
   if (!S.branch) {
@@ -494,6 +507,75 @@ function renderToolbar() {
   line.innerHTML = `<span class="tag">Branch #${b.runNo}</span><span>${title}</span>${
     b.spec ? `<span class="mono">${b.spec.components.map((c) => `${c.channel} ${c.mode === "add" ? signed(c.value, 2) + " " + CHANNEL_INFO[c.channel].unit : signed(c.value, 0) + " %"}`).join(" · ")}</span>` : ""
   }${stale ? `<span class="warn">Shock edited since this run — maps show Branch #${b.runNo}. Run Branch to update.</span>` : ""}`;
+}
+
+/** Ripple reach per day for the active view, or null when there is no non-zero Branch. */
+function rippleSeries(): number[] | null {
+  const diffs = diffFields();
+  if (!diffs || !S.branch || S.branch.zero) return null;
+  return cached(`ripple`, () => {
+    const out = outsideMask(S.branch!.spec!.box);
+    return diffs.map((d) => rippleFraction(d, out, RIPPLE_THRESHOLDS[S.view]));
+  });
+}
+
+function renderDayStrip(steps: number) {
+  const strip = $("day-strip");
+  const ripple = rippleSeries();
+  if (strip.childElementCount !== steps) {
+    strip.replaceChildren();
+    for (let d = 1; d <= steps; d++) {
+      const b = document.createElement("button");
+      b.className = "day-stop";
+      b.dataset.day = String(d);
+      b.setAttribute("role", "radio");
+      b.innerHTML = `<span class="day-n">${d}</span><span class="day-bar"><i></i></span>`;
+      strip.append(b);
+    }
+  }
+  strip.querySelectorAll<HTMLButtonElement>(".day-stop").forEach((b) => {
+    const d = Number(b.dataset.day);
+    b.setAttribute("aria-checked", String(d === S.day));
+    b.tabIndex = d === S.day ? 0 : -1;
+    const v = ripple ? ripple[d - 1] : 0;
+    // Bars are relative to the largest day so the trend is visible; the tooltip gives the absolute share.
+    const peak = ripple ? Math.max(...ripple) : 0;
+    b.querySelector<HTMLElement>(".day-bar i")!.style.transform = `scaleX(${peak > 0 ? v / peak : 0})`;
+    b.title = ripple ? `Day ${d}: ripple reach ${(v * 100).toFixed(1)} % of cells outside the shock box (bar relative to the largest day)` : `Forecast day ${d}`;
+  });
+  $<HTMLButtonElement>("day-prev").disabled = S.day <= 1;
+  $<HTMLButtonElement>("day-next").disabled = S.day >= steps;
+}
+
+function currentImpact(): ImpactResult | null {
+  if (!comparable()) return null;
+  const num = (id: string) => Number($<HTMLInputElement>(id).value);
+  return computeImpact(S.prime!.rollout, S.branch!.rollout, {
+    regionMask: boxMask(S.impactBox), landFraction: S.land,
+    dayStart: num("agri-d0"), dayEnd: num("agri-d1"), dryThreshold: num("agri-dry"), heavyThreshold: num("agri-heavy"),
+  });
+}
+
+/** Signature ribbon: shock → reach on the selected day → farm-region outcome, all from the same two rollouts. */
+function renderOutcome() {
+  const el = $("outcome");
+  const diffs = diffFields();
+  if (!diffs || !S.branch || S.branch.zero) { el.hidden = true; return; }
+  el.hidden = false;
+  const vi = varInfo();
+  const ripple = rippleSeries();
+  const reach = ripple ? ripple[S.day - 1] : 0;
+  const peak = maxAbs(diffs[S.day - 1]);
+  const imp = currentImpact();
+  const farm = !imp || imp.empty
+    ? `<span class="hint">${escapeHtml(imp?.empty ? imp.reason : "—")}</span>`
+    : `<b class="mono ${imp.rainChangeMm < 0 ? "neg" : imp.rainChangeMm > 0 ? "pos" : ""}">${signed(imp.rainChangeMm, 1)} mm</b><span>rain, days ${imp.days[0]}–${imp.days[imp.days.length - 1]} · dry spell ${signed(imp.drySpellChange, 0)} d</span>`;
+  el.innerHTML = `
+    <div class="oc oc-shock"><span class="oc-k">Shock</span><span>${escapeHtml(S.branch.spec!.label)}</span></div>
+    <div class="oc-arrow" aria-hidden="true">→</div>
+    <div class="oc"><span class="oc-k">Day ${S.day} reach</span><b class="mono">${(reach * 100).toFixed(0)} %</b><span>of cells outside the box · peak |Δ| ${fmt(peak, 2)} ${escapeHtml(vi.deltaUnit)}</span></div>
+    <div class="oc-arrow" aria-hidden="true">→</div>
+    <div class="oc oc-farm"><span class="oc-k">Farm region vs Prime</span>${farm}</div>`;
 }
 
 function renderMaps() {
@@ -540,9 +622,15 @@ function renderMaps() {
 
 function legend(el: HTMLElement, sc: Scale | null, unit: string, note: string) {
   if (!sc) { el.innerHTML = ""; return; }
-  const mid = sc.kind === "div" ? "0" : fmt((sc.lo + sc.hi) / 2, 1);
+  // Five evenly spaced ticks so values can be read off the bar (zero is the middle tick on diverging scales).
+  const span = sc.hi - sc.lo;
+  const digits = Math.abs(span) < 2 ? 2 : Math.abs(span) < 20 ? 1 : 0;
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => {
+    const v = sc.lo + t * span;
+    return sc.kind === "div" ? (t === 0.5 ? "0" : signed(v, digits)) : fmt(v, digits);
+  });
   el.innerHTML = `<div class="legend-bar" style="background:${sc.gradient}"></div>
-    <div class="legend-ticks mono"><span>${sc.kind === "div" ? signed(sc.lo, 2) : fmt(sc.lo, 1)}</span><span>${mid}</span><span>${sc.kind === "div" ? signed(sc.hi, 2) : fmt(sc.hi, 1)}</span></div>
+    <div class="legend-ticks mono">${ticks.map((t) => `<span>${t}</span>`).join("")}</div>
     <div class="legend-note">${escapeHtml(unit)}${note ? ` · ${escapeHtml(note)}` : ""}</div>`;
 }
 
@@ -596,10 +684,7 @@ function renderAgri() {
     return;
   }
   const num = (id: string) => Number($<HTMLInputElement>(id).value);
-  const res: ImpactResult = computeImpact(S.prime!.rollout, S.branch!.rollout, {
-    regionMask: boxMask(S.impactBox), landFraction: S.land,
-    dayStart: num("agri-d0"), dayEnd: num("agri-d1"), dryThreshold: num("agri-dry"), heavyThreshold: num("agri-heavy"),
-  });
+  const res = currentImpact()!;
   if (res.empty) {
     out.innerHTML = `<p class="err">${escapeHtml(res.reason)}</p>`;
     chart.innerHTML = "";
@@ -636,6 +721,14 @@ function renderAgri() {
   });
   s += `<text x="${W - 4}" y="12" text-anchor="end" class="svg-tick">regional mean mm/day · <tspan class="lg-prime">■ Prime</tspan> <tspan class="lg-branch">■ Branch</tspan> · dashed = dry threshold</text>`;
   chart.innerHTML = s;
+}
+
+/** One short highlight when a new Branch lands: the peak moment of the demo. */
+function flash(el: Element | null) {
+  if (!el) return;
+  el.classList.remove("fresh");
+  void (el as HTMLElement).offsetWidth; // restart the animation
+  el.classList.add("fresh");
 }
 
 function escapeHtml(s: string): string {

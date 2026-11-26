@@ -60,7 +60,7 @@
             </select>
           </div>
           <div id="shock-preview" class="preview"></div>
-          <div class="btn-row">
+          <div class="btn-row sticky-actions">
             <button id="run-branch" class="btn btn-shock" disabled>Run Branch</button>
             <button id="zero-check" class="btn btn-quiet" disabled title="Send an all-zero perturbation and compare with Prime">Zero-shock check</button>
             <button id="reset-shock" class="btn btn-quiet">Reset</button>
@@ -81,14 +81,18 @@
       <main class="stage">
         <div class="toolbar">
           <div id="var-seg" class="seg" role="radiogroup" aria-label="Weather variable"></div>
-          <div class="day-ctl">
-            <label for="day">Forecast day</label>
-            <input id="day" type="range" min="1" max="10" step="1" value="1" />
-            <output id="day-out" class="mono">Day 1</output>
-          </div>
+        </div>
+
+        <div class="day-ctl">
+          <span class="day-label" id="day-label">Forecast day</span>
+          <button id="day-prev" class="btn btn-icon" aria-label="Previous day">‹</button>
+          <div id="day-strip" class="day-strip" role="radiogroup" aria-labelledby="day-label"></div>
+          <button id="day-next" class="btn btn-icon" aria-label="Next day">›</button>
+          <output id="day-out" class="mono day-out">Day 1</output>
         </div>
 
         <div id="scenario-line" class="scenario-line"></div>
+        <div id="outcome" class="outcome" hidden></div>
 
         <div class="maps">
           <figure class="map map-hero">

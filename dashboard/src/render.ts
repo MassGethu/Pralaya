@@ -66,9 +66,11 @@ export interface Overlays {
   hoverCell?: number | null;
 }
 
+export interface City { name: string; lat: number; lon: number; labelLeft?: boolean; labelBelow?: boolean }
+
 export interface GeoContext {
   land: Float32Array;
-  cities: { name: string; lat: number; lon: number }[];
+  cities: City[];
 }
 
 const PAD = { l: 30, r: 6, t: 6, b: 20 };
@@ -155,7 +157,7 @@ export class MapView {
       g.strokeRect(this.x(c) + 0.75, this.y(r) + 0.75, k - 1.5, k - 1.5);
     }
     if (!field && emptyText) {
-      g.fillStyle = "rgba(220,228,236,0.55)"; g.font = "500 12px ui-sans-serif, -apple-system, sans-serif"; g.textAlign = "center";
+      g.fillStyle = "rgba(220,228,236,0.72)"; g.font = "500 13px ui-sans-serif, -apple-system, sans-serif"; g.textAlign = "center";
       g.fillText(emptyText, PAD.l + (NLON * k) / 2, PAD.t + (NLAT * k) / 2);
     }
   }
@@ -176,7 +178,7 @@ export class MapView {
 
   private drawGraticule() {
     const g = this.ctx, k = this.cell;
-    g.font = "10px ui-monospace, SFMono-Regular, Menlo, monospace"; g.fillStyle = "rgba(200,210,220,0.6)";
+    g.font = "11px ui-monospace, SFMono-Regular, Menlo, monospace"; g.fillStyle = "rgba(200,210,220,0.7)";
     g.strokeStyle = "rgba(255,255,255,0.07)"; g.lineWidth = 1;
     // cell edges are at integer degrees: lat edge e sits at bottom of row (e - 6)
     for (let lat = 10; lat <= 35; lat += 5) {
@@ -193,13 +195,17 @@ export class MapView {
 
   private drawCities() {
     const g = this.ctx, k = this.cell;
-    g.font = "10px ui-sans-serif, -apple-system, sans-serif"; g.textAlign = "left";
+    g.font = "500 11px ui-sans-serif, -apple-system, sans-serif";
     for (const city of this.geo.cities) {
       const xx = PAD.l + (city.lon - (LON0 - 0.5)) * k;
       const yy = PAD.t + (NLAT - (city.lat - (LAT0 - 0.5))) * k;
       g.fillStyle = "#0b0f14"; g.beginPath(); g.arc(xx, yy, 3, 0, Math.PI * 2); g.fill();
       g.fillStyle = "#eef2f6"; g.beginPath(); g.arc(xx, yy, 1.8, 0, Math.PI * 2); g.fill();
-      if (k >= 11) { g.fillStyle = "rgba(238,242,246,0.85)"; g.fillText(city.name, xx + 4, yy - 3); }
+      if (k >= 11) {
+        g.fillStyle = "rgba(238,242,246,0.88)";
+        g.textAlign = city.labelLeft ? "right" : "left";
+        g.fillText(city.name, xx + (city.labelLeft ? -5 : 5), yy + (city.labelBelow ? 11 : -4));
+      }
     }
   }
 
@@ -212,12 +218,13 @@ export class MapView {
   }
 }
 
-export const CITIES = [
+// Bengaluru and Chennai sit ~1 cell apart: their labels go to opposite sides so they never collide.
+export const CITIES: City[] = [
   { name: "Delhi", lat: 28.61, lon: 77.21 },
   { name: "Mumbai", lat: 19.08, lon: 72.88 },
   { name: "Kolkata", lat: 22.57, lon: 88.36 },
-  { name: "Chennai", lat: 13.08, lon: 80.27 },
-  { name: "Bengaluru", lat: 12.97, lon: 77.59 },
+  { name: "Chennai", lat: 13.08, lon: 80.27, labelBelow: true },
+  { name: "Bengaluru", lat: 12.97, lon: 77.59, labelLeft: true, labelBelow: true },
 ];
 
 export const landFrom = (lsm: number[][]): Float32Array => {
