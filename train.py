@@ -101,6 +101,9 @@ def main(argv=None) -> int:
     ap.add_argument("--width", type=int, default=96)
     ap.add_argument("--blocks", type=int, default=5)
     ap.add_argument("--rain-weight", type=float, default=1.0, help="loss weight of the tp channel")
+    ap.add_argument("--heavy-rain-weight", type=float, default=1.0,
+                    help="multiplies the tp loss where the observed target rain >= --heavy-rain-thresh")
+    ap.add_argument("--heavy-rain-thresh", type=float, default=10.0, help="mm/day (the kit's rain threshold)")
     ap.add_argument("--ocean-t2m-weight", type=float, default=1.0, help="loss weight of t2m on ocean cells (lsm < 0.5)")
     ap.add_argument("--stab-weight", type=float, default=0.0,
                     help="weight of the shock-response hinge penalty (random kit-like shocks; 0 = off)")
@@ -180,13 +183,18 @@ def main(argv=None) -> int:
     log(f"epoch {start_ep - 1} val_score={v0['val_score']:.4f} (rmse_norm lead1/4/8 mean over ch: "
         f"{[round(float(np.mean(r)), 4) for r in v0['rmse_norm']]})")
     for ep in range(start_ep, args.epochs + 1):
-        t0 = time.time(); tot = 0.0
+        t0 = time.time(); tot = 0.0; stab_tot = 0.0
         perm = tr[torch.randperm(len(tr), device=dev)]
         for chunk in torch.split(perm, args.batch):
             x, y, sc = batch(data, sc_all, chunk, args.rollout)
             out = net.rollout(x, sc, args.rollout)
             d = (out - y) / net.std.view(1, 1, NC, 1, 1)
-            loss = ((d ** 2) * w.unsqueeze(1) * cw).mean()
+            if args.heavy_rain_weight != 1.0:
+                hw = torch.ones_like(d)
+                hw[:, :, 1] = torch.where(y[:, :, 1] >= args.heavy_rain_thresh, args.heavy_rain_weight, 1.0)
+                loss = ((d ** 2) * w.unsqueeze(1) * cw * hw).mean()
+            else:
+                loss = ((d ** 2) * w.unsqueeze(1) * cw).mean()
             if args.grad_loss:
                 gx, gy = d[..., :, 1:] - d[..., :, :-1], d[..., 1:, :] - d[..., :-1, :]
                 loss = loss + args.grad_loss * 0.5 * ((gx ** 2 * w.unsqueeze(1) * cw[..., :, 1:]).mean() + (gy ** 2 * w.unsqueeze(1)[..., 1:, :] * cw[..., 1:, :]).mean())
@@ -194,14 +202,16 @@ def main(argv=None) -> int:
                 xs, m = random_shocks(x, gen)
                 resp = (net.rollout(xs, sc, args.rollout) - out) / net.std.view(1, 1, NC, 1, 1)
                 hinge = torch.relu(resp.abs() - args.stab_tau) ** 2
-                loss = loss + args.stab_weight * hinge.sum() / (len(chunk) * args.rollout * SHOCK_BOX_CELLS ** 2)
+                stab = args.stab_weight * hinge.sum() / (len(chunk) * args.rollout * SHOCK_BOX_CELLS ** 2)
+                stab_tot += float(stab.detach()) * len(chunk)
+                loss = loss + stab
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
             opt.step(); sched.step()
             tot += float(loss.detach()) * len(chunk)
         v = validate(net, data, sc_all, va, w, dev)
-        rec = {"epoch": ep, "train_loss": tot / len(tr), **v, "sec": round(time.time() - t0, 1), "lr": sched.get_last_lr()[0]}
+        rec = {"epoch": ep, "train_loss": tot / len(tr), "stab_loss": stab_tot / len(tr), **v, "sec": round(time.time() - t0, 1), "lr": sched.get_last_lr()[0]}
         with open(out_dir / "log.jsonl", "a") as f:
             f.write(json.dumps(rec) + "\n")
         save_ckpt(out_dir / "last.pt", net, {**meta, "epoch": ep, "val_score": v["val_score"]})
@@ -211,7 +221,7 @@ def main(argv=None) -> int:
             save_ckpt(out_dir / "best.pt", net, {**meta, "epoch": ep, "val_score": best})
         torch.save({"opt": opt.state_dict(), "sched": sched.state_dict(), "epoch": ep, "best": best,
                     "epochs": args.epochs, "rng": torch.get_rng_state()}, out_dir / "resume.pt")
-        log(f"epoch {ep}/{args.epochs} loss={rec['train_loss']:.4f} val_score={v['val_score']:.4f} "
+        log(f"epoch {ep}/{args.epochs} loss={rec['train_loss']:.4f} stab={rec['stab_loss']:.4f} val_score={v['val_score']:.4f} "
             f"lead1/4/8={[round(float(np.mean(r)), 4) for r in v['rmse_norm']]} {rec['sec']}s{tag}")
     log(f"done best val_score={best:.4f} -> {out_dir / 'best.pt'}")
     return 0

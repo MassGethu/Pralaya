@@ -215,3 +215,59 @@ the worst windows, the first negative lead by region and channel, and the shock 
   - 42 of 354 windows exceed 5 std for warm_ocean, and 41 for monsoon_stall (b3: 51 and 37). All are rain inside
     the box.
   - The stall shock is 1.1 pp less stable than b3 (allowed: 2 pp).
+
+---
+## Round 2: pre-registration (written 2026-11-27 00:10 IST, before any of these runs was trained)
+Baseline to beat: **`e3_roll8_ocean`**, shipped on main `08958a8`. Seed 0, val 2020 only, one change each. No
+tuning on val, and no inner-holdout retrain. `model/bundle` is not touched and nothing is pushed to main.
+
+### Earlier plan hypotheses, re-labelled
+- `h1_multiscale` (old B2) and `h3_transport` (old B5) were **weak attempts**. The new layers started at zero, got
+  12 epochs at lr 1e-4 and barely trained (output-layer norms 0.13 and 0.18). Their nulls do not test the ideas.
+- Round 2 retests both fairly (b2_unet, b5_transport), with full training from scratch.
+
+### Runs
+| id | Mac / branch | recipe | change |
+|---|---|---|---|
+| `b4_heavyrain` | Jarvis / `jarvis/model` | e3's exact recipe: `--init runs/b3_roll4/best.pt --rollout 8 --lr 1e-4 --epochs 12 --ocean-t2m-weight 4 --seed 0` | `--heavy-rain-weight 4`: tp squared error ×4 where observed rain ≥ 10 mm/day (`--heavy-rain-thresh 10`, the kit's rain threshold). Applied at every rollout step, not renormalised. No gradient loss |
+| `b5_transport` | Hridhin / `hridhin/b5-transport` | full chain from scratch with `--advect`: `b5_transport_b1` (40 ep, K=1, lr 1e-3) → `b5_transport_b3` (12 ep, K=4, lr 3e-4) → `b5_transport` (12 ep, K=8, lr 1e-4, `--ocean-t2m-weight 4`) | wind-guided transport input (B5) |
+| `b2_unet` | Mass / `mass/b2-unet` | compact U-Net through the same chain: `b2_unet_b1` → `b2_unet_b3` → `b2_unet` | U-Net architecture (B2) |
+| `e3_rainstab` (conditional) | Jarvis / `jarvis/model` | e3's exact recipe + `--stab-weight 1` (tau 3, the e2 setting) | rain-stability hinge on top of e3 |
+
+- **`b2_unet` specification:**
+  - Grid: 32×36 → 16×18 → 8×9, with skip connections.
+  - Parameters within ±20 % of the width-96 / 5-block CNN (856,422), so 685k–1,028k.
+  - Output head initialised at zero, so the untrained net equals persistence.
+  - Same inputs, residual output and rain ReLU as `PralayaNet`.
+  - Fair B2 vs B1: `b2_unet_b1` is compared with `b1_onestep` on val. This is reported, not used for promotion.
+- **`e3_rainstab` is run only if `b4_heavyrain` finishes before 02:00 IST.** Otherwise it is recorded as "not run
+  (time)". The setting is fixed here.
+- **Why heavy-rain weight 4:**
+  - In e3 at 25 mm/day, the frequency bias is 0.79 at day 1, and the shipped model forecasts too few heavy-rain
+    days by day 8.
+  - Plain MSE pulls wet cells toward the conditional mean.
+  - The value 4 matches the ocean t2m weight that worked in round 1. It is chosen here and not tuned.
+
+### Promotion rule (round-1 rules restated against e3)
+1. Passes every SELECTION gate.
+2. S ≥ S(e3) + 1.0 = **50.37**.
+3. The paired per-window skill difference vs e3 has a 95 % CI lower bound > 0.
+4. No harm vs e3:
+   - both stable fractions not lower by more than 2 pp;
+   - heavy-rain 25 mm/day day-1 CSI not lower by more than 10 % relative;
+   - day-8 in-band fraction not lower by more than 0.02.
+5. Seeds: the 3-seed mean S ≥ e3's 3-seed mean (49.49) + 1.0 = **50.49**.
+   - Fine-tune candidates (b4, e3_rainstab) use `--init runs/b3_roll4_s{1,2}/best.pt --seed {1,2}`.
+   - From-scratch candidates (b2, b5) rerun their whole chain with `--seed {1,2}`.
+
+- At most one winner: the highest S among runs passing 1–4. Only that run gets seeds.
+- If no run wins, e3 ships unchanged.
+- Compared with `python -m evaluation.compare --base e3_roll8_ocean --out compare_<id>_vs_e3 <id>`.
+- Reported vs e3: S; the paired CI; stable %; heavy-rain CSI and POD at 25 and 50 mm/day on days 1 and 8; day-8
+  in-band fraction.
+
+### Cutoffs (IST; submission 10:00)
+- 00:15: this pre-registration is pushed.
+- 03:00: seed-0 results for all runs are pushed.
+- 05:30: seeds s1 and s2 for the single winner, run one after another.
+- Anything late or failing is "not promoted", with one line on why.
