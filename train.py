@@ -46,6 +46,27 @@ def save_ckpt(path: Path, net: PralayaNet, meta: dict) -> None:
                 "std": net.std.view(-1).cpu(), "static": net.static.cpu(), "meta": meta}, path)
 
 
+SHOCK_BOX_CELLS = 13                  # kit shock boxes span 12 degrees = 13 cell centres
+
+
+def random_shocks(x: torch.Tensor, gen: torch.Generator) -> tuple[torch.Tensor, torch.Tensor]:
+    """Kit-like shocks at random positions on the last input day (physical units), one per sample.
+    Warm/moist (t2m +1..3 K, tcwv +5..15 %) or weak wind (u10, v10 -20..40 %), 13 x 13 cell box. Returns (x', mask)."""
+    b, dev = x.shape[0], x.device
+    r = lambda lo, hi: lo + (hi - lo) * torch.rand(b, generator=gen, device="cpu").to(dev).view(b, 1, 1)
+    i0 = torch.randint(0, x.shape[-2] - SHOCK_BOX_CELLS + 1, (b,), generator=gen).to(dev).view(b, 1, 1)
+    j0 = torch.randint(0, x.shape[-1] - SHOCK_BOX_CELLS + 1, (b,), generator=gen).to(dev).view(b, 1, 1)
+    ii = torch.arange(x.shape[-2], device=dev).view(1, -1, 1); jj = torch.arange(x.shape[-1], device=dev).view(1, 1, -1)
+    m = ((ii >= i0) & (ii < i0 + SHOCK_BOX_CELLS) & (jj >= j0) & (jj < j0 + SHOCK_BOX_CELLS)).float()   # [B,32,36]
+    warm = (torch.rand(b, generator=gen) < 0.5).to(dev).float().view(b, 1, 1)
+    last = x[:, -1].clone()
+    last[:, 0] += m * warm * r(1.0, 3.0)
+    last[:, 5] *= 1 + m * warm * r(0.05, 0.15)
+    cut = 1 - m * (1 - warm) * r(0.2, 0.4)
+    last[:, 2] *= cut; last[:, 3] *= cut
+    return torch.cat([x[:, :-1], last.unsqueeze(1)], dim=1), m
+
+
 def batch(data: torch.Tensor, sc_all: torch.Tensor, idx: torch.Tensor, k: int):
     """inputs days i..i+2, targets i+3..i+2+k, sin/cos of the last input day i+2."""
     offs = torch.arange(3 + k, device=data.device)
@@ -80,6 +101,13 @@ def main(argv=None) -> int:
     ap.add_argument("--width", type=int, default=96)
     ap.add_argument("--blocks", type=int, default=5)
     ap.add_argument("--rain-weight", type=float, default=1.0, help="loss weight of the tp channel")
+    ap.add_argument("--ocean-t2m-weight", type=float, default=1.0, help="loss weight of t2m on ocean cells (lsm < 0.5)")
+    ap.add_argument("--stab-weight", type=float, default=0.0,
+                    help="weight of the shock-response hinge penalty (random kit-like shocks; 0 = off)")
+    ap.add_argument("--stab-tau", type=float, default=3.0, help="response (in std) allowed before the hinge penalty starts")
+    ap.add_argument("--grad-loss", type=float, default=0.0, help="weight of the spatial-gradient (structure) loss")
+    ap.add_argument("--ms-levels", type=int, default=0, help="multi-scale branches (new modules start at zero)")
+    ap.add_argument("--advect", action="store_true", help="wind-guided transport input (new module starts at zero)")
     ap.add_argument("--init", default=None, help="checkpoint to fine-tune from")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--device", default="auto")
@@ -108,11 +136,17 @@ def main(argv=None) -> int:
         args.epochs = resume_state["epochs"]                 # the LR schedule is fixed by the original run length
     if args.init:
         ck = torch.load(args.init, map_location="cpu", weights_only=True)
-        net = PralayaNet(ck["mean"], ck["std"], ck["static"], **ck["config"])
-        net.load_state_dict(ck["state_dict"])
+        arch = {**ck["config"], **({"ms_levels": args.ms_levels} if args.ms_levels else {}),
+                **({"advect": True} if args.advect else {})}
+        net = PralayaNet(ck["mean"], ck["std"], ck["static"], **arch)
+        missing, unexpected = net.load_state_dict(ck["state_dict"], strict=False)
+        new = ("branches.", "adv_stem.", "adv_speed", "cos_lat")
+        if unexpected or any(not k.startswith(new) for k in missing):
+            raise SystemExit(f"--init {args.init}: state mismatch missing={missing} unexpected={unexpected}")
         mean, std = ck["mean"].numpy(), ck["std"].numpy()
     else:
-        net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks)
+        net = PralayaNet(mean, std, arc.static, width=args.width, blocks=args.blocks, ms_levels=args.ms_levels,
+                         advect=args.advect)
     net = net.to(dev).train()
 
     data = torch.from_numpy(arc.data).to(dev)
@@ -120,7 +154,11 @@ def main(argv=None) -> int:
     tr = torch.from_numpy(window_starts(arc.dates, "train", args.rollout)).to(dev)
     va = torch.from_numpy(window_starts(arc.dates, "val", VAL_STEPS, args.val_stride)).to(dev)
     w = lat_w(arc.lat, dev)
-    cw = torch.ones(NC, device=dev); cw[1] = args.rain_weight; cw = (cw / cw.mean()).view(1, 1, NC, 1, 1)
+    cw = torch.ones(NC, device=dev); cw[1] = args.rain_weight
+    cw = cw.view(1, 1, NC, 1, 1).expand(1, 1, NC, *arc.static.shape[-2:]).clone()
+    cw[0, 0, 0][torch.from_numpy(arc.static[0] < 0.5).to(dev)] *= args.ocean_t2m_weight
+    cw = cw / cw.mean()                                      # [1,1,6,32,36], mean 1
+    gen = torch.Generator().manual_seed(args.seed)
 
     cfg = {**vars(args), "device": str(dev), "splits": SPLITS, "train_windows": len(tr), "val_windows": len(va),
            "params": sum(p.numel() for p in net.parameters()), "norm_mean": mean.tolist(), "norm_std": std.tolist()}
@@ -149,6 +187,14 @@ def main(argv=None) -> int:
             out = net.rollout(x, sc, args.rollout)
             d = (out - y) / net.std.view(1, 1, NC, 1, 1)
             loss = ((d ** 2) * w.unsqueeze(1) * cw).mean()
+            if args.grad_loss:
+                gx, gy = d[..., :, 1:] - d[..., :, :-1], d[..., 1:, :] - d[..., :-1, :]
+                loss = loss + args.grad_loss * 0.5 * ((gx ** 2 * w.unsqueeze(1) * cw[..., :, 1:]).mean() + (gy ** 2 * w.unsqueeze(1)[..., 1:, :] * cw[..., 1:, :]).mean())
+            if args.stab_weight:
+                xs, m = random_shocks(x, gen)
+                resp = (net.rollout(xs, sc, args.rollout) - out) / net.std.view(1, 1, NC, 1, 1)
+                hinge = torch.relu(resp.abs() - args.stab_tau) ** 2
+                loss = loss + args.stab_weight * hinge.sum() / (len(chunk) * args.rollout * SHOCK_BOX_CELLS ** 2)
             opt.zero_grad(set_to_none=True)
             loss.backward()
             torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
