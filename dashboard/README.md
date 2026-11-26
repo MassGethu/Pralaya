@@ -47,13 +47,15 @@ Demo windows come from 2021, the held-out test year: no 2021 data trained the mo
 
 ## Demo flow
 
-1. **Load input JSON.** The panel shows the last input day, `doy_sincos`, and shape and unit checks.
-2. **Run Prime.** Sends `perturbation: null` with `steps: 10`.
-3. **Shock.** Drag a box on any map (with **Draw shock box** selected) or type latitude and longitude. Pick variables, each as an additive physical delta or as a percent of the final input day. Presets reproduce the contract's warm Bay of Bengal and weaker Arabian Sea wind shocks. The preview table shows the exact Δ per channel before you send it.
-4. **Run Branch.** Sends the same input, `doy_sincos` and `steps` as Prime, plus the `[6,32,36]` delta. The delta is non-zero only in the selected cells and channels.
-5. Read **Branch − Prime** using the day strip (click a day, or use ← / →). The amber bar under each day shows that day's ripple reach, scaled to the largest day; the tooltip gives the absolute share. ▶ plays through the days (any manual day change stops it). The outcome ribbon above the maps links the shock, the selected day's reach and the farm-region rainfall change. **Initial shock · day 0** shows the delta itself, kept separate from the forecast.
-6. **Draw impact region** sets a separate agricultural region, for example a shock over the ocean with impact read over land.
-7. **Zero-shock check** sends an all-zero tensor and reports the max |Branch − Prime| per channel against the contract tolerance (1e-3 × channel std).
+The screen has three parts: the scenario steps on the left, one large map in the middle, and the farm impact on the right. The step tracker in the header and the amber hint at the top left always say what to do next.
+
+1. **Load input JSON.** The card shows the last input day, `doy_sincos`, and shape and unit checks.
+2. **Run Prime.** Sends `perturbation: null` with `steps: 10`. The map shows Timeline Prime.
+3. **Pick a shock.** Start from a preset, or drag a box on the map with **Draw shock box** selected (exact latitude/longitude is under "Edit box"). Choose variables as an additive physical delta or a percent of the final input day. The preview table shows the exact Δ per channel before you send it.
+4. **Run Branch.** Sends the same input, `doy_sincos` and `steps` as Prime plus the `[6,32,36]` delta, which is non-zero only in the selected cells and channels. The map switches to **Difference** (Branch − Prime) and briefly rings amber.
+5. Compare with the view switch above the map: **Prime**, **Swipe** (drag the divider, or press `[` / `]`), **Branch** or **Difference**. The variable rail on the right changes the weather variable. The timeline at the bottom steps through the days (click, ← / →, or ▶ to play); the amber bar under each day is that day's ripple reach, scaled to the largest day.
+6. **Draw farm region** sets the agricultural region separately from the shock box (for example, shock the ocean and read rain over land). The right column shows the headline cards, the cumulative rainfall chart (Absolute / Change), all indicators, ripple reach, and the initial shock at day 0.
+7. **Zero check** sends an all-zero tensor and reports the max |Branch − Prime| per channel against the contract tolerance (1e-3 × channel std).
 
 ## Conventions
 
@@ -61,6 +63,7 @@ Demo windows come from 2021, the held-out test year: no 2021 data trained the mo
 - Channels: `t2m` K, `tp` mm/day, `u10` and `v10` m/s, `msl` Pa, `tcwv` kg/m². Conversions happen only for display: °C, and hPa for pressure. Wind speed is derived per timeline from `u10` and `v10` before differencing.
 - Boxes select cells whose centres fall inside them, the same rule as the kit's `box_mask`.
 - A negative rain shock is capped so the shocked state stays at or above 0 mm/day.
+- The coastline is the 0.5 contour of the kit's `land_sea_mask` (marching squares), drawn from the repo's static fields; no map tiles or downloads.
 - Rainfall maps use fixed classes (0, 0.1, 0.5, 1, 2, 5, 10, 20, 50 mm/day) with a stepped legend, as on operational rain maps; 10 mm/day is the contract's heavy-rain level. Other variables share one continuous absolute scale across Prime and Branch (1st–99th percentile over both timelines and all days). The difference uses a zero-centred diverging scale, fixed across days.
 - Race safety: each run has a run number. A late response from a superseded request is dropped. Loading a new input or switching engine clears all results. Editing the shock after a run flags the maps as showing the earlier Branch.
 
@@ -85,4 +88,4 @@ For each forecast day: the share of cells outside the shock box where |Branch �
 
 ## Attribution
 
-Design references (patterns only, no assets): Ventusky (classed rain legend, timeline play control) and Copernicus Climate Pulse (highlighted series over a dashed reference, selected-point callout, absolute/anomaly toggle). Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. The dashboard needs no map tiles or other network assets.
+Design references (patterns only, no assets): Ventusky (map-first layout, floating layer rail, classed rain legend, timeline play control), NASA Worldview (A/B swipe comparison), Zoom Earth (glass panels) and Copernicus Climate Pulse (headline cards, highlighted series over a dashed reference, selected-point callout, absolute/anomaly toggle). Static fields derive from the official kit's `india_climate_train.nc`: modified ERA5 (Copernicus Climate Change Service, Hersbach et al. 2020), CC BY 4.0, via WeatherBench 2. City markers use public coordinates. The dashboard needs no map tiles or other network assets.

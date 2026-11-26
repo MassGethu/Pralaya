@@ -179,3 +179,22 @@ describe("agricultural indicators", () => {
 
 // keep NLAT referenced for clarity of the orientation tests
 void NLAT;
+
+describe("coastline contour", () => {
+  it("traces the 0.5 land contour halfway between a land column and a sea column", async () => {
+    const { coastline } = await import("../src/render");
+    const land = new Float32Array(NCELL);
+    for (let r = 0; r < NLAT; r++) for (let c = 0; c < 10; c++) land[r * NLON + c] = 1; // columns 0..9 land
+    const segs = coastline(land);
+    expect(segs.length).toBe(NLAT - 1); // one segment per row gap
+    for (const [c0, , c1] of segs) {
+      expect(c0).toBeCloseTo(9.5, 9);
+      expect(c1).toBeCloseTo(9.5, 9);
+    }
+  });
+
+  it("gives no coastline for an all-sea grid", async () => {
+    const { coastline } = await import("../src/render");
+    expect(coastline(new Float32Array(NCELL))).toHaveLength(0);
+  });
+});

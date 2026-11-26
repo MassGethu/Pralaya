@@ -7,7 +7,9 @@ import { type ViewVar, VIEW_VARS, difference, displayField, maxAbs, sharedRange 
 import { fixtureSimulate, syntheticInput } from "./fixture";
 import { type ImpactResult, computeImpact } from "./impact";
 import { type Box, boxCellCount, boxFromDegrees, boxMask, clampBox, describeBox } from "./region";
-import { CITIES, MapView, type Scale, classedRainScale, divergingScale, landFrom, sequentialScale } from "./render";
+import { type AgriMode, agriChartSvg, legendHtml, rippleChartSvg } from "./charts";
+import { escapeHtml, fmt, signed } from "./format";
+import { CITIES, type MapContent, MapView, type Scale, classedRainScale, divergingScale, landFrom, sequentialScale } from "./render";
 import { RIPPLE_THRESHOLDS, outsideMask, rippleFraction } from "./ripple";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
@@ -17,8 +19,6 @@ interface PrimeRun { rollout: Rollout; inputId: string; engine: Engine; ms: numb
 interface BranchRun extends PrimeRun { spec: ShockSpec | null; specKey: string; delta: Float32Array; zero: boolean }
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const fmt = (v: number, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : "—");
-const signed = (v: number, d = 2) => (v > 0 ? "+" : v < 0 ? "−" : "±") + Math.abs(v).toFixed(d);
 const engineLabel = (e: Engine) => (e.kind === "live" ? `LIVE · ${e.model}` : "FIXTURE ENGINE");
 const sameEngine = (a: Engine, b: Engine) => a.kind === b.kind && (a.kind === "fixture" || (b.kind === "live" && a.model === b.model));
 
@@ -44,12 +44,15 @@ const S = {
   brush: "shock" as "shock" | "impact",
   draft: null as Box | null,
   view: "tp" as ViewVar,
+  mapView: "prime" as MapMode,
+  split: 0.5,
   day: 1,
   hover: null as number | null,
   fixtureEngine: false,
   health: null as Health | null,
 };
 
+type MapMode = "prime" | "swipe" | "branch" | "diff";
 const specKey = (s: ShockSpec) => JSON.stringify({ b: s.box, c: s.components });
 
 // ---------------- boot ----------------
@@ -75,32 +78,32 @@ function showFatal(msg: string) {
 }
 
 // ---------------- maps ----------------
-let mapDiff: MapView, mapPrime: MapView, mapBranch: MapView, mapShock: MapView;
+let mapMain: MapView, mapShock: MapView;
 
 function setupMaps() {
   const geo = { land: S.land, cities: CITIES };
-  mapDiff = new MapView($("map-diff"), 15, geo, true);
-  mapPrime = new MapView($("map-prime"), 8, geo, true);
-  mapBranch = new MapView($("map-branch"), 8, geo, true);
-  mapShock = new MapView($("map-shock"), 7, geo, false);
-  for (const m of [mapDiff, mapPrime, mapBranch]) {
-    m.onHover = (cell, ev) => {
-      S.hover = cell;
-      renderMaps();
-      renderTooltip(ev);
-    };
-    m.onBox = (b, final) => {
-      const box = clampBox(b);
-      if (!final) {
-        S.draft = box;
-      } else {
-        S.draft = null;
-        if (S.brush === "shock") S.shock = { ...S.shock, box, label: "Custom shock" };
-        else S.impactBox = box;
-      }
-      renderAll();
-    };
-  }
+  mapMain = new MapView($("map-main"), geo, true);
+  mapShock = new MapView($("map-shock"), geo, false, 6);
+  mapMain.onHover = (cell, ev) => {
+    S.hover = cell;
+    renderMaps();
+    renderTooltip(ev);
+  };
+  mapMain.onSplit = (split) => {
+    S.split = split;
+    renderMaps();
+  };
+  mapMain.onBox = (b, final) => {
+    const box = clampBox(b);
+    if (!final) {
+      S.draft = box;
+    } else {
+      S.draft = null;
+      if (S.brush === "shock") S.shock = { ...S.shock, box, label: "Custom shock" };
+      else S.impactBox = box;
+    }
+    renderAll();
+  };
 }
 
 // ---------------- controls ----------------
@@ -159,6 +162,9 @@ function setupControls() {
     b.addEventListener("click", () => { S.view = v.id; renderAll(); });
     seg.append(b);
   }
+  document.querySelectorAll<HTMLButtonElement>("#view-seg [data-view]").forEach((b) =>
+    b.addEventListener("click", () => { S.mapView = b.dataset.view as MapMode; renderAll(); }),
+  );
   const step = (d: number) => {
     const steps = S.prime?.rollout.steps ?? S.steps;
     const next = Math.min(steps, Math.max(1, S.day + d));
@@ -172,11 +178,17 @@ function setupControls() {
     if (b) { stopPlay(); S.day = Number(b.dataset.day); renderAll(); }
   });
   document.querySelectorAll<HTMLButtonElement>("[data-agri-mode]").forEach((b) =>
-    b.addEventListener("click", () => { agriMode = b.dataset.agriMode as "abs" | "change"; renderAgri(); }),
+    b.addEventListener("click", () => { agriMode = b.dataset.agriMode as AgriMode; renderAgri(); }),
   );
   // ← / → step through forecast days unless the user is typing in a field.
   document.addEventListener("keydown", (e) => {
     if ((e.target as HTMLElement).closest("input, select, textarea")) return;
+    // [ and ] move the swipe divider, so the comparison works without a mouse too.
+    if (S.mapView === "swipe" && (e.key === "[" || e.key === "]")) {
+      S.split = Math.min(1, Math.max(0, S.split + (e.key === "]" ? 0.05 : -0.05)));
+      renderMaps();
+      e.preventDefault();
+    }
     if (e.key === "ArrowLeft") { stopPlay(); step(-1); e.preventDefault(); }
     if (e.key === "ArrowRight") { stopPlay(); step(1); e.preventDefault(); }
   });
@@ -259,6 +271,7 @@ async function runPrime() {
     const out = await execute(null, "prime");
     if (seq !== S.seq.prime || S.input?.id !== inputId || !out) return; // superseded
     S.prime = { rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter };
+    if (!S.branch) S.mapView = "prime";
     if (S.branch && !sameEngine(S.branch.engine, out.engine)) S.branch = null;
     S.day = Math.min(S.day, out.r.steps);
   } catch (e) {
@@ -292,7 +305,8 @@ async function runBranch(zero: boolean) {
       rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter,
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
-    flash(document.querySelector(".map-hero"));
+    S.mapView = "diff"; // the shock's effect is the point of the demo
+    flash(document.querySelector(".map-host"));
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
     S.branchErr = (e as Error).message;
@@ -350,6 +364,7 @@ const varInfo = () => VIEW_VARS.find((v) => v.id === S.view)!;
 
 // ---------------- rendering ----------------
 function renderAll() {
+  renderStepper();
   renderStatus();
   renderInputInfo();
   renderShockControls();
@@ -546,7 +561,7 @@ const VAR_ICONS: Record<ViewVar, string> = {
   tcwv: svgIcon("M4.5 11.5h7.5a2.5 2.5 0 0 0 0-5 4 4 0 0 0-7.6-1A3 3 0 0 0 4.5 11.5z"),
 };
 
-let agriMode: "abs" | "change" = "abs";
+let agriMode: AgriMode = "abs";
 
 /** Ripple reach per day for the active view, or null when there is no non-zero Branch. */
 function rippleSeries(): number[] | null {
@@ -595,26 +610,41 @@ function currentImpact(): ImpactResult | null {
   });
 }
 
-/** Signature ribbon: shock → reach on the selected day → farm-region outcome, all from the same two rollouts. */
+/** Climate Pulse-style headline cards: farm-region rain change, dry-spell change and ripple reach for the day. */
 function renderOutcome() {
   const el = $("outcome");
-  const diffs = diffFields();
-  if (!diffs || !S.branch || S.branch.zero) { el.hidden = true; return; }
-  el.hidden = false;
-  const vi = varInfo();
+  const imp = currentImpact();
+  if (!imp || !S.branch || S.branch.zero) {
+    el.innerHTML = `<div class="kpi kpi-empty"><span class="kpi-k">Farm-region rain vs Prime</span><b class="mono">—</b><span>${S.branch?.zero ? "Zero shock: nothing changes" : "Run Prime, then Branch"}</span></div>`;
+    return;
+  }
+  if (imp.empty) { el.innerHTML = `<div class="kpi kpi-empty"><span class="kpi-k">Farm region</span><span class="err">${escapeHtml(imp.reason)}</span></div>`; return; }
   const ripple = rippleSeries();
   const reach = ripple ? ripple[S.day - 1] : 0;
-  const peak = maxAbs(diffs[S.day - 1]);
-  const imp = currentImpact();
-  const farm = !imp || imp.empty
-    ? `<span class="hint">${escapeHtml(imp?.empty ? imp.reason : "—")}</span>`
-    : `<b class="mono ${imp.rainChangeMm < 0 ? "neg" : imp.rainChangeMm > 0 ? "pos" : ""}">${signed(imp.rainChangeMm, 1)} mm</b><span>rain, days ${imp.days[0]}–${imp.days[imp.days.length - 1]} · dry spell ${signed(imp.drySpellChange, 0)} d</span>`;
+  const cls = (v: number) => (v < 0 ? "neg" : v > 0 ? "pos" : "");
+  const pct = imp.rainChangePct == null ? "" : ` (${signed(imp.rainChangePct, 0)} %)`;
   el.innerHTML = `
-    <div class="oc oc-shock"><span class="oc-k">Shock</span><span>${escapeHtml(S.branch.spec!.label)}</span></div>
-    <div class="oc-arrow" aria-hidden="true">→</div>
-    <div class="oc"><span class="oc-k">Day ${S.day} reach</span><b class="mono">${(reach * 100).toFixed(0)} %</b><span>of cells outside the box · peak |Δ| ${fmt(peak, 2)} ${escapeHtml(vi.deltaUnit)}</span></div>
-    <div class="oc-arrow" aria-hidden="true">→</div>
-    <div class="oc oc-farm"><span class="oc-k">Farm region vs Prime</span>${farm}</div>`;
+    <div class="kpi kpi-hero"><span class="kpi-k">Farm-region rain vs Prime · days ${imp.days[0]}–${imp.days[imp.days.length - 1]}</span>
+      <b class="mono ${cls(imp.rainChangeMm)}">${signed(imp.rainChangeMm, 1)} mm</b><span>${fmt(imp.prime.cumulativeRain, 1)} → ${fmt(imp.branch.cumulativeRain, 1)} mm${pct}</span></div>
+    <div class="kpi"><span class="kpi-k">Longest dry spell</span><b class="mono ${cls(-imp.drySpellChange)}">${signed(imp.drySpellChange, 0)} d</b><span>${imp.prime.longestDrySpell} → ${imp.branch.longestDrySpell} days</span></div>
+    <div class="kpi"><span class="kpi-k">Ripple reach · day ${S.day}</span><b class="mono">${(reach * 100).toFixed(0)} %</b><span>cells outside the box changed</span></div>`;
+}
+
+/** Header stepper + "what next" hint so a first-time user always knows the next click. */
+function renderStepper() {
+  const hasInput = !!S.input, hasPrime = !!S.prime && S.prime.inputId === S.input?.id;
+  const hasBranch = comparable() && !!S.branch && !S.branch.zero;
+  const set = (id: string, state: "done" | "now" | "todo") => ($(id).dataset.state = state);
+  set("st-input", hasInput ? "done" : "now");
+  set("st-prime", hasPrime ? "done" : hasInput ? "now" : "todo");
+  set("st-shock", hasBranch ? "done" : hasPrime ? "now" : "todo");
+  set("st-branch", hasBranch ? "done" : hasPrime ? "now" : "todo");
+  const hint = !hasInput ? "Start here: load a three-day input."
+    : !currentEngine() ? "The inference server is not ready yet."
+    : !hasPrime ? "Next: run Timeline Prime."
+    : !hasBranch ? "Next: drag a shock box on the map (or pick a preset), then Run Branch."
+    : "Try another shock, play the days, or read the farm impact on the right.";
+  $("next-hint").textContent = hint;
 }
 
 function renderMaps() {
@@ -622,25 +652,43 @@ function renderMaps() {
   const ov = { shockBox: S.branch?.spec?.box ?? S.shock.box, impactBox: S.impactBox, draftBox: S.draft, draftKind: S.brush, hoverCell: S.hover };
   const scale = absScale();
   const pf = S.prime ? displayField(S.prime.rollout, S.day, S.view) : null;
-  const bf = S.branch && S.prime && comparable() ? displayField(S.branch.rollout, S.day, S.view) : null;
-  mapPrime.draw(pf, scale, ov, S.busy.prime ? "Running…" : "Run Prime");
-  mapBranch.draw(bf, scale, ov, S.busy.branch ? "Running…" : "Run Branch");
-  $("cap-prime").textContent = S.prime ? `${engineLabel(S.prime.engine)} · day ${S.day} · ${vi.unit}` : "";
-  $("cap-branch").textContent = bf ? `${engineLabel(S.branch!.engine)} · day ${S.day} · ${vi.unit}` : "";
-  legend($("legend-abs"), scale, vi.unit, "Shared scale, Prime & Branch, all days");
-
+  const bf = S.branch && comparable() ? displayField(S.branch.rollout, S.day, S.view) : null;
   const diffs = diffFields();
-  if (diffs) {
-    const m = Math.max(...diffs.map(maxAbs));
-    const ds = divergingScale(S.view, m);
-    mapDiff.draw(diffs[S.day - 1], ds, ov);
-    $("cap-diff").textContent = m === 0 ? `day ${S.day} · zero everywhere (identical rollouts)` : `day ${S.day} · ${vi.deltaUnit} · max |Δ| ${fmt(maxAbs(diffs[S.day - 1]), 3)} today`;
-    legend($("legend-diff"), ds, vi.deltaUnit, m === 0 ? "No difference on any day" : "Zero-centred, fixed across days");
+  const branchLabel = S.branch ? `Branch #${S.branch.runNo}` : "Branch";
+  let content: MapContent, caption = "", leg = "";
+  const mode = S.mapView;
+  if (!pf || !scale) {
+    content = { kind: "empty", text: S.busy.prime ? "Running Prime…" : S.input ? "Run Prime to see the forecast" : "Load an initial state to begin" };
+  } else if (mode === "prime" || ((mode === "branch" || mode === "swipe") && !bf) || (mode === "diff" && !diffs)) {
+    content = { kind: "single", field: pf, scale };
+    caption = mode === "prime" ? `Timeline Prime · day ${S.day}` : `Timeline Prime · day ${S.day} · run Branch to compare`;
+    leg = legendHtml(scale, vi.unit, "Prime & Branch share this scale");
+  } else if (mode === "branch") {
+    content = { kind: "single", field: bf!, scale };
+    caption = `${branchLabel} · day ${S.day}`;
+    leg = legendHtml(scale, vi.unit, "Prime & Branch share this scale");
+  } else if (mode === "swipe") {
+    content = { kind: "swipe", left: pf, right: bf!, scale, split: S.split, leftLabel: "Prime", rightLabel: branchLabel };
+    caption = `Drag the divider · day ${S.day}`;
+    leg = legendHtml(scale, vi.unit, "Prime & Branch share this scale");
   } else {
-    mapDiff.draw(null, null, ov, !S.prime ? "Load an initial state and run Prime" : "Run Branch to see Branch − Prime");
-    $("cap-diff").textContent = "";
-    legend($("legend-diff"), null, "", "");
+    const m = Math.max(...diffs!.map(maxAbs));
+    const ds = divergingScale(S.view, m);
+    content = { kind: "single", field: diffs![S.day - 1], scale: ds };
+    caption = m === 0 ? `Branch − Prime · day ${S.day} · identical everywhere` : `Branch − Prime · day ${S.day} · max |Δ| ${fmt(maxAbs(diffs![S.day - 1]), 2)} ${vi.deltaUnit}`;
+    leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, fixed across days");
   }
+  mapMain.draw(content, ov);
+  const engine = S.prime ? `<span class="cap-engine" data-kind="${S.prime.engine.kind}">${escapeHtml(engineLabel(S.prime.engine))}</span>` : "";
+  $("map-caption").innerHTML = caption ? `${engine}<span>${escapeHtml(caption)} · ${escapeHtml(vi.label)}</span>` : "";
+  $("map-caption").hidden = !caption;
+  $("legend-main").innerHTML = leg;
+  $("legend-main").hidden = !leg;
+  document.querySelectorAll<HTMLButtonElement>("#view-seg [data-view]").forEach((b) => {
+    const v = b.dataset.view as MapMode;
+    b.setAttribute("aria-pressed", String(v === mode));
+    b.disabled = v === "prime" ? !pf : !bf;
+  });
 
   // Initial shock footprint (day 0)
   let delta: Float32Array | null = null, label = "";
@@ -651,33 +699,14 @@ function renderMaps() {
   if (delta) {
     const f = delta.subarray(CHANNEL_INFO[ch].index * NCELL, (CHANNEL_INFO[ch].index + 1) * NCELL);
     const sc = divergingScale(ch === "tp" || ch === "tcwv" ? "tp" : ch === "t2m" ? "t2m" : "u10", maxAbs(f));
-    mapShock.draw(f, sc, { shockBox: spec.box });
-    legend($("legend-shock"), sc, CHANNEL_INFO[ch].unit, `${ch} · ${label}`);
+    mapShock.drawField(f, sc, { shockBox: spec.box });
+    $("legend-shock").innerHTML = legendHtml(sc, CHANNEL_INFO[ch].unit, `${ch} · ${label}`);
   } else {
-    mapShock.draw(null, null, { shockBox: spec.box }, "No input");
-    legend($("legend-shock"), null, "", "");
+    mapShock.drawField(null, null, { shockBox: spec.box }, "No input");
+    $("legend-shock").innerHTML = "";
   }
 }
 
-function legend(el: HTMLElement, sc: Scale | null, unit: string, note: string) {
-  if (!sc) { el.innerHTML = ""; return; }
-  if (sc.classes) {
-    const css = (c: number[]) => `rgb(${c.map(Math.round).join(",")})`;
-    el.innerHTML = `<div class="legend-steps">${sc.classes.map((k, i) => `<div class="step-cell"><i style="background:${css(k.color)}"></i><span class="mono">${i === 0 ? "0" : k.lo}</span></div>`).join("")}</div>
-      <div class="legend-note">${escapeHtml(unit)} · classed like rain-gauge bands · ≥ 10 = contract heavy rain${note ? ` · ${escapeHtml(note)}` : ""}</div>`;
-    return;
-  }
-  // Five evenly spaced ticks so values can be read off the bar (zero is the middle tick on diverging scales).
-  const span = sc.hi - sc.lo;
-  const digits = Math.abs(span) < 2 ? 2 : Math.abs(span) < 20 ? 1 : 0;
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((t) => {
-    const v = sc.lo + t * span;
-    return sc.kind === "div" ? (t === 0.5 ? "0" : signed(v, digits)) : fmt(v, digits);
-  });
-  el.innerHTML = `<div class="legend-bar" style="background:${sc.gradient}"></div>
-    <div class="legend-ticks mono">${ticks.map((t) => `<span>${t}</span>`).join("")}</div>
-    <div class="legend-note">${escapeHtml(unit)}${note ? ` · ${escapeHtml(note)}` : ""}</div>`;
-}
 
 function renderTooltip(ev: PointerEvent) {
   const tip = $("tooltip");
@@ -698,34 +727,17 @@ function renderTooltip(ev: PointerEvent) {
 }
 
 function renderRipple() {
-  const svg = $("ripple-chart");
-  const diffs = diffFields();
   const th = RIPPLE_THRESHOLDS[S.view];
-  $("ripple-hint").textContent = `Share of cells outside the shock box with |Δ ${varInfo().label.toLowerCase()}| > ${th} ${varInfo().deltaUnit}, per day. Measures how far the model's response reaches.`;
-  if (!diffs || !S.branch || S.branch.zero) {
-    svg.innerHTML = `<text x="150" y="64" text-anchor="middle" class="svg-empty">Needs a Prime and a non-zero Branch</text>`;
-    return;
-  }
-  const out = outsideMask(S.branch.spec!.box);
-  const fr = diffs.map((d) => rippleFraction(d, out, th));
-  const W = 300, H = 120, pl = 28, pb = 18, bw = (W - pl - 4) / fr.length;
-  const y = (v: number) => H - pb - v * (H - pb - 8);
-  let s = `<line x1="${pl}" y1="${y(0)}" x2="${W}" y2="${y(0)}" class="axis"/>`;
-  for (const t of [0, 0.5, 1]) s += `<text x="${pl - 4}" y="${y(t) + 3}" text-anchor="end" class="svg-tick">${t * 100}%</text>`;
-  fr.forEach((v, k) => {
-    const x = pl + k * bw + 2;
-    s += `<rect x="${x}" y="${y(v)}" width="${bw - 4}" height="${Math.max(0.5, y(0) - y(v))}" class="${k + 1 === S.day ? "bar bar-on" : "bar"}"><title>Day ${k + 1}: ${(v * 100).toFixed(1)}%</title></rect>`;
-    s += `<text x="${x + (bw - 4) / 2}" y="${H - 5}" text-anchor="middle" class="svg-tick">${k + 1}</text>`;
-  });
-  svg.innerHTML = s;
+  $("ripple-hint").textContent = `Share of cells outside the shock box with |Δ ${varInfo().label.toLowerCase()}| > ${th} ${varInfo().deltaUnit}. Shows how far the model's response reaches each day.`;
+  $("ripple-chart").innerHTML = rippleChartSvg(rippleSeries(), S.day);
 }
 
 function renderAgri() {
   const out = $("agri-out"), chart = $("agri-chart");
-  $("agri-region").innerHTML = `<span class="tag-impact">Impact region</span> ${describeBox(S.impactBox)} — independent of the shock box. Use “Draw impact region” to change it.`;
+  $("agri-region").innerHTML = `<span class="tag-impact">Farm region</span> ${describeBox(S.impactBox)}. Independent of the shock box: use “Draw farm region” to move it.`;
   if (!comparable()) {
     out.innerHTML = `<p class="hint">Runs after both Prime and Branch exist for the same input.</p>`;
-    chart.innerHTML = "";
+    chart.innerHTML = `<text x="190" y="92" text-anchor="middle" class="svg-empty">Run Prime, then a Branch, to compare rainfall here</text>`;
     return;
   }
   const num = (id: string) => Number($<HTMLInputElement>(id).value);
@@ -736,10 +748,8 @@ function renderAgri() {
     return;
   }
   const p = res.prime, b = res.branch;
-  const pct = res.rainChangePct == null ? "" : ` (${signed(res.rainChangePct, 1)} %)`;
   out.innerHTML = `
-    <p class="agri-headline"><span class="mono big ${res.rainChangeMm < 0 ? "neg" : res.rainChangeMm > 0 ? "pos" : ""}">${signed(res.rainChangeMm, 1)} mm</span>
-      cumulative rainfall vs Timeline Prime${pct}, days ${res.days[0]}–${res.days[res.days.length - 1]}, ${res.cells} land cells.</p>
+    <p class="hint">${res.cells} land cells · days ${res.days[0]}–${res.days[res.days.length - 1]}</p>
     <table class="agri-table">
       <thead><tr><th></th><th>Prime</th><th>Branch #${S.branch!.runNo}</th><th>Branch − Prime</th></tr></thead>
       <tbody>
@@ -750,59 +760,11 @@ function renderAgri() {
         <tr><td>Mean 2 m temperature</td><td class="mono">${fmt(p.meanTempC, 1)} °C</td><td class="mono">${fmt(b.meanTempC, 1)} °C</td><td class="mono">${signed(b.meanTempC - p.meanTempC, 2)} K</td></tr>
       </tbody>
     </table>`;
-  renderAgriChart(res, chart);
+  chart.innerHTML = agriChartSvg(res, agriMode, S.day, num("agri-dry"));
   document.querySelectorAll<HTMLButtonElement>("[data-agri-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.agriMode === agriMode)));
-  $("agri-source").textContent = `Data: ${engineLabel(S.prime!.engine)} · Prime #${S.prime!.runNo} vs Branch #${S.branch!.runNo} · cos(lat)-weighted land mean`;
+  $("agri-source").textContent = `Data: ${engineLabel(S.prime!.engine)} · Prime #${S.prime!.runNo} vs Branch #${S.branch!.runNo} · land-cell mean, cos(lat) weighted`;
 }
 
-/**
- * Climate Pulse-style chart: Prime is the dashed reference, Branch the highlighted line, with a callout on the
- * selected forecast day. "Absolute" shows cumulative regional rainfall; "Change" shows Branch − Prime cumulative.
- * Small marks under the axis flag dry days (regional mean below the dry threshold) for each timeline.
- */
-function renderAgriChart(res: Extract<ImpactResult, { empty: false }>, chart: HTMLElement) {
-  const W = 440, H = 170, pl = 40, pr = 12, pt = 26, pb = 34;
-  const cum = (a: number[]) => a.reduce<number[]>((o, v) => (o.push((o.at(-1) ?? 0) + v), o), []);
-  const pc = cum(res.prime.dailyRain), bc = cum(res.branch.dailyRain);
-  const series = agriMode === "abs" ? { ref: pc, main: bc } : { ref: pc.map(() => 0), main: bc.map((v, i) => v - pc[i]) };
-  let lo = Math.min(0, ...series.ref, ...series.main), hi = Math.max(...series.ref, ...series.main);
-  if (hi - lo < 1) hi = lo + 1;
-  const n = res.days.length;
-  const x = (i: number) => pl + (n === 1 ? (W - pl - pr) / 2 : (i * (W - pl - pr)) / (n - 1));
-  const y = (v: number) => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
-  const path = (a: number[]) => a.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join("");
-  const unit = "mm";
-  let s = "";
-  for (const t of [lo, (lo + hi) / 2, hi]) {
-    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${pl - 6}" y="${y(t) + 3}" text-anchor="end" class="svg-tick">${fmt(t, Math.abs(hi - lo) < 10 ? 1 : 0)}</text>`;
-  }
-  if (lo < 0) s += `<line x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}" class="axis"/>`;
-  s += `<path d="${path(series.ref)}" class="ln-ref"/>`;
-  if (agriMode === "change") s += `<path d="${path(series.main)}L${x(n - 1)},${y(0)}L${x(0)},${y(0)}Z" class="${series.main.at(-1)! < 0 ? "area-neg" : "area-pos"}"/>`;
-  s += `<path d="${path(series.main)}" class="ln-main"/>`;
-  const dry = Number($<HTMLInputElement>("agri-dry").value);
-  res.days.forEach((d, i) => {
-    s += `<circle cx="${x(i)}" cy="${y(series.main[i])}" r="2.5" class="pt-main"><title>Day ${d}: Branch ${fmt(bc[i], 1)} mm, Prime ${fmt(pc[i], 1)} mm cumulative</title></circle>`;
-    s += `<text x="${x(i)}" y="${H - pb + 14}" text-anchor="middle" class="svg-tick">${d}</text>`;
-    if (res.prime.dailyRain[i] < dry) s += `<rect x="${x(i) - 6}" y="${H - 10}" width="5" height="4" class="dry-prime"><title>Day ${d}: Prime dry day</title></rect>`;
-    if (res.branch.dailyRain[i] < dry) s += `<rect x="${x(i) + 1}" y="${H - 10}" width="5" height="4" class="dry-branch"><title>Day ${d}: Branch dry day</title></rect>`;
-  });
-  // Callout on the selected forecast day, if it is inside the window.
-  const k = res.days.indexOf(S.day);
-  if (k >= 0) {
-    const v = series.main[k];
-    const label = agriMode === "abs" ? `Day ${S.day} · ${fmt(bc[k], 1)} ${unit} (Prime ${fmt(pc[k], 1)})` : `Day ${S.day} · ${signed(v, 1)} ${unit} vs Prime`;
-    const anchor = x(k) > W - 150 ? "end" : "start";
-    s += `<line x1="${x(k)}" x2="${x(k)}" y1="${pt}" y2="${H - pb}" class="cursor"/><circle cx="${x(k)}" cy="${y(v)}" r="4.5" class="pt-focus"/>`;
-    // Put the label on the emptier side of the point so it never sits on the line.
-    const upper = y(v) < pt + (H - pt - pb) / 2;
-    const ly = upper ? Math.min(H - pb - 4, y(v) + 18) : Math.max(pt + 10, y(v) - 12);
-    s += `<text x="${x(k) + (anchor === "end" ? -8 : 8)}" y="${ly}" text-anchor="${anchor}" class="callout">${label}</text>`;
-  }
-  s += `<text x="${pl}" y="14" class="svg-tick">${agriMode === "abs" ? "Cumulative regional rainfall, mm" : "Branch − Prime cumulative rainfall, mm"} · <tspan class="lg-branch">━ Branch</tspan> <tspan class="lg-prime">┅ Prime</tspan></text>`;
-  s += `<text x="${W - pr}" y="${H - 2}" text-anchor="end" class="svg-tick">dry day (&lt; ${dry} mm/day): <tspan class="lg-prime">▬</tspan> Prime <tspan class="lg-branch">▬</tspan> Branch</text>`;
-  chart.innerHTML = s;
-}
 
 /** One short highlight when a new Branch lands: the peak moment of the demo. */
 function flash(el: Element | null) {
@@ -812,8 +774,5 @@ function flash(el: Element | null) {
   el.classList.add("fresh");
 }
 
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
-}
 
 boot();
