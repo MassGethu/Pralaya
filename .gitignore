@@ -1,0 +1,15 @@
+# local data, envs, caches: never committed (repo_scan flags .nc and multi-year archives)
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+*.nc
+*.nc4
+*.zarr
+data/
+runs/
+demo_inputs/
+evaluation/results/*.npy
+# only the selected release checkpoint under model/assets/ is committed
+*.pt
+!model/assets/pralaya.pt
