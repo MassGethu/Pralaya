@@ -17,6 +17,7 @@ import { Timeline } from "./timeline";
 import { CommandField } from "./command";
 import { type AppApi, buildCommands, nextAction } from "./actions";
 import { introEnabled, playIntro } from "./intro";
+import { ScenarioPanel, type ScenarioReplay } from "./scenarios";
 import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
@@ -87,6 +88,8 @@ const showFatal = (msg: string) => document.body.insertAdjacentHTML("afterbegin"
 
 // ---------------- maps ----------------
 let mapMain: MapView, mapShock: MapView, flow: WindFlow;
+let scenarioPanel: ScenarioPanel | null = null;
+let drawingScenarioRegion = false;
 
 function setupMaps() {
   const geo = { land: S.land, orography: S.oro, cities: CITIES };
@@ -112,7 +115,13 @@ function setupMaps() {
     } else {
       S.draft = null;
       if (S.brush === "shock") S.shock = { ...S.shock, box, label: "Custom shock" };
-      else S.impactBox = box;
+      else {
+        S.impactBox = box;
+        if (drawingScenarioRegion) {
+          drawingScenarioRegion = false;
+          openDrawer("scenarios");
+        }
+      }
     }
     renderAll();
   };
@@ -133,6 +142,16 @@ const api: AppApi = {
 };
 
 function setupControls() {
+  scenarioPanel = new ScenarioPanel(() => {
+    drawingScenarioRegion = true;
+    S.brush = "impact";
+    closeDrawer();
+    renderAll();
+  }, async (replay) => {
+    if (!scenarioContext() || S.busy.branch) throw new Error("Wait for the trained server and the current Branch run.");
+    S.shock = replay.spec;
+    if (!await runBranch(false, replay)) throw new Error(S.branchErr || "Replay was superseded. Run the search again.");
+  });
   cmd = new CommandField($("cmd-field"), $("cmd-text"), $<HTMLButtonElement>("cmd-go"), $("cmd-panel"), $<HTMLInputElement>("cmd-input"), $("cmd-list"), () => buildCommands(api));
   $("cmd-field").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === e.currentTarget) cmd?.runNext(); });
   $("steps-label").textContent = String(S.steps);
@@ -176,6 +195,7 @@ function setupControls() {
   }
   document.querySelectorAll<HTMLButtonElement>("[data-brush]").forEach((b) =>
     b.addEventListener("click", () => {
+      drawingScenarioRegion = false;
       S.brush = b.dataset.brush as "shock" | "impact";
       renderAll();
     }),
@@ -286,6 +306,12 @@ function currentEngine(): Engine | null {
   return null;
 }
 
+function scenarioContext() {
+  const prime = S.prime, input = S.input, engine = currentEngine();
+  if (!input || !prime || prime.inputId !== input.id || engine?.kind !== "live" || engine.model !== "PRALAYA" || !sameEngine(prime.engine, engine)) return null;
+  return { input, prime: prime.rollout, land: S.land, primeRun: prime.runNo };
+}
+
 async function pollHealth() {
   if (S.fixtureEngine) { renderStatus(); return; }
   S.health = await health();
@@ -331,12 +357,12 @@ async function runPrime() {
   }
 }
 
-async function runBranch(zero: boolean) {
+async function runBranch(zero: boolean, replay?: ScenarioReplay) {
   if (!S.input || !S.prime) return;
   let delta: Float32Array;
   const spec = zero ? null : structuredClone(S.shock);
   try {
-    delta = zero ? new Float32Array(NCH * NCELL) : buildPerturbation(S.input, spec!);
+    delta = replay?.delta ?? (zero ? new Float32Array(NCH * NCELL) : buildPerturbation(S.input, spec!));
   } catch (e) {
     S.branchErr = e instanceof ShockError ? e.message : String(e);
     renderAll();
@@ -349,13 +375,21 @@ async function runBranch(zero: boolean) {
   try {
     const out = await execute(delta, "branch");
     if (seq !== S.seq.branch || S.input?.id !== inputId || !out) return;
+    if (replay && !out.r.data.every((value, index) => value === replay.expected.data[index])) {
+      throw new Error("The replay differed from the scenario forecast. Check that both services use the same checkpoint.");
+    }
     S.branch = {
       rollout: out.r, inputId, engine: out.engine, ms: out.ms, wallMs: out.wall, runNo: ++S.runCounter,
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
     S.mapView = "diff"; // the shock's effect is the point of the demo
+    if (replay) {
+      $<HTMLInputElement>("agri-d0").value = String(replay.dayStart);
+      $<HTMLInputElement>("agri-d1").value = String(replay.dayEnd);
+    }
     if (!zero) setTab("impact");
     flash(document.querySelector(".map-host"));
+    return true;
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
     S.branchErr = (e as Error).message;
@@ -504,6 +538,7 @@ function renderShockControls() {
 
 function renderButtons() {
   const engine = currentEngine();
+  scenarioPanel?.update(scenarioContext(), S.impactBox);
   const primeBtn = $<HTMLButtonElement>("run-prime");
   primeBtn.disabled = !S.input || S.busy.prime || !engine;
   primeBtn.textContent = S.busy.prime ? "Running Prime…" : S.prime ? "Re-run Prime" : "Run Prime";

@@ -52,6 +52,7 @@ export function buildCommands(a: AppApi): Command[] {
     ...VIEW_VARS.map((v) => ({ id: `var-${v.id}`, group: "Weather layer", label: v.label, hint: v.unit, enabled: always, run: () => a.setVar(v.id) })),
     { id: "impact", group: "Details", label: "Farm impact", hint: "cards and chart", enabled: always, run: () => a.open("impact") },
     { id: "ripple", group: "Details", label: "Ripple reach", enabled: always, run: () => a.open("ripple") },
+    { id: "scenarios", group: "Details", label: "Scenario analysis", hint: "inverse search, rainfall spread and preparedness", enabled: always, run: () => a.open("scenarios") },
     { id: "setup", group: "Details", label: "Setup", hint: "run info, display, developer", enabled: always, run: () => a.open("setup") },
     { id: "intro", group: "Details", label: "Replay intro", hint: "Pralaya in 12 languages", enabled: always, run: a.replayIntro },
   ];

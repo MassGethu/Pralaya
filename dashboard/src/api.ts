@@ -15,12 +15,12 @@ export class ApiError extends Error {
   }
 }
 
-async function post(path: string, body: unknown, signal?: AbortSignal): Promise<unknown> {
+async function post(path: string, body: unknown, signal?: AbortSignal, base = API_BASE): Promise<unknown> {
   const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
   const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(`${base}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -44,6 +44,10 @@ async function post(path: string, body: unknown, signal?: AbortSignal): Promise<
   } catch {
     throw new ApiError("contract", `${path} returned non-JSON`);
   }
+}
+
+export function postScenario(body: unknown, signal: AbortSignal): Promise<unknown> {
+  return post("/scenarios", body, signal, "/scenario-api");
 }
 
 export interface Health {

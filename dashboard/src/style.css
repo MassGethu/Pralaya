@@ -510,7 +510,34 @@ button.hud-hero { cursor: pointer; }
 .rail-gear:hover { color: var(--ink); }
 .hud-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
 .hud-tag .hud-kv { grid-template-columns: 1fr auto; }
-.tabs { grid-template-columns: repeat(4, 1fr); }
+.tabs { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.tabs .tab { padding-inline: 3px; }
+.scenario-form, .scenario-block, .scenario-results { display: grid; gap: 8px; min-width: 0; }
+.scenario-results[hidden] { display: none; }
+.scenario-form h3, .scenario-block h4, .scenario-form p, .scenario-block p { margin: 0; }
+.scenario-region { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 8px; }
+.scenario-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.scenario-grid label { display: grid; gap: 3px; color: var(--ink-2); font-size: 11px; }
+.scenario-form .method .scenario-grid { margin-block-start: 8px; }
+.scenario-block { border-top: 1px solid var(--line-2); padding-top: 10px; }
+.scenario-winner { border-inline-start: 2px solid var(--shock); padding-inline-start: 8px; }
+.scenario-block svg { display: block; width: 100%; }
+.scenario-block svg .grid { stroke: var(--line-2); }
+.scenario-band { fill: var(--signal); opacity: 0.26; }
+.scenario-median, .scenario-prime { fill: none; stroke-width: 2; }
+.scenario-median { stroke: var(--signal-2); }
+.scenario-prime { stroke: var(--ink-2); stroke-dasharray: 4 3; }
+.scenario-median-dot { fill: var(--signal-2); }
+.scenario-prime-dot { fill: var(--ink-2); }
+.scenario-chart-key { display: flex; flex-wrap: wrap; gap: 4px 9px; font-size: 10px; color: var(--ink-2); }
+.scenario-chart-key span::before { content: ""; display: inline-block; width: 10px; margin-inline-end: 4px; vertical-align: middle; border-top: 2px solid var(--ink-2); }
+.scenario-chart-key .key-interval::before { border-block-width: 5px 0; border-color: var(--signal); opacity: 0.6; }
+.scenario-chart-key .key-median::before { border-color: var(--signal-2); }
+.scenario-chart-key .key-prime::before { border-top-style: dashed; }
+.scenario-table th[scope="row"] { text-align: left; }
+.scenario-table-scroll { overflow-x: auto; }
+.scenario-candidates { list-style: none; padding: 0; margin: 5px 0 0; font-size: 12px; }
+.scenario-candidates li { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 4px 0; border-bottom: 1px solid var(--line); }
 
 @media (max-width: 1080px) {
   .bar { height: auto; padding: 8px 12px; margin: 8px 8px 0; grid-template-columns: auto 1fr; }

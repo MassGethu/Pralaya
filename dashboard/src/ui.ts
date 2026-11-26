@@ -18,7 +18,7 @@ export const VAR_ICONS: Record<ViewVar, string> = {
   tcwv: svgIcon("M4.5 11.5h7.5a2.5 2.5 0 0 0 0-5 4 4 0 0 0-7.6-1A3 3 0 0 0 4.5 11.5z"),
 };
 
-export type TabName = "shock" | "impact" | "ripple" | "setup";
+export type TabName = "shock" | "impact" | "ripple" | "scenarios" | "setup";
 
 export function setTab(name: TabName) {
   document.querySelectorAll<HTMLButtonElement>(".tab[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));

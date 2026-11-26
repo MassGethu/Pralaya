@@ -81,6 +81,7 @@
           <button class="tab" role="tab" data-tab="shock" aria-selected="true">Shock</button>
           <button class="tab" role="tab" data-tab="impact" aria-selected="false">Impact</button>
           <button class="tab" role="tab" data-tab="ripple" aria-selected="false">Ripple</button>
+          <button class="tab" role="tab" data-tab="scenarios" aria-selected="false">Scenarios</button>
           <button class="tab" role="tab" data-tab="setup" aria-selected="false">Setup</button>
         </div>
 
@@ -158,6 +159,38 @@
             <div class="mini-map"><canvas id="map-shock"></canvas></div>
             <div id="legend-shock" class="legend-inline"></div>
           </div>
+        </section>
+        <section class="tab-panel" data-panel="scenarios" role="tabpanel" aria-label="Scenario analysis" hidden>
+          <form id="scenario-form" class="scenario-form">
+            <h3>Inverse search</h3>
+            <div class="scenario-region">
+              <p id="scenario-region" class="hint"></p>
+              <button type="button" id="scenario-draw" class="btn btn-quiet btn-small">Draw farm region</button>
+            </div>
+            <div class="scenario-grid">
+              <label>Rainfall target
+                <select id="scenario-objective">
+                  <option value="deficit_mm">Deficit vs Prime</option>
+                  <option value="rainfall_at_least_mm">Total reaches threshold</option>
+                </select>
+              </label>
+              <label>Threshold (mm)<input id="scenario-threshold" type="number" min="0.01" step="any" value="0.1" required /></label>
+              <label>From day<input id="scenario-start" type="number" min="1" max="10" value="1" required /></label>
+              <label>To day<input id="scenario-end" type="number" min="1" max="10" value="7" required /></label>
+            </div>
+            <label class="check"><input id="scenario-expanded" type="checkbox" /> Include larger plausible shocks</label>
+            <details class="method">
+              <summary>Preparedness assumptions</summary>
+              <div class="scenario-grid">
+                <label>Water target (mm/day)<input id="scenario-water" type="number" min="0.01" step="any" value="8" required /></label>
+                <label>Supplement A (mm/day)<input id="scenario-action-a" type="number" min="0" step="any" value="2" required /></label>
+                <label>Supplement B (mm/day)<input id="scenario-action-b" type="number" min="0" step="any" value="4" required /></label>
+              </div>
+            </details>
+            <button id="run-scenarios" class="btn btn-primary" disabled>Run scenario search</button>
+            <p id="scenario-feedback" class="hint" role="status" aria-live="polite"></p>
+          </form>
+          <div id="scenario-results" class="scenario-results" hidden></div>
         </section>
         <section class="tab-panel" data-panel="setup" role="tabpanel" hidden>
           <div class="btn-row">

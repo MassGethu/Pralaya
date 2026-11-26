@@ -15,13 +15,17 @@ npm run dev                # http://localhost:5317, proxies /api/* to http://127
 ```
 
 Start the inference server separately from the repo root: `python serve.py --port 8000`.
+Start the scenario service in a separate terminal from the same repo root: `python -m scripts.scenario_service --port 8001`. If you stage a checkpoint with `--bundle`, pass the same bundle directory to both commands.
 
 | Variable | Default | Use |
 | --- | --- | --- |
 | `PRALAYA_API_URL` | `http://127.0.0.1:8000` | Where the dev proxy forwards `/api/*`, e.g. a teammate's Mac `http://192.168.x.y:8000` |
+| `PRALAYA_SCENARIO_URL` | `http://127.0.0.1:8001` | Where the dev and preview proxies forward `/scenario-api/*` |
 | `PRALAYA_UI_PORT` | `5317` | Dashboard port (Vite's default 5173 is often taken) |
 
 The browser only talks to its own origin, so the official server needs no CORS change.
+
+After loading a history and running Prime on the trained server, open **Scenarios** in the drawer or **Scenario analysis** in the command palette. Draw a farm region or keep the current one, pick a rainfall target and day range, and run the search. The tab shows the lowest-cost qualifying shock, the ensemble's cumulative rainfall spread, and the average, worst, and per-scenario water shortfalls for the chosen supplements. **Replay as Branch** sends the winning physical delta through the forecast server and verifies the resulting rollout against the search result. The rainfall spread and crossing count describe the shocks tested. [Scenario contract](../docs/CONTRACTS.md#local-scenario-service)
 
 ```bash
 npm test                   # unit tests: grid orientation, shock tensor, impact formulas, zero difference

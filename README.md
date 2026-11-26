@@ -50,7 +50,7 @@ Open `http://localhost:5317`. The development proxy forwards API calls to `http:
 
 ## Run scenario analysis
 
-Start the local scenario service from the repository root with `python -m scripts.scenario_service --port 8001`. It loads the same checkpoint bundle and provides bounded inverse rainfall-deficit search, ensemble summaries, and agricultural water-shortfall comparisons. [Scenario API contract](docs/CONTRACTS.md#local-scenario-service)
+Start the local scenario service from the repository root with `python -m scripts.scenario_service --port 8001`. After running Prime on the trained server, open **Scenarios** in the dashboard drawer for inverse rainfall search, rainfall ensemble summaries, and agricultural water-shortfall comparisons. [Scenario API contract](docs/CONTRACTS.md#local-scenario-service)
 
 ## Data attribution
 
