@@ -40,3 +40,8 @@ Score S = RMSE-skill proxy (/30) + CSI proxy (/15) + anti-blur proxy (/10) + cau
 Means with 95% moving-block-bootstrap CIs (block 10 windows, 2000 resamples), worst windows, 5-window grader-draw
 spread, shock stability CIs with the unstable channel, region skill table, and the spread across seeds
 (mean ± sd over 3 seeds) for each recipe.
+
+## Outcome (added after the fact; the rule above was not edited)
+- Val (`ed10825`): every candidate passed the gates. `b3_roll4` was selected: its S (45.92) was within 1.0 of `b3_roll4_s1` (45.21), and it had the higher 5-window p05 (2.83 vs 1.79).
+  See `evaluation/results/selection_val.md`.
+- Test (`e50d790`, scored once afterwards): `b3_roll4` S 46.77; all six candidates in `evaluation/results/report_test.md`.

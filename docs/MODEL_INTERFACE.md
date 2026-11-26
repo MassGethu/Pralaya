@@ -1,7 +1,7 @@
 # Model interface (Jarvis -> Mass)
 
 Source of truth for data facts: `kit/API_CONTRACT.md` and `monsoon_r1/contract.py` (kit v1.0.0). Everything below was
-verified against `india_climate_train.nc` (sha256 `f37bdb…903b`, 122,831,709 bytes).
+verified against `india_climate_train.nc` (full audit: `docs/DATA_AUDIT.md`, `python -m evaluation.audit`) (sha256 `f37bdb…903b`, 122,831,709 bytes).
 
 ## Verified data facts
 | Item | Value |
