@@ -1,0 +1,7 @@
+# Data attribution (copy into README)
+
+`india_climate_train.nc` and `stats.json` (organizer kit `yug-monsoon-kit` v1.0.0) contain modified ERA5 reanalysis data.
+Contains modified Copernicus Climate Change Service information (ERA5, Hersbach et al. 2020), accessed through
+Google WeatherBench 2 (Rasp et al. 2024). ERA5 is licensed under CC BY 4.0. Fields were regridded to 1 degree,
+averaged to daily values and to a 32 x 36 half-degree-centred grid over 6.5N-37.5N, 65.5E-100.5E.
+(Source: `monsoon_r1_kit-1.0.0.dist-info/licenses/NOTICE`.)

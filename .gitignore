@@ -9,3 +9,13 @@ __pycache__/
 *.grib2
 *.zarr/
 node_modules/
+# local data, envs, caches: never committed (repo_scan flags .nc and multi-year archives)
+*.pyc
+*.zarr
+data/
+runs/
+demo_inputs/
+evaluation/results/*.npy
+# only the selected release checkpoint under model/bundle/ is committed
+*.pt
+!model/bundle/pralaya.pt
