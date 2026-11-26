@@ -58,7 +58,8 @@ used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--st
     skill +0.0055 [+0.0014, +0.0097], stable 92.9 / 94.9 % (e3 88.1 / 88.4 %).
   - 3-seed mean 50.85 ± 1.54 against e3's 49.49 ± 1.14. The seeds vary a lot: **seed 1 (49.19) is below e3**,
     and its paired CI includes 0. We ship seed 0, as registered.
-  - Not yet scored on 2021.
+  - *Follow-up evaluation on 2021*, scored once after promotion: S 50.72, **0.20 below e3's 50.92** (fewer CSI
+    points), with warm-Bay shock stability 95.8 % against 89.5 %. Per-window skill +0.059 [+0.049, +0.071].
 - **Known weaknesses of the shipped model (honest).**
   - Skill against the better baseline (persistence or climatology) turns negative at day 8 for the mean over
     channels (−0.015; day 6 for rain).

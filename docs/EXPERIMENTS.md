@@ -199,8 +199,13 @@ Rule 5 is pending. Recipe for it, fixed before it runs: the same command with `-
 |---|---|---|---|---|
 | b3_roll4 | 46.77 | +0.043 [+0.031, +0.056] | +0.222 | 86.1 % / 95.2 % |
 | e3_roll8_ocean | **50.92** | +0.059 [+0.048, +0.071] | +0.232 | 89.5 % / 97.2 % |
+| e3_rainstab | 50.72 | +0.059 [+0.049, +0.071] | +0.230 | 95.8 % / 97.7 % |
 
 The gain on 2021 (+4.15 S) is the same size as on val (+3.45). Most of it is RMSE points (10.82 → 14.75).
+
+e3_rainstab was scored on 2021 once, after its round-2 promotion. Its S is 0.20 below e3's: CSI points 12.2 → 11.8,
+while warm-Bay stability rises (89.5 → 95.8 %). This does not change the promotion, which used val only.
+Files: `e3_rainstab_test.md`, `trace_e3_rainstab_test.md`.
 
 ### Reproducible failure cases (shipped e3, val)
 `python -m evaluation.trace --ckpt model/bundle/pralaya.pt --split val` writes `trace_e3_roll8_ocean_val.md`, with
