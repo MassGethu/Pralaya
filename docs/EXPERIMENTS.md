@@ -369,3 +369,25 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - trusted Bay of Bengal −2 … +2 K and Arabian Sea wind −30 … +30 %;
   - the scenario service has an `e3_rainstab` profile with 13 defaults.
   - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.
+
+---
+## Round 3, pre-registered: `a5_ens3` (3-seed average + recalibration)
+Written and pushed **before** any `a5_ens3` number was computed (27 Nov 2026, ~05:15 IST). Baseline: the served release
+on main `b97d7d8` (`e3_rainstab` seed 0 + paired calibration), served S **57.92** on val 2020.
+
+**Change (one idea):** the forecast is the mean of three independent rollouts of `e3_rainstab` seeds 0/1/2
+(`pralaya.pt` sha256 `90605130…`, `e3_rainstab_s1` `16eb4c26…`, `e3_rainstab_s2` `560bbcc3…`). Each member rolls out on
+its own; only the outputs are averaged. The paired calibration is then refitted to the ensemble's raw val rollouts
+with the existing rung-4 fit, floor 0.3, and the rain weights pinned to 1, exactly as for the release. Branch keeps
+the raw ensemble's paired response (raw ensemble Branch − raw ensemble Prime). No other setting is tuned.
+
+**Gates (all must hold, served path, val 2020, `python -m evaluation.evaluate --served`):**
+1. S ≥ 58.92 (served baseline + 1.0).
+2. Paired per-window skill difference vs the served baseline: 95% CI lower bound > 0.
+3. Shock propagation and stability, both boxes: no more than 2 pp below the served baseline.
+4. Null shock exact; 0 invalid windows.
+5. Anti-blur 10/10 and the day-8 in-band share no more than 2 pp below the served baseline.
+6. pytest, contract check, official validator and repo scan pass; p95 local request time < 500 ms.
+
+2021 is scored once afterwards as a follow-up (must not fall below the served release's 56.92). Seeds are the
+members themselves, so there is no separate rule-5 run. If any gate fails, the release stays as it is.
