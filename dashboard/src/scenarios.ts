@@ -13,6 +13,7 @@ interface Candidate {
   amplitude_unit: string;
   box: Bounds | null;
   rain_mm: number;
+  within_recommended_range?: boolean | null;
   within_b3_recommended_range: boolean;
   qualifies: boolean;
 }
@@ -51,6 +52,7 @@ const RECIPES = {
 };
 
 const candidateLabel = (c: Candidate) => `${RECIPES[c.recipe].label} ${signed(c.amplitude, c.amplitude % 1 ? 1 : 0)} ${c.amplitude_unit}`;
+const recommendedRange = (c: Candidate) => c.within_recommended_range === undefined ? c.within_b3_recommended_range : c.within_recommended_range;
 
 function parseReport(value: unknown): Report {
   const r = value as Report;
@@ -98,7 +100,7 @@ function resultHtml(r: Report): string {
   const { qualifying_count: hits, scenario_count: count, p10_cumulative_mm: low, p90_cumulative_mm: high } = r.ensemble;
   const verdict = best
     ? `<p class="scenario-winner"><strong>${escapeHtml(candidateLabel(best))}</strong><br>${fmt(r.prime_total_rain_mm, 2)} → ${fmt(best.rain_mm, 2)} mm versus Prime</p>
-       ${best.within_b3_recommended_range ? "" : '<p class="warn">Outside the recommended model range.</p>'}
+       ${recommendedRange(best) === false ? '<p class="warn">Outside the recommended model range.</p>' : ""}
        <button type="button" id="scenario-replay" class="btn btn-shock">Replay as Branch</button>`
     : `<p class="scenario-winner">${r.baseline_meets_threshold ? "Prime already meets this rainfall threshold." : "No tested shock reaches this target."}</p>`;
 
@@ -106,7 +108,8 @@ function resultHtml(r: Report): string {
     <section class="scenario-block" aria-labelledby="scenario-found">
       <h4 id="scenario-found">Search result</h4>${verdict}
       <p class="hint">${escapeHtml(r.checkpoint.model_id)} · ${r.land_cells} land cells · days ${r.days[0]}–${r.days.at(-1)}</p>
-      <details class="method"><summary>Tested shocks</summary><ul class="scenario-candidates">${r.candidates.map(c => `<li><span>${escapeHtml(candidateLabel(c))}${c.within_b3_recommended_range ? "" : ' <span class="warn">· outside range</span>'}</span><span class="mono">${fmt(c.rain_mm, 2)} mm${c.qualifies ? ' <span class="pos">✓</span>' : ""}</span></li>`).join("")}</ul></details>
+      ${r.candidates.some(c => recommendedRange(c) === null) ? '<p class="warn">Recommended ranges have not been established for this checkpoint.</p>' : ""}
+      <details class="method"><summary>Tested shocks</summary><ul class="scenario-candidates">${r.candidates.map(c => `<li><span>${escapeHtml(candidateLabel(c))}${recommendedRange(c) === false ? ' <span class="warn">· outside range</span>' : ""}</span><span class="mono">${fmt(c.rain_mm, 2)} mm${c.qualifies ? ' <span class="pos">✓</span>' : ""}</span></li>`).join("")}</ul></details>
     </section>
     <section class="scenario-block" aria-labelledby="scenario-spread">
       <h4 id="scenario-spread">Rainfall ensemble</h4>

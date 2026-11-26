@@ -14,9 +14,10 @@ From the repo root, run:
 python -m pip install -r requirements-train.txt
 python train.py --data /path/to/india_climate_train.nc --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0
 python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0
+python train.py --data /path/to/india_climate_train.nc --name e3_roll8_ocean --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4
 ```
 
-Training uses 2005–2019 for fitting and normalization, 2020 for checkpoint and candidate selection, and 2021 for evaluation after selection. The selected run writes `runs/b3_roll4/best.pt`. The server's default bundle loads `model/bundle/pralaya.pt`. [Training recipe](docs/TRAINING.md) · [Selection rule](docs/SELECTION.md) · [2021 evaluation](evaluation/results/report_test.md)
+Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint and candidate selection. The selected run writes `runs/e3_roll8_ocean/best.pt`. The server loads the bundled `e3_roll8_ocean` from `model/bundle/pralaya.pt`. It scored 49.37/70 on 2020 validation, up from 45.92 for `b3_roll4`. The later 2021 comparison is follow-up evaluation. [Training recipe](docs/TRAINING.md) · [Promotion evidence](docs/EXPERIMENTS.md) · [2021 follow-up](evaluation/results/e3_roll8_ocean_test.md)
 
 ## Serve and validate
 

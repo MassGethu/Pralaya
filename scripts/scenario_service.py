@@ -21,7 +21,11 @@ LON = np.arange(STATE_SHAPE[2]) + 65.5
 Box = tuple[FiniteFloat, FiniteFloat, FiniteFloat, FiniteFloat]
 RECIPES = {"warm_ocean": (8, 20, 82, 94), "monsoon_stall": (8, 20, 65, 75)}
 PLAUSIBLE = {"warm_ocean": (-2, 3), "monsoon_stall": (-50, 30)}
-RECOMMENDED = {"warm_ocean": (-1, -0.5, 0.5, 1), "monsoon_stall": (-20, -10, 10, 20, 30)}
+B3_MAGNITUDES = {"warm_ocean": (-1, -0.5, 0.5, 1), "monsoon_stall": (-20, -10, 10, 20, 30)}
+VALIDATED_MAGNITUDES = {
+    "b3_roll4": B3_MAGNITUDES,
+    "e3_roll8_ocean": {**B3_MAGNITUDES, "warm_ocean": (*B3_MAGNITUDES["warm_ocean"], 1.5)},
+}
 Positive = Annotated[FiniteFloat, Field(gt=0)]
 Nonnegative = Annotated[FiniteFloat, Field(ge=0)]
 REFERENCE_ACTION = "No supplemental water"
@@ -138,8 +142,10 @@ def evaluate(request: ScenarioRequest, inference: Inference, land: np.ndarray, c
     def regional_rain(rollout: np.ndarray) -> np.ndarray:
         return np.average(rollout[window, 1][:, area], axis=1, weights=weights)
 
+    validated = VALIDATED_MAGNITUDES.get(checkpoint.get("model_id"))
+    defaults = validated or B3_MAGNITUDES
     specs = request.candidates or [
-        Shock(recipe=recipe, amplitude=amplitude) for recipe, amplitudes in RECOMMENDED.items() for amplitude in amplitudes
+        Shock(recipe=recipe, amplitude=amplitude) for recipe, amplitudes in defaults.items() for amplitude in amplitudes
     ]
     deltas = [build_delta(history[-1], shock) for shock in specs]
     if len({delta.tobytes() for delta, _ in deltas}) != len(deltas):
@@ -162,11 +168,13 @@ def evaluate(request: ScenarioRequest, inference: Inference, land: np.ndarray, c
         else:
             margin = total - request.rainfall_at_least_mm
         amplitude = shock.resolved_amplitude
-        recommended = RECOMMENDED[shock.recipe]
+        b3 = B3_MAGNITUDES[shock.recipe]
+        recommended = validated[shock.recipe] if validated else None
         candidate = {
             "index": index, **shock.model_dump(), "amplitude": amplitude, "cost": cost, "rain_mm": total,
             "amplitude_unit": "K" if shock.recipe == "warm_ocean" else "%",
-            "within_b3_recommended_range": recommended[0] <= amplitude <= recommended[-1],
+            "within_b3_recommended_range": b3[0] <= amplitude <= b3[-1],
+            "within_recommended_range": None if recommended is None else recommended[0] <= amplitude <= recommended[-1],
             "deficit_mm": deficit, "qualifies": margin >= 0 and not baseline_meets_threshold,
             "daily_rain_mm": daily.tolist(),
         }

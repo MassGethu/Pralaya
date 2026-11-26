@@ -67,6 +67,17 @@ class ScenarioServiceTest(unittest.TestCase):
             self.assertEqual(report["best"] is not None, crosses)
             self.assertEqual(report["baseline_meets_threshold"], not crosses)
 
+    def test_defaults_and_range_follow_checkpoint(self):
+        self.parameters.pop("candidates")
+        request = ScenarioRequest(**self.parameters, deficit_mm=0.2)
+        b3 = evaluate(request, ControlledForecast(), self.land, {"model_id": "b3_roll4"})
+        e3 = evaluate(request, ControlledForecast(), self.land, {"model_id": "e3_roll8_ocean"})
+        self.assertEqual(b3["ensemble"]["scenario_count"], 9)
+        self.assertEqual(e3["ensemble"]["scenario_count"], 10)
+        warm = next(c for c in e3["candidates"] if c["recipe"] == "warm_ocean" and c["amplitude"] == 1.5)
+        self.assertTrue(warm["within_recommended_range"])
+        self.assertFalse(warm["within_b3_recommended_range"])
+
 
 if __name__ == "__main__":
     unittest.main()
