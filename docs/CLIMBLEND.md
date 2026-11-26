@@ -76,6 +76,31 @@ done
 python -m scripts.clim_blend_score --split val --data "$data" --out "$score/raw.json"
 ```
 
+## e3_rainstab refit (shipping model): result — TESTED, NOT SHIPPED
+
+e3_rainstab replaced e3 as the shipping model on jarvis/model@f563bf2 (bundle SHA-256 `90605130265bb9282ee0e2bdd5fec698c0f3ac4b2df8802f0a8be94eb68d88db`, checked). The blend was refitted on that bundle's raw rollouts and gated with the same pre-registered G1–G4 and the same single 0.5-floor fallback. The bundle was read from the commit into a scratch file. `model/bundle` on this branch was not changed. Scored 27 Nov at about 02:30 IST. The unblended row reproduces Jarvis's recorded val S of 51.11 and shock stability (93%/95%). Reports are in `evaluation/results/clim_blend_rainstab/`.
+
+| Run | RMSE /30 | CSI /15 | Blur /10 | Causality /15 | **S** |
+|---|---:|---:|---:|---:|---:|
+| e3_rainstab unblended (served path) | 16.11 | 11.07 | 10.00 | 13.92 | **51.11** |
+| e3_rainstab + blend, floor 0.3 | 24.10 | 10.81 | 10.00 | 13.41 | **58.31** |
+| e3_rainstab + blend, floor 0.5 (fallback) | 23.80 | 10.97 | 10.00 | 13.46 | **58.24** |
+
+| Gate | Floor 0.3 | Floor 0.5 |
+|---|---|---|
+| G1 spread: warm_ocean propagates | 97.7% → 82.8% (−14.9 pp) **FAIL** | 97.7% → 85.0% (−12.7 pp) **FAIL** |
+| G1 spread: monsoon_stall propagates | 57.1% → 34.7% (−22.4 pp) **FAIL** | 57.1% → 36.4% (−20.7 pp) **FAIL** |
+| G1 spread: causality points | −0.51 (pass) | −0.46 (pass) |
+| G2 variance | 10/10; lowest ratio tp 0.460 (pass) | 10/10; lowest ratio tp 0.471 (pass) |
+| G3 null | bit-identical (pass) | bit-identical (pass) |
+| G4 gain | +7.20 (pass) | +7.13 (pass) |
+
+Day-8 variance ratios (t2m, tp, u10, v10, msl, tcwv) were 1.011 / 0.608 / 0.796 / 0.826 / 0.981 / 0.901 unblended. With floor 0.3 they were 1.008 / 0.460 / 0.741 / 0.734 / 0.948 / 0.885. With floor 0.5 they were 1.008 / 0.471 / 0.740 / 0.735 / 0.948 / 0.886. As on e3, the fit chose a day-1 persistence share of 1.0 and blended rain (tp weights 0.90 / 0.89 on day 1, ocean / land, down to 0.38 / 0.37 by day 8 at floor 0.3).
+
+**Verdict.** G1 failed at both floors, for the same reason as on e3, so the blend does not ship with e3_rainstab. No blend artifact enters the build. 2021 and the ship checks were not run. Frozen artifacts, kept outside the repo and each 391,715 bytes: floor 0.3 `b6d350bceb3573652f955cae0b84cba678874efa33c7fcc1144a28d849aab1c9`, floor 0.5 `75810bae7772c808354f0c2414ffbbba8de7b9ef41ec5ddbbe6b726aa2e56255`.
+
+To reproduce, run the e3 commands above with `--ckpt` set to a copy of `model/bundle/pralaya.pt` from f563bf2, passing it to both scripts.
+
 # Original experiment: blend for b3_roll4 (26 Nov)
 
 The served model and checkpoint stay fixed. The blend uses a seasonal-mean prior fitted on 2005–2019 (7 coefficients per cell) for each weather channel. The coefficients describe a mean and three annual harmonics. Decode the request's last-input phase with `atan2` and advance it by one 365-day cycle step per lead. For leads 1–10, interpolate from that seasonal field (or the rung 4 reference) toward the raw model rollout with weight `a` in [0.3, 1]. Leads 11–14 use the original rollout. Apply the existing physical clipping after interpolation. The adapter applies the shock once, before the model rollout. Without `postprocess/clim_blend.pt`, the model takes the original inference path.
