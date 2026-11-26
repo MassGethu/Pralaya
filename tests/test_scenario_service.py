@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from inference_adapter import HISTORY_SHAPE
-from scripts.scenario_service import ScenarioRequest, evaluate
+from scripts.scenario_service import ScenarioRequest, Shock, build_delta, evaluate
 
 
 class ControlledForecast:
@@ -48,6 +48,24 @@ class ScenarioServiceTest(unittest.TestCase):
         self.parameters["candidates"][0]["box"] = [18, 26, 74, 84]
         with self.assertRaisesRegex(ValueError, "stay inside"):
             self.result(1)
+
+    def test_signed_shocks_match_recipe_units_and_limits(self):
+        last = np.asarray(self.parameters["init_states"][-1], dtype=np.float32)
+        cool, _ = build_delta(last, Shock(recipe="warm_ocean", amplitude=-1))
+        wind, _ = build_delta(last, Shock(recipe="monsoon_stall", amplitude=30))
+        self.assertEqual(float(cool[0].min()), -1)
+        self.assertEqual(float(cool[5].min()), -1.75)
+        self.assertAlmostEqual(float(wind[2].max()), 0.6)
+        with self.assertRaisesRegex(ValueError, "amplitude must be nonzero and within"):
+            Shock(recipe="monsoon_stall", amplitude=31)
+
+    def test_rainfall_threshold_detects_crossing_and_prime_already_above(self):
+        self.parameters["candidates"] = [{"recipe": "warm_ocean", "amplitude": -1}]
+        for threshold, crosses in [(12.1, True), (11.9, False)]:
+            request = ScenarioRequest(**self.parameters, rainfall_at_least_mm=threshold)
+            report = evaluate(request, ControlledForecast(), self.land, {})
+            self.assertEqual(report["best"] is not None, crosses)
+            self.assertEqual(report["baseline_meets_threshold"], not crosses)
 
 
 if __name__ == "__main__":
