@@ -86,3 +86,32 @@ export function agriChartSvg(res: Extract<ImpactResult, { empty: false }>, mode:
   s += `<text x="${W - pr}" y="${H - 2}" text-anchor="end" class="svg-tick">dry day (&lt; ${dry} mm/day): <tspan class="lg-prime">▬</tspan> Prime <tspan class="lg-branch">▬</tspan> Branch</text>`;
   return s;
 }
+
+type Impact = Extract<ImpactResult, { empty: false }>;
+
+/** Climate Pulse-style headline cards: farm-region rain change, dry-spell change and ripple reach for the day. */
+export function outcomeCardsHtml(imp: Impact, day: number, reach: number): string {
+  const cls = (v: number) => (v < 0 ? "neg" : v > 0 ? "pos" : "");
+  const pct = imp.rainChangePct == null ? "" : ` (${signed(imp.rainChangePct, 0)} %)`;
+  return `
+    <div class="kpi kpi-hero"><span class="kpi-k">Farm-region rain vs Prime · days ${imp.days[0]}–${imp.days[imp.days.length - 1]}</span>
+      <b class="${cls(imp.rainChangeMm)}">${signed(imp.rainChangeMm, 1)} mm</b><span>${fmt(imp.prime.cumulativeRain, 1)} → ${fmt(imp.branch.cumulativeRain, 1)} mm${pct}</span></div>
+    <div class="kpi"><span class="kpi-k">Longest dry spell</span><b class="${cls(-imp.drySpellChange)}">${signed(imp.drySpellChange, 0)} d</b><span>${imp.prime.longestDrySpell} → ${imp.branch.longestDrySpell} days</span></div>
+    <div class="kpi"><span class="kpi-k">Ripple reach · day ${day}</span><b>${(reach * 100).toFixed(0)} %</b><span>cells outside the box changed</span></div>`;
+}
+
+export function indicatorTableHtml(res: Impact, branchRunNo: number, dry: number, heavy: number): string {
+  const p = res.prime, b = res.branch;
+  return `
+    <p class="hint">${res.cells} land cells · days ${res.days[0]}–${res.days[res.days.length - 1]}</p>
+    <table class="agri-table">
+      <thead><tr><th></th><th>Prime</th><th>Branch #${branchRunNo}</th><th>Branch − Prime</th></tr></thead>
+      <tbody>
+        <tr><td>Cumulative rainfall</td><td class="mono">${fmt(p.cumulativeRain, 1)} mm</td><td class="mono">${fmt(b.cumulativeRain, 1)} mm</td><td class="mono">${signed(res.rainChangeMm, 1)} mm</td></tr>
+        <tr><td>Longest dry spell</td><td class="mono">${p.longestDrySpell} d</td><td class="mono">${b.longestDrySpell} d</td><td class="mono">${signed(res.drySpellChange, 0)} d</td></tr>
+        <tr><td>Dry days (&lt; ${dry} mm/day)</td><td class="mono">${p.dryDays}</td><td class="mono">${b.dryDays}</td><td class="mono">${signed(b.dryDays - p.dryDays, 0)}</td></tr>
+        <tr><td>Heavy-rain exposure (≥ ${heavy} mm/day)</td><td class="mono">${fmt(100 * p.heavyShare, 1)} %</td><td class="mono">${fmt(100 * b.heavyShare, 1)} %</td><td class="mono">${signed(100 * (b.heavyShare - p.heavyShare), 1)} pp</td></tr>
+        <tr><td>Mean 2 m temperature</td><td class="mono">${fmt(p.meanTempC, 1)} °C</td><td class="mono">${fmt(b.meanTempC, 1)} °C</td><td class="mono">${signed(b.meanTempC - p.meanTempC, 2)} K</td></tr>
+      </tbody>
+    </table>`;
+}

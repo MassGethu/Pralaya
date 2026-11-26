@@ -1,16 +1,23 @@
 import { ApiError, type Health, health, simulate } from "./api";
 import {
-  CHANNELS, CHANNEL_INFO, CHANNEL_STD, type Channel, DEFAULT_STEPS, type InitialState, NCELL, NCH, NLON, type Rollout,
+  CHANNELS, CHANNEL_INFO, CHANNEL_STD, type Channel, DEFAULT_STEPS, type InitialState, NCELL, NCH, type Rollout,
   latOf, lonOf, parseInitialState,
 } from "./contract";
 import { type ViewVar, VIEW_VARS, difference, displayField, maxAbs, sharedRange } from "./fields";
 import { fixtureSimulate, syntheticInput } from "./fixture";
 import { type ImpactResult, computeImpact } from "./impact";
 import { type Box, boxCellCount, boxFromDegrees, boxMask, clampBox, describeBox } from "./region";
-import { type AgriMode, agriChartSvg, legendHtml, rippleChartSvg } from "./charts";
+import { type AgriMode, agriChartSvg, indicatorTableHtml, legendHtml, outcomeCardsHtml, rippleChartSvg } from "./charts";
 import { escapeHtml, fmt, signed } from "./format";
-import { CITIES, type MapContent, MapView, type Scale, classedRainScale, divergingScale, landFrom, sequentialScale } from "./render";
+import { WindFlow, type WindSource } from "./particles";
+import { CITIES, type MapContent, MapView, type Scale, classedRainScale, divergingScale, gridFrom, sequentialScale } from "./render";
 import { RIPPLE_THRESHOLDS, outsideMask, rippleFraction } from "./ripple";
+import { type HudTag, renderHud } from "./hud";
+import { Timeline } from "./timeline";
+import { CommandField } from "./command";
+import { type AppApi, buildCommands, nextAction } from "./actions";
+import { introEnabled, playIntro } from "./intro";
+import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
 // ---------------- state ----------------
@@ -24,6 +31,7 @@ const sameEngine = (a: Engine, b: Engine) => a.kind === b.kind && (a.kind === "f
 
 const S = {
   land: new Float32Array(NCELL) as Float32Array<ArrayBufferLike>,
+  oro: new Float32Array(NCELL) as Float32Array<ArrayBufferLike>,
   input: null as InitialState | null,
   inputError: "",
   steps: DEFAULT_STEPS,
@@ -61,7 +69,8 @@ async function boot() {
     const res = await fetch("/static/static_fields.json");
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const js = await res.json();
-    S.land = landFrom(js.land_sea_mask);
+    S.land = gridFrom(js.land_sea_mask);
+    S.oro = gridFrom(js.orography_m);
   } catch (e) {
     showFatal(`Could not load local static fields (land-sea mask): ${(e as Error).message}`);
     return;
@@ -70,20 +79,23 @@ async function boot() {
   setupControls();
   pollHealth();
   setInterval(pollHealth, 5000);
+  startClock($("clock"));
   renderAll();
 }
 
-function showFatal(msg: string) {
-  document.body.insertAdjacentHTML("afterbegin", `<div class="fatal">${msg}</div>`);
-}
+const showFatal = (msg: string) => document.body.insertAdjacentHTML("afterbegin", `<div class="fatal">${escapeHtml(msg)}</div>`);
 
 // ---------------- maps ----------------
-let mapMain: MapView, mapShock: MapView;
+let mapMain: MapView, mapShock: MapView, flow: WindFlow;
 
 function setupMaps() {
-  const geo = { land: S.land, cities: CITIES };
+  const geo = { land: S.land, orography: S.oro, cities: CITIES };
+  flow = new WindFlow($<HTMLCanvasElement>("map-flow"));
   mapMain = new MapView($("map-main"), geo, true);
+  mapMain.onResize = (g) => { flow.resize(g); renderHudNow(); };
+  flow.resize(mapMain.geometry());
   mapShock = new MapView($("map-shock"), geo, false, 6);
+  mapShock.setOptions({ smooth: false });
   mapMain.onHover = (cell, ev) => {
     S.hover = cell;
     renderMaps();
@@ -107,7 +119,22 @@ function setupMaps() {
 }
 
 // ---------------- controls ----------------
+let cmd: CommandField | null = null;
+const api: AppApi = {
+  hasInput: () => !!S.input, hasPrime: () => !!S.prime && S.prime.inputId === S.input?.id,
+  hasBranch: () => comparable() && !!S.branch && !S.branch.zero,
+  stale: () => !!S.branch && !S.branch.zero && S.branch.specKey !== specKey(S.shock),
+  serverReady: () => !!currentEngine(), busy: () => S.busy.prime || S.busy.branch, shockLabel: () => S.shock.label,
+  loadState: () => $<HTMLInputElement>("file-input").click(), runPrime: () => void runPrime(), runBranch: () => void runBranch(false),
+  zeroCheck: () => void runBranch(true), play: () => { if (!playTimer) togglePlay(); }, open: (t) => openDrawer(t),
+  preset: (id) => { const p = PRESETS.find((x) => x.id === id); if (p) { S.shock = p.spec(); renderAll(); } },
+  setView: (v) => { S.mapView = v; renderAll(); }, setVar: (v) => { S.view = v; renderAll(); },
+  drawFarm: () => { S.brush = "impact"; renderAll(); }, replayIntro: playIntro,
+};
+
 function setupControls() {
+  cmd = new CommandField($("cmd-field"), $("cmd-text"), $<HTMLButtonElement>("cmd-go"), $("cmd-panel"), $<HTMLInputElement>("cmd-input"), $("cmd-list"), () => buildCommands(api));
+  $("cmd-field").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target === e.currentTarget) cmd?.runNext(); });
   $("steps-label").textContent = String(S.steps);
   $<HTMLInputElement>("file-input").addEventListener("change", onFile);
   $("load-fixture").addEventListener("click", () => setInput(syntheticInput(S.land)));
@@ -156,8 +183,11 @@ function setupControls() {
   const seg = $("var-seg");
   for (const v of VIEW_VARS) {
     const b = document.createElement("button");
-    b.className = "seg-btn";
-    b.innerHTML = `${VAR_ICONS[v.id]}<span>${v.label}</span>`;
+    b.className = "layer-row";
+    b.setAttribute("role", "radio");
+    b.title = `${v.label} (${v.unit})`;
+    b.setAttribute("aria-label", v.label);
+    b.innerHTML = `<span class="pill-ic">${VAR_ICONS[v.id]}</span><span class="layer-name">${v.label}</span>`;
     b.dataset.var = v.id;
     b.addEventListener("click", () => { S.view = v.id; renderAll(); });
     seg.append(b);
@@ -165,6 +195,27 @@ function setupControls() {
   document.querySelectorAll<HTMLButtonElement>("#view-seg [data-view]").forEach((b) =>
     b.addEventListener("click", () => { S.mapView = b.dataset.view as MapMode; renderAll(); }),
   );
+  $("drawer-close").addEventListener("click", closeDrawer);
+  $("open-setup").addEventListener("click", () => openDrawer("setup"));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
+  document.querySelectorAll<HTMLButtonElement>(".tab[data-tab]").forEach((t) =>
+    t.addEventListener("click", () => setTab(t.dataset.tab as TabName)),
+  );
+  document.querySelectorAll<HTMLButtonElement>(".st-btn[data-step]").forEach((b) =>
+    b.addEventListener("click", () => {
+      const s = b.dataset.step;
+      if (s === "input") $<HTMLInputElement>("file-input").click();
+      else if (s === "prime") void runPrime();
+      else if (s === "shock") { openDrawer("shock"); S.brush = "shock"; renderAll(); }
+      else if (s === "branch") void runBranch(false);
+    }),
+  );
+  const flowToggle = $<HTMLInputElement>("tg-flow");
+  flowToggle.checked = !WindFlow.reducedMotion();
+  flow.setEnabled(flowToggle.checked);
+  flowToggle.addEventListener("change", () => flow.setEnabled(flowToggle.checked));
+  $<HTMLInputElement>("tg-terrain").addEventListener("change", (e) => mapMain.setOptions({ terrain: (e.target as HTMLInputElement).checked }));
+  $<HTMLInputElement>("tg-smooth").addEventListener("change", (e) => mapMain.setOptions({ smooth: (e.target as HTMLInputElement).checked }));
   const step = (d: number) => {
     const steps = S.prime?.rollout.steps ?? S.steps;
     const next = Math.min(steps, Math.max(1, S.day + d));
@@ -173,10 +224,7 @@ function setupControls() {
   $("day-play").addEventListener("click", togglePlay);
   $("day-prev").addEventListener("click", () => { stopPlay(); step(-1); });
   $("day-next").addEventListener("click", () => { stopPlay(); step(1); });
-  $("day-strip").addEventListener("click", (e) => {
-    const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-day]");
-    if (b) { stopPlay(); S.day = Number(b.dataset.day); renderAll(); }
-  });
+  timeline = new Timeline($("day-strip"), (d) => { stopPlay(); S.day = d; renderAll(); });
   document.querySelectorAll<HTMLButtonElement>("[data-agri-mode]").forEach((b) =>
     b.addEventListener("click", () => { agriMode = b.dataset.agriMode as AgriMode; renderAgri(); }),
   );
@@ -306,6 +354,7 @@ async function runBranch(zero: boolean) {
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
     S.mapView = "diff"; // the shock's effect is the point of the demo
+    if (!zero) setTab("impact");
     flash(document.querySelector(".map-host"));
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
@@ -365,6 +414,7 @@ const varInfo = () => VIEW_VARS.find((v) => v.id === S.view)!;
 // ---------------- rendering ----------------
 function renderAll() {
   renderStepper();
+  renderHudNow();
   renderStatus();
   renderInputInfo();
   renderShockControls();
@@ -391,20 +441,7 @@ function renderStatus() {
 }
 
 function renderInputInfo() {
-  const el = $("input-info");
-  if (S.inputError) { el.innerHTML = `<p class="err">${escapeHtml(S.inputError)}</p>`; return; }
-  if (!S.input) { el.innerHTML = ""; return; }
-  const m = S.input.meta;
-  const doy = typeof m.day_of_year === "number" ? m.day_of_year : null;
-  const ang = Math.atan2(S.input.doySinCos[0], S.input.doySinCos[1]);
-  const derivedDoy = Math.round(((ang < 0 ? ang + 2 * Math.PI : ang) * 365) / (2 * Math.PI));
-  el.innerHTML = `
-    <dl class="kv">
-      <dt>Source</dt><dd>${escapeHtml(S.input.label)}</dd>
-      ${m.last_input_day ? `<dt>Last input day</dt><dd class="mono">${escapeHtml(String(m.last_input_day))}</dd>` : ""}
-      <dt>doy_sincos</dt><dd class="mono">[${fmt(S.input.doySinCos[0], 4)}, ${fmt(S.input.doySinCos[1], 4)}] ≈ doy ${doy ?? derivedDoy}</dd>
-      <dt>Shape</dt><dd class="mono">[3, 6, 32, 36] ✓ finite, physical ranges ✓</dd>
-    </dl>`;
+  $("input-info").innerHTML = S.inputError ? `<p class="err">${escapeHtml(S.inputError)}</p>` : S.input ? inputInfoHtml(S.input) : "";
 }
 
 function renderShockControls() {
@@ -476,7 +513,8 @@ function renderButtons() {
   $<HTMLButtonElement>("zero-check").disabled = !ok || S.busy.branch;
 
   const pi = $("prime-info");
-  if (S.primeErr) pi.innerHTML = `<p class="err">Prime failed: ${escapeHtml(S.primeErr)}</p>`;
+  $("prime-err").innerHTML = S.primeErr ? `<p class="err">Prime failed: ${escapeHtml(S.primeErr)}</p>` : "";
+  if (S.primeErr) pi.innerHTML = "";
   else if (S.busy.prime) pi.innerHTML = `<p class="hint pulse">Waiting for /simulate…</p>`;
   else {
     const down = !engine && S.input ? `<p class="err">Server not ready (${escapeHtml(S.health?.detail ?? "no answer")}). Start it with <code>python serve.py --port 8000</code>; results below stay tied to their run numbers.</p>` : "";
@@ -509,25 +547,18 @@ function renderButtons() {
 }
 
 function renderToolbar() {
-  document.querySelectorAll<HTMLButtonElement>("#var-seg .seg-btn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.var === S.view)));
+  document.querySelectorAll<HTMLButtonElement>("#var-seg .layer-row").forEach((b) => b.setAttribute("aria-checked", String(b.dataset.var === S.view)));
+  renderEventHead();
   const steps = S.prime?.rollout.steps ?? S.steps;
   renderDayStrip(steps);
-  $("day-out").textContent = `Day ${S.day} of ${steps}`;
+  const date = forecastDateLabel(S.input?.meta.last_input_day, S.day);
+  $("day-out").textContent = `Day ${S.day}${date ? ` · ${date}` : ` of ${steps}`}`;
   renderOutcome();
 
   const line = $("scenario-line");
-  if (!S.branch) {
-    line.innerHTML = S.prime ? `<span>Prime run #${S.prime.runNo} ready. Choose a shock and run Branch.</span>` : "";
-    line.dataset.state = "idle";
-    return;
-  }
-  const b = S.branch;
-  const title = b.zero ? "Zero shock (all-zero tensor)" : `${escapeHtml(b.spec!.label)} · ${describeBox(b.spec!.box)}`;
-  const stale = !b.zero && b.specKey !== specKey(S.shock);
-  line.dataset.state = stale ? "stale" : "current";
-  line.innerHTML = `<span class="tag">Branch #${b.runNo}</span><span>${title}</span>${
-    b.spec ? `<span class="mono">${b.spec.components.map((c) => `${c.channel} ${c.mode === "add" ? signed(c.value, 2) + " " + CHANNEL_INFO[c.channel].unit : signed(c.value, 0) + " %"}`).join(" · ")}</span>` : ""
-  }${stale ? `<span class="warn">Shock edited since this run — maps show Branch #${b.runNo}. Run Branch to update.</span>` : ""}`;
+  const r = scenarioLine(S.branch, S.prime?.runNo ?? null, specKey(S.shock));
+  line.innerHTML = r.html;
+  line.dataset.state = r.state;
 }
 
 // ---------------- play through forecast days (Ventusky-style timeline) ----------------
@@ -550,17 +581,6 @@ function togglePlay() {
   }, PLAY_MS);
 }
 
-const svgIcon = (d: string) => `<svg class="vi" viewBox="0 0 16 16" aria-hidden="true"><path d="${d}"/></svg>`;
-const VAR_ICONS: Record<ViewVar, string> = {
-  tp: svgIcon("M8 1.5C8 1.5 3.5 7 3.5 10a4.5 4.5 0 0 0 9 0C12.5 7 8 1.5 8 1.5z"),
-  t2m: svgIcon("M6.5 2.5a1.5 1.5 0 0 1 3 0v6.8a3 3 0 1 1-3 0z"),
-  wind: svgIcon("M1.5 6h8a2 2 0 1 0-2-2M1.5 10h10.5a2 2 0 1 1-2 2"),
-  u10: svgIcon("M2 8h11M9.5 4.5 13 8l-3.5 3.5"),
-  v10: svgIcon("M8 14V3M4.5 6.5 8 3l3.5 3.5"),
-  msl: svgIcon("M2.5 11a5.5 5.5 0 0 1 11 0M8 11l2.5-3.5"),
-  tcwv: svgIcon("M4.5 11.5h7.5a2.5 2.5 0 0 0 0-5 4 4 0 0 0-7.6-1A3 3 0 0 0 4.5 11.5z"),
-};
-
 let agriMode: AgriMode = "abs";
 
 /** Ripple reach per day for the active view, or null when there is no non-zero Branch. */
@@ -573,30 +593,11 @@ function rippleSeries(): number[] | null {
   });
 }
 
+let timeline: Timeline | null = null;
+
 function renderDayStrip(steps: number) {
-  const strip = $("day-strip");
-  const ripple = rippleSeries();
-  if (strip.childElementCount !== steps) {
-    strip.replaceChildren();
-    for (let d = 1; d <= steps; d++) {
-      const b = document.createElement("button");
-      b.className = "day-stop";
-      b.dataset.day = String(d);
-      b.setAttribute("role", "radio");
-      b.innerHTML = `<span class="day-n">${d}</span><span class="day-bar"><i></i></span>`;
-      strip.append(b);
-    }
-  }
-  strip.querySelectorAll<HTMLButtonElement>(".day-stop").forEach((b) => {
-    const d = Number(b.dataset.day);
-    b.setAttribute("aria-checked", String(d === S.day));
-    b.tabIndex = d === S.day ? 0 : -1;
-    const v = ripple ? ripple[d - 1] : 0;
-    // Bars are relative to the largest day so the trend is visible; the tooltip gives the absolute share.
-    const peak = ripple ? Math.max(...ripple) : 0;
-    b.querySelector<HTMLElement>(".day-bar i")!.style.transform = `scaleX(${peak > 0 ? v / peak : 0})`;
-    b.title = ripple ? `Day ${d}: ripple reach ${(v * 100).toFixed(1)} % of cells outside the shock box (bar relative to the largest day)` : `Forecast day ${d}`;
-  });
+  const dates = Array.from({ length: steps }, (_, i) => forecastDateLabel(S.input?.meta.last_input_day, i + 1));
+  timeline?.set({ steps, day: S.day, dates, ripple: rippleSeries() });
   $<HTMLButtonElement>("day-prev").disabled = S.day <= 1;
   $<HTMLButtonElement>("day-next").disabled = S.day >= steps;
 }
@@ -620,14 +621,7 @@ function renderOutcome() {
   }
   if (imp.empty) { el.innerHTML = `<div class="kpi kpi-empty"><span class="kpi-k">Farm region</span><span class="err">${escapeHtml(imp.reason)}</span></div>`; return; }
   const ripple = rippleSeries();
-  const reach = ripple ? ripple[S.day - 1] : 0;
-  const cls = (v: number) => (v < 0 ? "neg" : v > 0 ? "pos" : "");
-  const pct = imp.rainChangePct == null ? "" : ` (${signed(imp.rainChangePct, 0)} %)`;
-  el.innerHTML = `
-    <div class="kpi kpi-hero"><span class="kpi-k">Farm-region rain vs Prime · days ${imp.days[0]}–${imp.days[imp.days.length - 1]}</span>
-      <b class="mono ${cls(imp.rainChangeMm)}">${signed(imp.rainChangeMm, 1)} mm</b><span>${fmt(imp.prime.cumulativeRain, 1)} → ${fmt(imp.branch.cumulativeRain, 1)} mm${pct}</span></div>
-    <div class="kpi"><span class="kpi-k">Longest dry spell</span><b class="mono ${cls(-imp.drySpellChange)}">${signed(imp.drySpellChange, 0)} d</b><span>${imp.prime.longestDrySpell} → ${imp.branch.longestDrySpell} days</span></div>
-    <div class="kpi"><span class="kpi-k">Ripple reach · day ${S.day}</span><b class="mono">${(reach * 100).toFixed(0)} %</b><span>cells outside the box changed</span></div>`;
+  el.innerHTML = outcomeCardsHtml(imp, S.day, ripple ? ripple[S.day - 1] : 0);
 }
 
 /** Header stepper + "what next" hint so a first-time user always knows the next click. */
@@ -639,17 +633,72 @@ function renderStepper() {
   set("st-prime", hasPrime ? "done" : hasInput ? "now" : "todo");
   set("st-shock", hasBranch ? "done" : hasPrime ? "now" : "todo");
   set("st-branch", hasBranch ? "done" : hasPrime ? "now" : "todo");
-  const hint = !hasInput ? "Start here: load a three-day input."
-    : !currentEngine() ? "The inference server is not ready yet."
-    : !hasPrime ? "Next: run Timeline Prime."
-    : !hasBranch ? "Next: drag a shock box on the map (or pick a preset), then Run Branch."
-    : "Try another shock, play the days, or read the farm impact on the right.";
-  $("next-hint").textContent = hint;
+  const n = nextAction(api);
+  cmd?.setNext(n);
+  $("next-hint").textContent = `Next: ${n.label}${n.detail ? ` · ${n.detail}` : ""}`;
+}
+
+/** Wind particles follow the timeline on screen: Prime, Branch, or both halves in swipe view. */
+function updateFlow(mode: MapMode, hasBranch: boolean) {
+  const wind = (r: Rollout | undefined): WindSource | null => {
+    if (!r) return null;
+    const base = (S.day - 1) * NCH * NCELL;
+    return { u: r.data.subarray(base + 2 * NCELL, base + 3 * NCELL), v: r.data.subarray(base + 3 * NCELL, base + 4 * NCELL) };
+  };
+  const p = wind(S.prime?.rollout), b = hasBranch ? wind(S.branch?.rollout) : null;
+  if (mode === "swipe" && b) flow.setWind(p, b, S.split);
+  else flow.setWind((mode === "branch" || mode === "diff") && b ? b : p);
+}
+
+function openDrawer(tab: TabName) { setTab(tab); $("drawer").dataset.open = "true"; }
+function closeDrawer() { $("drawer").dataset.open = "false"; }
+
+/** U3 HUD: the shock and farm region carry their own live readouts and actions, pinned on the map. */
+function renderHudNow() {
+  if (!mapMain) return;
+  const b = S.branch && comparable() ? S.branch : null;
+  const stale = !!b && !b.zero && b.specKey !== specKey(S.shock);
+  const ready = !!S.input && !!S.prime && S.prime.inputId === S.input.id && !!currentEngine();
+  const comp = S.shock.components.map((c) => `${c.channel} ${c.mode === "add" ? `${signed(c.value, 1)} ${CHANNEL_INFO[c.channel].unit}` : `${signed(c.value, 0)}%`}`).join(" · ");
+  const diffs = diffFields();
+  const peak: [string, string][] = b && !b.zero && !stale && diffs ? [[`Peak Δ today`, `${fmt(maxAbs(diffs[S.day - 1]), 1)} ${varInfo().unit}`]] : [];
+  const shock: HudTag = {
+    box: S.shock.box, kind: "shock",
+    kicker: b && !b.zero ? (stale ? `Shock · edited since #${b.runNo}` : `Shock · Branch #${b.runNo}`) : S.busy.branch ? "Shock · running" : "Shock · draft",
+    state: S.busy.branch ? "busy" : b && !b.zero ? (stale ? "stale" : b.engine.kind === "fixture" ? "fixture" : "live") : "draft",
+    title: S.shock.label, sub: comp, rows: peak, pin: b && !b.zero ? `#${b.runNo}` : "Draft", onOpen: () => openDrawer("shock"),
+    actions: [
+      { label: "Edit", onClick: () => openDrawer("shock") },
+      { label: S.busy.branch ? "Running…" : "Run Branch", primary: true, disabled: !ready || S.busy.branch, onClick: () => void runBranch(false) },
+    ],
+  };
+  const imp = currentImpact();
+  const f = S.impactBox;
+  const farmRows: [string, string][] = imp && !imp.empty ? [[`Rain vs Prime, days ${imp.days[0]}–${imp.days[imp.days.length - 1]}`, `${signed(imp.rainChangeMm, 1)} mm`]] : [];
+  const farm: HudTag = {
+    box: f, kind: "farm", kicker: "Farm region", state: imp && !imp.empty ? "live" : "empty",
+    title: "Farm region",
+    sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(0)}–${latOf(f.r1).toFixed(0)}°N · ${lonOf(f.c0).toFixed(0)}–${lonOf(f.c1).toFixed(0)}°E`,
+    rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–", onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
+  };
+  renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: null });
+}
+
+/** Tempest-style event header: what scenario the card is about and whether the maps are current. */
+function renderEventHead() {
+  const b = S.branch && comparable() ? S.branch : null;
+  const stale = !!b && !b.zero && b.specKey !== specKey(S.shock);
+  const title = b ? (b.zero ? "Zero shock (all-zero tensor)" : b.spec!.label) : S.prime ? `${S.shock.label} (not run yet)` : "Scenario";
+  const status = b ? `Branch #${b.runNo} · ${engineLabel(b.engine)}${stale ? " · shock edited since" : ""}`
+    : S.busy.branch ? "Running Branch…" : S.prime ? "Draft · pick a shock, then Run Branch" : "No scenario yet";
+  $("ev-title").textContent = title;
+  $("ev-status").textContent = status;
+  $("ev-dot").dataset.state = b ? (stale ? "stale" : b.engine.kind === "fixture" ? "fixture" : "live") : S.busy.branch ? "busy" : "idle";
 }
 
 function renderMaps() {
   const vi = varInfo();
-  const ov = { shockBox: S.branch?.spec?.box ?? S.shock.box, impactBox: S.impactBox, draftBox: S.draft, draftKind: S.brush, hoverCell: S.hover };
+  const ov = { shockBox: S.shock.box, impactBox: S.impactBox, draftBox: S.draft, draftKind: S.brush, hoverCell: S.hover };
   const scale = absScale();
   const pf = S.prime ? displayField(S.prime.rollout, S.day, S.view) : null;
   const bf = S.branch && comparable() ? displayField(S.branch.rollout, S.day, S.view) : null;
@@ -679,6 +728,8 @@ function renderMaps() {
     leg = legendHtml(ds, vi.deltaUnit, m === 0 ? "no difference on any day" : "zero-centred, fixed across days");
   }
   mapMain.draw(content, ov);
+  $("map-host").dataset.view = mode;
+  updateFlow(mode, !!bf);
   const engine = S.prime ? `<span class="cap-engine" data-kind="${S.prime.engine.kind}">${escapeHtml(engineLabel(S.prime.engine))}</span>` : "";
   $("map-caption").innerHTML = caption ? `${engine}<span>${escapeHtml(caption)} · ${escapeHtml(vi.label)}</span>` : "";
   $("map-caption").hidden = !caption;
@@ -707,23 +758,11 @@ function renderMaps() {
   }
 }
 
-
 function renderTooltip(ev: PointerEvent) {
-  const tip = $("tooltip");
-  if (S.hover == null) { tip.hidden = true; return; }
-  const i = S.hover, r = Math.floor(i / NLON), c = i % NLON, vi = varInfo();
-  const rows = [`<b>${latOf(r).toFixed(1)}°N, ${lonOf(c).toFixed(1)}°E</b>`, `<span class="mono">cell [${r}, ${c}] · land ${S.land[i].toFixed(2)}</span>`];
-  if (S.prime) rows.push(`Prime: <span class="mono">${fmt(displayField(S.prime.rollout, S.day, S.view)[i])} ${vi.unit}</span>`);
-  if (S.branch && comparable()) {
-    const p = displayField(S.prime!.rollout, S.day, S.view)[i], b = displayField(S.branch.rollout, S.day, S.view)[i];
-    rows.push(`Branch: <span class="mono">${fmt(b)} ${vi.unit}</span>`, `Δ: <span class="mono">${signed(b - p, 3)} ${vi.deltaUnit}</span>`);
-  }
-  if (boxMask(S.shock.box)[i]) rows.push(`<span class="tag-shock">in shock box</span>`);
-  if (boxMask(S.impactBox)[i]) rows.push(`<span class="tag-impact">in impact region</span>`);
-  tip.innerHTML = rows.join("<br>");
-  tip.hidden = false;
-  tip.style.left = `${ev.clientX + 14}px`;
-  tip.style.top = `${ev.clientY + 14}px`;
+  const i = S.hover, vi = varInfo();
+  const pv = S.prime ? displayField(S.prime.rollout, S.day, S.view)[i ?? 0] : null;
+  const bv = S.branch && comparable() ? displayField(S.branch.rollout, S.day, S.view)[i ?? 0] : null;
+  showTooltip($("tooltip"), ev, i, S.land, pv, bv, vi, i != null && !!boxMask(S.shock.box)[i], i != null && !!boxMask(S.impactBox)[i]);
 }
 
 function renderRipple() {
@@ -747,32 +786,12 @@ function renderAgri() {
     chart.innerHTML = "";
     return;
   }
-  const p = res.prime, b = res.branch;
-  out.innerHTML = `
-    <p class="hint">${res.cells} land cells · days ${res.days[0]}–${res.days[res.days.length - 1]}</p>
-    <table class="agri-table">
-      <thead><tr><th></th><th>Prime</th><th>Branch #${S.branch!.runNo}</th><th>Branch − Prime</th></tr></thead>
-      <tbody>
-        <tr><td>Cumulative rainfall</td><td class="mono">${fmt(p.cumulativeRain, 1)} mm</td><td class="mono">${fmt(b.cumulativeRain, 1)} mm</td><td class="mono">${signed(res.rainChangeMm, 1)} mm</td></tr>
-        <tr><td>Longest dry spell</td><td class="mono">${p.longestDrySpell} d</td><td class="mono">${b.longestDrySpell} d</td><td class="mono">${signed(res.drySpellChange, 0)} d</td></tr>
-        <tr><td>Dry days (&lt; ${num("agri-dry")} mm/day)</td><td class="mono">${p.dryDays}</td><td class="mono">${b.dryDays}</td><td class="mono">${signed(b.dryDays - p.dryDays, 0)}</td></tr>
-        <tr><td>Heavy-rain exposure (≥ ${num("agri-heavy")} mm/day)</td><td class="mono">${fmt(100 * p.heavyShare, 1)} %</td><td class="mono">${fmt(100 * b.heavyShare, 1)} %</td><td class="mono">${signed(100 * (b.heavyShare - p.heavyShare), 1)} pp</td></tr>
-        <tr><td>Mean 2 m temperature</td><td class="mono">${fmt(p.meanTempC, 1)} °C</td><td class="mono">${fmt(b.meanTempC, 1)} °C</td><td class="mono">${signed(b.meanTempC - p.meanTempC, 2)} K</td></tr>
-      </tbody>
-    </table>`;
+  out.innerHTML = indicatorTableHtml(res, S.branch!.runNo, num("agri-dry"), num("agri-heavy"));
   chart.innerHTML = agriChartSvg(res, agriMode, S.day, num("agri-dry"));
   document.querySelectorAll<HTMLButtonElement>("[data-agri-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.agriMode === agriMode)));
   $("agri-source").textContent = `Data: ${engineLabel(S.prime!.engine)} · Prime #${S.prime!.runNo} vs Branch #${S.branch!.runNo} · land-cell mean, cos(lat) weighted`;
 }
 
 
-/** One short highlight when a new Branch lands: the peak moment of the demo. */
-function flash(el: Element | null) {
-  if (!el) return;
-  el.classList.remove("fresh");
-  void (el as HTMLElement).offsetWidth; // restart the animation
-  el.classList.add("fresh");
-}
-
-
+if (introEnabled()) playIntro();
 boot();
