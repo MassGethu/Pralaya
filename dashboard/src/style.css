@@ -38,7 +38,7 @@
 
 /* Type: 11 label (spaced caps) · 12 meta · 13/14 body · 16 title · 22 card title · 30 hero number. */
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink); font: 14px/1.45 var(--sans); -webkit-font-smoothing: antialiased; }
+html, body { margin: 0; height: 100%; background: var(--void); color: var(--ink); font: 14px/1.45 var(--sans); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; }
 h2, h3, h4 { margin: 0; text-wrap: balance; }
 p { margin: 0; text-wrap: pretty; }
@@ -152,7 +152,7 @@ input[aria-invalid="true"] { border-color: rgba(255, 93, 93, 0.7); }
 .btn-small { min-height: 32px; padding: 6px 10px; font-size: 12px; align-self: flex-start; }
 .btn-primary { background: var(--signal); color: #fff; box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 6px 18px rgba(61, 123, 255, 0.35); font-weight: 600; }
 .btn-primary:hover:not(:disabled) { background: #5a8fff; }
-.btn-shock { background: var(--shock); color: var(--shock-ink); box-shadow: 0 6px 18px rgba(255, 176, 32, 0.3); font-weight: 650; flex: 1; }
+.btn-shock { background: var(--shock); color: var(--shock-ink); box-shadow: 0 6px 18px rgba(255, 176, 32, 0.3); font-weight: 700; flex: 1; }
 .btn-shock:hover:not(:disabled) { background: #ffc24d; }
 .btn-quiet { background: transparent; }
 .btn-icon { padding: 0 10px; min-height: 38px; min-width: 38px; background: transparent; box-shadow: none; color: var(--ink-2); font-size: 18px; }
@@ -207,12 +207,12 @@ table.mini td, table.mini th { padding: 3px 4px; border-bottom: 1px solid var(--
 .ev-dot[data-state="stale"] { background: var(--shock); box-shadow: 0 0 10px var(--shock); }
 .ev-dot[data-state="busy"] { background: var(--signal); animation: pulse 1s ease-in-out infinite; }
 .ev-dot[data-state="fixture"] { background: var(--fixture); }
-#ev-title { font-size: 22px; font-weight: 650; letter-spacing: -0.015em; line-height: 1.2; }
+#ev-title { font-size: 22px; font-weight: 700; letter-spacing: -0.015em; line-height: 1.2; }
 .next-hint { font-size: 13px; color: #ffd28a; }
 .next-hint:empty { display: none; }
 .scenario-line { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; font-size: 12px; color: var(--ink-2); }
 .scenario-line:empty { display: none; }
-.tag { background: var(--shock); color: var(--shock-ink); border-radius: 4px; padding: 2px 6px; font-weight: 650; font-size: 11px; }
+.tag { background: var(--shock); color: var(--shock-ink); border-radius: 4px; padding: 2px 6px; font-weight: 700; font-size: 11px; }
 .tag-shock { color: var(--shock); font-size: 11px; }
 .tag-impact { color: var(--farm); font-size: 11px; font-weight: 600; }
 
@@ -225,13 +225,13 @@ table.mini td, table.mini th { padding: 3px 4px; border-bottom: 1px solid var(--
 
 /* Impact tab: Climate Pulse band + headline cards */
 .pulse-band { margin: -14px -16px 0; padding: 14px 16px; background: var(--band); box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.1); }
-.pulse-band h3 { font-size: 16px; font-weight: 650; color: #fff; }
+.pulse-band h3 { font-size: 16px; font-weight: 700; color: #fff; }
 .source { color: rgba(220, 230, 255, 0.75); font-size: 12px; margin-top: 2px; }
 .outcome { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .kpi { display: flex; flex-direction: column; gap: 2px; padding: 12px; background: var(--raised); border-radius: var(--r-md); box-shadow: 0 0 0 1px var(--line); min-width: 0; font-size: 12px; color: var(--ink-2); }
 .kpi-hero, .kpi-empty { grid-column: 1 / -1; background: linear-gradient(160deg, rgba(163, 230, 53, 0.1), var(--raised) 60%); box-shadow: 0 0 0 1px rgba(163, 230, 53, 0.3); }
 .kpi-k { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-3); }
-.kpi b { font-size: 20px; font-weight: 650; color: var(--ink); letter-spacing: -0.01em; font-family: var(--mono); }
+.kpi b { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; font-family: var(--mono); }
 .kpi-hero b { font-size: 30px; }
 .kpi b.neg { color: #fdba74; }
 .kpi b.pos { color: #67e8f9; }
@@ -674,7 +674,7 @@ button.hud-hero { cursor: pointer; }
 .logo-lock { display: grid; grid-template-columns: auto; justify-items: start; gap: 4px; }
 .logo-t { font: 400 15px "Michroma", var(--sans); letter-spacing: 0.4em; background: linear-gradient(180deg, #ffffff, #8db4ff); -webkit-background-clip: text; background-clip: text; color: transparent; line-height: 1; }
 .logo-line { width: 100%; height: 1px; background: linear-gradient(90deg, var(--shock), rgba(255,176,32,0)); }
-.logo-tag { font: 600 10.5px var(--sans); letter-spacing: 0.28em; text-transform: uppercase; color: #c9d6e6; line-height: 1.1; margin-top: 2px; }
+.logo-tag { font: 600 11px var(--sans); letter-spacing: 0.25em; text-transform: uppercase; color: #c9d6e6; line-height: 1.1; margin-top: 2px; }
 
 /* ================= intro film ================= */
 .intro { position: fixed; inset: 0; z-index: 100; background: #020306; overflow: hidden; cursor: pointer; transition: opacity 600ms var(--ease-out); }
@@ -740,7 +740,13 @@ svg .callout { font-size: 12px; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Hero: the Difference map legend carries a title, units, day and plain-language ends. */
-.map-host[data-view="diff"] ~ .legend { width: 376px; padding: 11px 13px 10px; }
+@media (min-width: 901px) { .map-host[data-view="diff"] ~ .legend { width: 376px; padding: 11px 13px 10px; } }
+@media (max-width: 900px) {
+  /* Small screens (e.g. the 800×500 figure): keep the legend beside the map, not over it. */
+  .map-host[data-view="diff"] ~ .legend { width: 288px; padding: 9px 11px; }
+  .legend-head b { font-size: 12px; }
+  .legend-note { display: none; }
+}
 .legend-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
 .legend-head b { font-size: 13px; font-weight: 600; color: var(--ink); }
 .legend-head .mono { color: var(--ink-2); white-space: nowrap; }
@@ -773,3 +779,6 @@ svg .callout { font-size: 12px; }
   .stage:has(.drawer[data-open="true"]) .map-host,
   .stage:has(.drawer[data-open="true"]) .caption-row { right: calc(var(--right-w) + var(--gap) * 2); }
 }
+
+/* Typography: changing values keep their width (no jitter while playing days or as the clock ticks). */
+.vt-date, .chip-clock, .hud-pin-v, .tl-date, .legend-ticks { font-variant-numeric: tabular-nums; }
