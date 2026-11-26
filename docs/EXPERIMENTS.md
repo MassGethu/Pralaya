@@ -271,3 +271,95 @@ tuning on val, and no inner-holdout retrain. `model/bundle` is not touched and n
 - 03:00: seed-0 results for all runs are pushed.
 - 05:30: seeds s1 and s2 for the single winner, run one after another.
 - Anything late or failing is "not promoted", with one line on why.
+
+## Round 2 results: `b2_unet` (Mass, `mass/b2-unet`, val 2020 only)
+**Verdict: not promoted.** The chain stopped at the stage-1 check: `b2_unet_b1` (S 33.18) was clearly worse than
+`b1_onestep` (S 38.67, paired CI below 0), so `b2_unet_b3` and `b2_unet` were not trained.
+
+### What was built (commit `16f39c9`)
+- **`UNetCore` in `model/net.py`, behind `arch="unet"`** (`train.py --arch {cnn,unet}`, default `cnn`):
+  - grid 32×36 → 16×18 → 8×9 and back, with skip connections;
+  - one residual block per level going down, one at the bottom and one per level going up;
+  - widths 48 / 96 / 128;
+  - downsampling: stride-2 3×3 conv; upsampling: bilinear, then a 1×1 conv merges each skip;
+  - replicate padding throughout.
+- **Same as `PralayaNet`:**
+  - same inputs (3 days × 6 channels + 4 geography + target-day sin/cos);
+  - residual on the last day, rain ReLU;
+  - the head starts at zero, so step 0 is exactly persistence.
+- **Parameters:** 904,326 for the U-Net against 856,422 for the width-96 / 5-block CNN (+5.6 %; allowed band
+  685k–1,028k). The widths were chosen from the parameter count alone, before any training.
+- **Backward compatibility:**
+  - `arch` is written to the config only for the U-Net, so checkpoints without it rebuild the CNN.
+  - `tests/test_unet.py` checks that the shipped e3 bundle reproduces, bit for bit, an output saved from `dccd2c0`
+    before the change.
+  - It also checks persistence at init, grid shapes, the parameter band and a U-Net checkpoint round trip through
+    `load_model` / `load_cpu`.
+  - `model/inference.py` and `model/forecaster.py` needed no change: they already rebuild from `**config`.
+  - 38/38 tests pass.
+
+### Chain check (fixed before training, not part of the pre-registration)
+- **Rule:** stop after stage 1 if `b2_unet_b1` fails a gate or scores S < 35.2. That is `b1_onestep`'s 38.67
+  minus B1's seed sd of 3.5.
+- **Recorded:** 00:14 IST, before the smoke run.
+- **Result:** S 33.18 < 35.2, so the chain stopped.
+  - `b2_unet_b3` was killed at epoch 5 of 12 (00:28 IST).
+  - That partial run was not evaluated and is not reported as a result.
+
+### Fair B2 vs B1 (one-step, seed 0, 354 val windows, every window shocked)
+| | `b1_onestep` (CNN) | `b2_unet_b1` (U-Net) |
+|---|---|---|
+| parameters | 856,422 | 904,326 |
+| S /70 (rmse + csi + blur + causal) | **38.67** (4.03 + 11.23 + 10 + 13.40) | 33.18 (0.00 + 9.49 + 10 + 13.69) |
+| SELECTION gates | all pass | all pass |
+| per-window skill [95 % CI] | +0.0161 [−0.0005, +0.0327] | −0.0074 [−0.0243, +0.0107] |
+| paired Δ skill vs B1 [95 % CI] | – | **−0.0235 [−0.0360, −0.0084]** |
+| worst window | −0.351 | −0.357 |
+| day-4 skill vs persistence | +0.187 | +0.176 |
+| stable warm / stall | 69.8 % / 78.0 % | 70.6 % / 80.8 % |
+| heavy 25 mm d1 CSI / POD | 0.374 / 0.487 | 0.360 / 0.463 |
+| heavy 25 mm d8 CSI / POD | 0.067 / 0.097 | 0.064 / 0.094 |
+| heavy 50 mm d1 CSI / POD | 0.240 / 0.300 | 0.248 / 0.308 |
+| heavy 50 mm d8 CSI / POD | 0.010 / 0.012 | 0.007 / 0.008 |
+| day-8 rain variance ratio / in-band fraction | 0.84 / 0.897 | 0.92 / 0.903 |
+| best epoch / train loss there / training-time val score | 28 / 0.0456 / 0.4213 | 23 / 0.0387 / 0.4304 |
+| train time (40 epochs) | 6.3 min (Jarvis, M5 Pro) | 5.8 min (Mass, M5 16 GB), about 9 s/epoch |
+| median CPU 10-step rollout | 113 ms | 32 ms |
+
+Files: `b2_unet_b1_val.*`, `trace_b2_unet_b1_val*`, `trace_b1_onestep_val*` (made from the included B1
+checkpoint), `compare_b2_unet_b1_vs_b1.*`.
+
+### Against e3 (what exists: stage 1 only)
+The pre-registered candidate `b2_unet` (the K=8 + ocean end of the chain) was not trained, so it has no S, paired
+CI or rule 1–5 verdict. For the record, the stage-1 U-Net against e3 is below (`compare_b2_unet_b1_vs_e3.*`). It is
+not like-for-like: e3 has had two rollout fine-tunes that the U-Net never got.
+
+| | `e3_roll8_ocean` | `b2_unet_b1` |
+|---|---|---|
+| S /70 | 49.37 | 33.18 (−16.19) |
+| paired Δ skill vs e3 [95 % CI] | – | −0.0664 [−0.0795, −0.0512] |
+| stable warm / stall | 88.1 % / 88.4 % | 70.6 % / 80.8 % |
+| heavy 25 mm d1 / d8 CSI (POD) | 0.364 (0.478) / 0.080 (0.106) | 0.360 (0.463) / 0.064 (0.094) |
+| heavy 50 mm d1 / d8 CSI (POD) | 0.235 (0.289) / 0.002 (0.003) | 0.248 (0.308) / 0.007 (0.008) |
+| day-8 in-band fraction / rain variance ratio | 0.897 / 0.72 | 0.903 / 0.92 |
+| rules 1–4 | base | fail 2, 3, 4a |
+
+### What this does and does not show (honest reading)
+- **On the same windows, the U-Net is worse than B1 seed 0.** Almost all of the loss is RMSE skill (4.03 → 0 points)
+  and CSI (11.23 → 9.49). The paired interval is below zero.
+- **But it is one seed against B1's best seed.** B1 seeds 1 and 2 scored 33.10 and 32.25, so 33.18 sits inside B1's
+  own seed spread (34.7 ± 3.5). This run does not show that the U-Net is worse than the CNN in general. It shows
+  that it gives no sign of being better, which is what promotion needed.
+- **A likely reason: it fits the training years more closely and generalises less.** At its best epoch the
+  training loss was lower than B1's (0.0387 vs 0.0456) while the val score was worse (0.4304 vs 0.4213). This is
+  consistent with mild overfitting; the run was not designed to prove it.
+- **What it did better:**
+  - day-8 fields are less smoothed (rain variance ratio 0.92 vs 0.84);
+  - shock stability is slightly higher (+0.8 / +2.8 pp);
+  - 50 mm day-1 rain is slightly better;
+  - CPU inference is 3.5× faster.
+  - None of these is large enough to change the verdict.
+- **Not tested:** whether rollout fine-tuning (K=4, then K=8 + ocean) would close the gap. The pre-registered
+  check stopped it, and testing it now would be a second, unregistered attempt.
+- **One line for the log:** `b2_unet`: not promoted. The one-step stage scored S 33.18 against B1's 38.67 (paired
+  CI below 0), so the chain was stopped at the pre-set stage-1 check.
