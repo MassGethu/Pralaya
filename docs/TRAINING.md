@@ -24,29 +24,44 @@ plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 chec
 - **Rain:** ReLU, so rain is never negative.
 - **Rollout:** autoregressive, one day per step. The season encoding advances by 2π/365 per step.
 
-## Recipe (the shipped `b3_roll4`)
+## Recipe (the shipped `e3_roll8_ocean`; previous release `b3_roll4`)
 | stage | command | what it does |
 |---|---|---|
 | b1 | `python train.py --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0` | one-step training from scratch |
 | b3 | `python train.py --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0` | fine-tunes through a 4-day rollout, which reduces drift and shock blow-up |
+| e3 | `python train.py --name e3_roll8_ocean --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4` | fine-tunes through an 8-day rollout with ocean t2m weighted 4× in the loss (best epoch 3) |
+
+How e3 was chosen, and the other experiments, are in [EXPERIMENTS.md](EXPERIMENTS.md). Optional `train.py` flags
+used only by those experiments: `--stab-weight/--stab-tau`, `--grad-loss`, `--ms-levels`, `--advect`.
 
 - Shared settings: AdamW (wd 1e-4), OneCycle LR, batch 32, gradient clip 1.0.
 - Loss: latitude-weighted MSE in normalised units.
 - Device: Apple MPS (about 320 samples/s); the checkpoint loads on CPU.
 - Each run writes `runs/<name>/{config.json, log.jsonl, train.log, last.pt, best.pt, resume.pt}` (gitignored). Use `--resume` to continue an interrupted run.
 - `best.pt` is the epoch with the lowest training-time val score (every 2nd val window, leads 1/4/8).
-- Seeds 1 and 2 use the same commands with `--seed 1|2` and `_s1|_s2` names.
+- Seeds 1 and 2 use the same commands with `--seed 1|2`, `_s1|_s2` names and the same-seed `--init`.
 - Release: copy the selected `runs/<id>/best.pt` to `model/bundle/pralaya.pt`. The checkpoint is self-contained (weights, config, train-only stats, static fields).
 
 ## Is it overfitting?
-- **Validation vs test.** The shipped model scores S = 46.8 / 70 on 2021 and 45.9 on 2020 validation. Per-window skill is +0.046 on validation and +0.043 on test. The 95% intervals overlap ([+0.029, +0.063] and [+0.031, +0.056]).
-- **Seeds.** b3 scores 45.2 ± 0.8 on val and 43.3 ± 3.4 on test (3 seeds). The gain over b1 (34.7 ± 3.5, 33.0 ± 0.6) holds on every seed and on both splits.
-- **Known weaknesses (honest).**
-  - Day-4 skill against the better baseline is about 0 (CI includes 0), and day 8 is negative (−0.11).
-  - Ocean t2m is worse than persistence at days 4 and 8.
+- **First release (`b3_roll4`).** S is 46.8 / 70 in 2021 and 45.9 on 2020 validation. Per-window skill is
+  +0.046 on validation and +0.043 in 2021, with overlapping 95% intervals.
+- **Seeds.** b3 scores 45.2 ± 0.8 on val and 43.3 ± 3.4 on test (3 seeds). The gain over b1 (34.7 ± 3.5, 33.0 ±
+  0.6) holds on every seed and on both splits.
+- **Shipped `e3_roll8_ocean`.**
+  - Promoted on val only: S 49.4 (+3.5 over b3), 3-seed mean 49.5 ± 1.1 against b3's 45.2 ± 0.8
+    ([EXPERIMENTS.md](EXPERIMENTS.md)).
+  - *Follow-up evaluation on 2021*, which we had already seen, so it is not used for the choice: S 50.9, against
+    46.8 for b3. Per-window skill is +0.059 [+0.048, +0.071] on test, the same as on val (+0.059 [+0.044, +0.074]).
+- **Known weaknesses of the shipped model (honest).**
+  - Skill against the better baseline (persistence or climatology) turns negative at day 7 for the mean over
+    channels (day 5 for rain), and is −0.03 at day 8.
+  - Ocean t2m is still slightly worse than persistence at day 1 (−0.02), and worse at days 4 and 8 (−0.13, −0.37).
   - Rain causes every unstable shock response.
+  - Day-8 rain spatial variance is 0.72 of observed (b3: 0.85). This is inside the kit band, but rain is smoother.
   - The grader averages only 5 windows, so the expected range is wide.
-  - Details: [`evaluation/results/report_test.md`](../evaluation/results/report_test.md) and the maps in `evaluation/results/maps/`.
+  - Details: `evaluation/results/compare_val.md` and `trace_e3_roll8_ocean_val.md`. The first-release report is
+    in [`evaluation/results/report_test.md`](../evaluation/results/report_test.md), with maps in
+    `evaluation/results/maps/`.
 
 ## Selection and evaluation
 - Rule: [SELECTION.md](SELECTION.md), fixed before test.

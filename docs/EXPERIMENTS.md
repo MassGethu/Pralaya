@@ -84,3 +84,134 @@ used for promotion.
   checks day-1 CSI at 25 mm/day.
 - **Spatial variance is healthy.** Day-8 variance ratio is 0.85–1.01 for every channel (kit band 0.4–2.5), and
   90 % of windows are in band.
+
+### First results (val; full table `evaluation/results/compare_val.md`)
+| id | S (Δ vs b3) | paired Δ skill vs b3 [CI] | stable warm / stall | verdict |
+|---|---|---|---|---|
+| c0_cont4 (control) | 44.14 (−1.78) | −0.0035 [−0.0087, +0.0015] | 77.4 % / 84.5 % | not promoted |
+| b4_roll8 | 47.11 (+1.19) | +0.0059 [−0.0002, +0.0136] | 87.0 % / 92.1 % | not promoted (rule 3: CI lower bound −0.0002) |
+| e1_ocean | 44.87 (−1.05) | −0.0004 [−0.0051, +0.0045] | 78.0 % / 84.5 % | not promoted |
+
+- **Attribution against the control:**
+  - Continuing K=4 training at low lr *hurts*. Shock stability drops by 8 and 5 pp, and S drops by 1.8.
+  - **K=8** reverses this. It gains +3.0 S over the control, with days 5–10 better by +0.01 to +0.04 and both
+    shocks more stable than b3.
+  - **The ocean weight** fixes what it targets. Ocean t2m skill goes from −0.069 to **+0.011** at day 1, −0.247 to
+    −0.115 at day 4, and −0.579 to −0.361 at day 8; the Bay of Bengal box at day 8 goes from −0.575 to −0.376.
+    Other channels are unchanged.
+  - Its stability loss equals the control's, so that loss comes from the extra K=4 training, not from the weight.
+
+### Pre-registered follow-up (written before it ran): `e3_roll8_ocean`
+K=8 and ocean t2m weight 4 together: `--rollout 4` → `--rollout 8`, plus `--ocean-t2m-weight 4`. Same base, lr
+and epochs. These are the two changes that each improved their target. It is a new candidate under the same
+promotion rule.
+
+### `e2_rainstab` (val)
+S 45.58 (−0.35 vs b3). Paired Δ skill −0.0010 [−0.0060, +0.0036]. Stable 84.2 % / 87.9 %. **Not promoted**
+(fails rules 2 and 3; 4a–4c pass).
+- **Against the control,** the stability penalty works. Unstable windows fall from 80 to 56 (warm) and from 55
+  to 43 (stall). It does not get back to b3 (51 / 37), because the same extra training that hurts the control
+  hurts here too.
+- **First >5 std day (rain-shock trace):** for monsoon_stall, early crossings on days 1–3 fall from 13 windows (b3)
+  to 7. The crossings that remain move later. warm_ocean is about the same as b3: mostly days 5–7.
+- **Heavy rain is not suppressed.** At 25 mm/day, day-1 CSI is 0.367 vs 0.369 (bias 0.81 vs 0.80). At day 8,
+  CSI is 0.082 vs 0.066 and bias 0.56 vs 0.45. At 50 mm/day, day-8 bias is 0.22 vs 0.13. Day-8 p99.9 rain is
+  49.6 vs 45.2 mm/day (obs 76.1). The penalty only acts on the shocked response above 3 std, so the
+  unperturbed rain forecast keeps (and slightly increases) its heavy tail.
+
+### `h1_multiscale` (plan hypothesis: multi-scale architecture) (val)
+S 44.28 (−1.65 vs b3, +0.14 vs control). Paired Δ skill −0.0027 [−0.0081, +0.0024]. Stable 79.1 % / 83.9 %.
+**Not promoted** (fails rules 2, 3 and 4a).
+- **Evidence: no effect at this setting.** Lead, channel, variance and heavy-rain numbers are within ±0.003 of
+  the control at every lead. Its losses against b3 are the control's (extra K=4 training).
+- **The branches did train, but stayed small.** The 1×1 output conv of each branch moved from 0 to a norm of
+  0.13, against 11.9 for the last body conv.
+- **Limitation, not a disproof:** the new layers started at zero and trained for 12 epochs at lr 1e-4. That is
+  probably too little to learn a coarse-scale path. A fair test would train from scratch or give the new layers
+  a higher lr. That is a second setting and was not pre-registered.
+
+### `h2_structloss` (plan hypothesis: structure-aware loss) (val)
+S 44.97 (−0.95 vs b3, +0.83 vs control). Paired Δ skill +0.0001 [−0.0050, +0.0051]. Stable 78.8 % / 84.2 %.
+**Not promoted** (fails rules 2, 3 and 4a).
+- **The blur part of the hypothesis cannot be tested here.** b3 and every candidate already get the full 10/10
+  blur points. Spatial variance did not rise: rain variance ratio at day 8 is 0.80, against 0.83 for the
+  control and 0.85 for b3.
+- **What the gradient loss did:** skill is slightly higher than the control at every lead (+0.002 to +0.006). Its
+  rmse points are 11.54 (control 10.64, b3 11.52), so it acts as a mild regulariser rather than a sharpener.
+- **Shock stability** is the same as the control's.
+
+### `h3_transport` (plan hypothesis: wind-guided transport) (val)
+S 44.09 (−1.83 vs b3, −0.05 vs control). Paired Δ skill −0.0034 [−0.0086, +0.0016]. Stable 78.8 % / 84.5 %.
+**Not promoted** (fails rules 2, 3 and 4a).
+- **Evidence: no effect.** Every lead, channel, variance and heavy-rain number equals the control's to ±0.001.
+- **The network barely uses the advected input.** Its input conv `adv_stem` grew from 0 to a norm of 0.18, against
+  8.0 for the main stem. The per-channel advection speeds `adv_speed` stayed at their 0.5 start (0.46–0.51).
+- **Blocker for a fair test** (same as h1): zero-initialised new layers fine-tuned for 12 epochs at lr 1e-4. Also,
+  the plain CNN already sees 3 × 3 neighbourhoods across 5 blocks, which covers a day of 10 m wind transport
+  (~4–8 m/s ≈ 3–7 cells/day). An explicit advection term adds little at this resolution.
+
+### Hypothesis summary
+| hypothesis | run | evidence | status |
+|---|---|---|---|
+| longer rollout reduces drift | b4_roll8 | days 5–10 better, more stable; S +1.19, CI just touches 0 | **supported, short of promotion** |
+| ocean t2m weighting | e1_ocean | ocean t2m day-1 skill −0.07 → +0.01; S cost from extra K=4 training | **supported for its target** |
+| rain-stability penalty | e2_rainstab | 24 / 12 fewer unstable windows than control; heavy rain kept | **supported vs control**, not vs b3 |
+| multi-scale architecture | h1_multiscale | = control | **null at this setting**; new layers under-trained |
+| structure-aware loss | h2_structloss | +0.83 S vs control via rmse; blur already 10/10 | **blur part untestable**; mild regulariser |
+| wind-guided transport | h3_transport | = control; advection input unused | **null at this setting** |
+
+### `e3_roll8_ocean` (val), passes rules 1–4
+S **49.37 (+3.45 vs b3)**. Paired Δ skill **+0.0129 [+0.0065, +0.0204]**. Stable 88.1 % / 88.4 %. Heavy 25 mm/day
+day-1 CSI 0.364 (b3 0.369, −1.4 % relative). Day-8 in band 0.897. Worst window −0.241 (b3 −0.348).
+
+Rule 5 is pending. Recipe for it, fixed before it runs: the same command with `--init runs/b3_roll4_s{1,2}/best.pt
+--seed {1,2}`, names `e3_roll8_ocean_s1` and `e3_roll8_ocean_s2`. The two runs train side by side on MPS.
+
+### Rule 5 (seeds) and outcome
+| seed | b3_roll4 S | e3_roll8_ocean S | Δ |
+|---|---|---|---|
+| 0 | 45.92 | 49.37 | +3.45 |
+| 1 | 45.21 | 48.41 | +3.20 |
+| 2 | 44.33 | 50.69 | +6.36 |
+| mean ± sd | 45.16 ± 0.80 | **49.49 ± 1.14** | +4.33 (needed ≥ +1.0) |
+
+- **Rule 5 passes,** and all three e3 seeds pass the gates. `e3_roll8_ocean` (seed 0) is the only candidate that
+  passed rules 1–5, so **it is promoted.**
+- We ship seed 0, as registered. Seed 2 scores higher on val, but picking it would be one more selection on val.
+- **Release:**
+  - `model/bundle/pralaya.pt` = `runs/e3_roll8_ocean/best.pt`, sha256 `d29656ae…0c7a90`, 3,470,551 bytes.
+  - Same architecture config as b3 (`{"width": 96, "blocks": 5}`), so serving code needs no change.
+  - Rollback: `git checkout 0175183 -- model/bundle/pralaya.pt` (b3_roll4, sha256 `20ebabfd…b4e4`).
+- **Checks on main 385e70f with the new bundle:**
+  - all 31 of main's tests;
+  - the official schema validator;
+  - `scripts/check_inference.py`;
+  - `repo_scan` 15/15 with no flags;
+  - peak RSS 242 MB;
+  - identical forecasts for repeated requests.
+
+### Follow-up evaluation on test 2021 (already seen; not used for promotion)
+| | S /70 | per-window skill [95% CI] | day-4 vs persistence | stable warm / stall |
+|---|---|---|---|---|
+| b3_roll4 | 46.77 | +0.043 [+0.031, +0.056] | +0.222 | 86.1 % / 95.2 % |
+| e3_roll8_ocean | **50.92** | +0.059 [+0.048, +0.071] | +0.232 | 89.5 % / 97.2 % |
+
+The gain on 2021 (+4.15 S) is the same size as on val (+3.45). Most of it is RMSE points (10.82 → 14.75).
+
+### Reproducible failure cases (shipped e3, val)
+`python -m evaluation.trace --ckpt model/bundle/pralaya.pt --split val` writes `trace_e3_roll8_ocean_val.md`, with
+the worst windows, the first negative lead by region and channel, and the shock first-crossing cells.
+- **Worst windows:**
+  - 2020-10-28 (msl, NE corner, skill −0.241);
+  - 2020-02-10 and 2020-02-11 (western disturbance: msl from day 1, then spurious rain at 8.5N 65.5E, 31.7
+    forecast vs 0.3 observed);
+  - 2020-05-06 and 2020-05-04 (pre-Amphan Bay of Bengal: 9.1 forecast vs 139.3 mm/day observed at 6.5N 94.5E).
+  - These are the same five as b3, and all score better (b3 worst was −0.348).
+- **First failures:**
+  - Ocean t2m is still the first field to fail, at day 1 (−0.020; b3 −0.066).
+  - Rain north of 28N and highland tcwv fail at day 3, as with b3.
+  - msl now holds to day 10 (b3: day 8).
+- **Shocks:**
+  - 42 of 354 windows exceed 5 std for warm_ocean, and 41 for monsoon_stall (b3: 51 and 37). All are rain inside
+    the box.
+  - The stall shock is 1.1 pp less stable than b3 (allowed: 2 pp).

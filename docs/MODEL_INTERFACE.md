@@ -39,10 +39,18 @@ out = forecast(history, doy_sincos, steps)          # history already shocked by
 `{"state_dict", "config": {"width", "blocks"}, "mean" [6], "std" [6], "static" [2,32,36], "meta": {"model_id", "train_years", ...}}`.
 Self-contained: no stats.json, no climatology and no archive are needed at inference. Expected size ~3.5 MB (no LFS needed).
 
-## Measured serve.py resources (main 0b848d4 with the b3_roll4 bundle, `evaluation/memprobe.py`)
-- Peak RSS 248 MB (server + children, sampled every 20 ms through the official validator, the 8-call check and 20
-  14-step calls). Limit 6 GB, about 25x headroom. Ready (POST /health) after 2.1 s; 14-step HTTP call median 232 ms,
-  max 375 ms (MPS training was running at the same time). Measured on macOS arm64, not the Linux grader.
+## Measured serve.py resources (main 385e70f with the e3_roll8_ocean bundle, `evaluation/memprobe.py`)
+- **Memory:** peak RSS 242 MB (server + children, sampled every 20 ms). The probe ran the official validator,
+  the 8-call check and 20 14-step calls. Limit 6 GB, about 25x headroom.
+- **Speed:** ready (POST /health) after 0.8 s; 14-step HTTP call median 64 ms, max 74 ms. Measured on macOS
+  arm64, not the Linux grader.
+- **Checks on the same checkout:**
+  - main's 31 tests pass;
+  - `monsoon_r1.schema_validator`: all checks passed;
+  - `scripts/check_inference.py` passes;
+  - `monsoon_r1.repo_scan`: 15/15, no flags;
+  - repeated identical requests return identical forecasts (only `inference_ms` differs).
+- b3_roll4 on main 0b848d4 measured 248 MB peak (MPS training ran alongside).
 
 ## Measured (MacBook Pro M5 Pro, untrained net of the same size, 0.86 M params)
 - 10-step CPU rollout, 4 torch threads: 25 ms. `.tolist()` + JSON encode: about 13 ms, 1.28 MB.

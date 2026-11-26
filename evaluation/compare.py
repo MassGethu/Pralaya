@@ -67,6 +67,7 @@ def verdict(base: dict, cand: dict, diff_ci: dict) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base", default="b3_roll4")
+    ap.add_argument("--out", default="compare_val", help="output name in evaluation/results")
     ap.add_argument("candidates", nargs="+")
     a = ap.parse_args(argv)
     base = load(a.base)
@@ -113,8 +114,8 @@ def main(argv=None) -> int:
     L += ["", "## Worst 3 windows (init day, grader-style skill)", ""]
     for cid, s in [(a.base, bs)] + [(k, v["summary"]) for k, v in out["candidates"].items()]:
         L.append(f"- {cid}: " + "; ".join(f"{d} {v:+.3f}" for d, v in s["worst"]))
-    (RESULTS / "compare_val.json").write_text(json.dumps(out, indent=1, default=float))
-    (RESULTS / "compare_val.md").write_text("\n".join(L) + "\n")
+    (RESULTS / f"{a.out}.json").write_text(json.dumps(out, indent=1, default=float))
+    (RESULTS / f"{a.out}.md").write_text("\n".join(L) + "\n")
     print("\n".join(L))
     return 0
 
