@@ -38,6 +38,8 @@ python -c "from monsoon_r1.repo_scan import scan; import json; print(json.dumps(
 
 See the [API contract](docs/CONTRACTS.md) for payloads, units and grid orientation.
 
+The optional forecast blend uses a seasonal-mean prior fitted on 2005–2019 (7 coefficients per cell) for each weather channel. The trained model contributes at least 30% to every blended lead. The experiment did not pass validation, so the release serves the original b3_roll4 forecasts. [Blend experiment](docs/CLIMBLEND.md)
+
 ## Run the dashboard
 
 With the inference server running and Node.js 20 or later installed, open a new terminal:
