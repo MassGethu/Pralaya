@@ -35,6 +35,47 @@ Written and committed on 27 Nov at 01:37 IST, before any e3 blend score was comp
 
 **Model match.** The blend is fitted on whichever checkpoint ships. If e3_rainstab is promoted, the blend is refitted and gated on it in the same way. A blend fitted on one model is never shipped with another.
 
+## e3 refit: result — TESTED, NOT SHIPPED
+
+Scored 27 Nov 01:38–01:42 IST on val 2020 (354 windows, both kit shocks on every window). The unblended row reproduces main's recorded e3 score exactly. Reports are in `evaluation/results/clim_blend_e3/`.
+
+| Run | RMSE /30 | CSI /15 | Blur /10 | Causality /15 | **S** |
+|---|---:|---:|---:|---:|---:|
+| e3 unblended (served path) | 14.75 | 10.92 | 10.00 | 13.70 | **49.37** |
+| e3 + blend, floor 0.3 | 23.65 | 10.42 | 10.00 | 13.26 | **57.33** |
+| e3 + blend, floor 0.5 (fallback) | 23.17 | 10.75 | 10.00 | 13.41 | **57.32** |
+
+| Gate | Floor 0.3 | Floor 0.5 |
+|---|---|---|
+| G1 spread: warm_ocean propagates | 96.3% → 79.1% (−17.2 pp) **FAIL** | 96.3% → 84.2% (−12.1 pp) **FAIL** |
+| G1 spread: monsoon_stall propagates | 57.9% → 30.5% (−27.4 pp) **FAIL** | 57.9% → 36.4% (−21.5 pp) **FAIL** |
+| G1 spread: causality points | −0.44 (pass) | −0.30 (pass) |
+| G2 variance | 10/10; lowest ratio tp 0.478 (pass) | 10/10; lowest ratio tp 0.512 (pass) |
+| G3 null | bit-identical (pass) | bit-identical (pass) |
+| G4 gain | +7.96 (pass) | +7.95 (pass) |
+
+Day-8 variance ratios, in channel order t2m, tp, u10, v10, msl, tcwv, were 1.009 / 0.716 / 0.823 / 0.870 / 1.005 / 0.926 unblended. With floor 0.3 they were 1.008 / 0.478 / 0.748 / 0.744 / 0.958 / 0.891. With floor 0.5 they were 1.008 / 0.512 / 0.750 / 0.753 / 0.959 / 0.898. G3 was also checked through `Inference.run` with a blend loaded (`tests/test_clim_blend.py`).
+
+**Verdict.** G1 failed at floor 0.3 and again at the pre-registered fallback floor 0.5, so the blend does not ship. `postprocess/clim_blend.pt` is not in the build, and the served path is unchanged e3. Following the stop rule, 2021 was not scored and the ship checks (serve, schema validator, repo scan, latency) were not run.
+
+**Why spread fails.** The kit counts a shock as propagating when the mean response energy outside the shock's neighbourhood on days 4–8 exceeds 1.5 times the day-1 outside energy. The blend scales the model's response by the model weight, so energy scales by its square. The weights fall from about 0.9 on day 1 to the floor by day 8, which cuts late outside energy relative to day 1 by roughly (0.5/0.9)² ≈ 0.3 even at floor 0.5. The e3 fit also chose the largest persistence share (1.0 on day 1, versus 0.5 on b3). That puts the perturbed last day back into the reference, adding near-box energy on day 1 and raising the kit's minimum-energy bar. This is the effect the mentor warned about in point 1.
+
+**Differences from the b3 fit.** On e3 the rain guard passed, so tp was blended (day-1 weight 0.87 ocean and 0.88 land, falling to the floor by day 8). This is the main reason tp's day-8 variance ratio fell to about 0.5. The method's guards allow it, but it differs from the earlier b3 result, where tp stayed at 1.0. We did not test whether pinning tp to 1.0 would change G1. That would be a third fit outside the pre-registered rule.
+
+**Frozen artifacts (kept outside the repo, not shipped).** Floor 0.3: SHA-256 `f089b48bd187099a0a27b4f2e9c0edc9c2660da42481110bdad333c0d43dde8d`, 391,715 bytes. Floor 0.5: SHA-256 `fabb617d22bf06d8d7a18c0afe72a8573f6557693e660ea1aaa9fccb8338c623`, 391,715 bytes. Both were fitted on the e3_roll8_ocean bundle, SHA-256 `d29656aebc8fd141f295f950a5d05b21c3afa33b3f5595e2c429e6c1ac0c7a90`.
+
+### Reproduce
+
+```sh
+data=/path/to/india_climate_train.nc; stats=/path/to/stats.json; fit=$(mktemp -d); score=$(mktemp -d)
+python -m scripts.clim_blend_experiment prepare --data "$data" --stats "$stats" --output "$fit"
+for floor in 0.3 0.5; do
+  python -m scripts.clim_blend_experiment val --rung 4 --floor $floor --data "$data" --stats "$stats" --output "$fit"
+  python -m scripts.clim_blend_score --split val --data "$data" --blend "$fit/rung4_floor$floor.pt" --out "$score/blend$floor.json"
+done
+python -m scripts.clim_blend_score --split val --data "$data" --out "$score/raw.json"
+```
+
 # Original experiment: blend for b3_roll4 (26 Nov)
 
 The served model and checkpoint stay fixed. The blend uses a seasonal-mean prior fitted on 2005–2019 (7 coefficients per cell) for each weather channel. The coefficients describe a mean and three annual harmonics. Decode the request's last-input phase with `atan2` and advance it by one 365-day cycle step per lead. For leads 1–10, interpolate from that seasonal field (or the rung 4 reference) toward the raw model rollout with weight `a` in [0.3, 1]. Leads 11–14 use the original rollout. Apply the existing physical clipping after interpolation. The adapter applies the shock once, before the model rollout. Without `postprocess/clim_blend.pt`, the model takes the original inference path.
