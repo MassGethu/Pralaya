@@ -50,6 +50,40 @@ change the decision.
 **Shipping needs, in addition to passing:** the mentor's OK for the two-run shocked path, and Mass's agreement, since the
 serving change goes in `inference_adapter.py`. Until then nothing in the served path changes.
 
-## Results
+## Results — G1–G4 PASS at floor 0.3 (G5 and approvals pending; not shipped)
 
-(appended after scoring)
+Scored 27 Nov 03:44–03:47 IST on all 354 val 2020 windows, both kit shocks on every window. The refit is byte-identical
+to Mass's frozen floor-0.3 artifact (sha256 `b6d350bceb3573652f955cae0b84cba678874efa33c7fcc1144a28d849aab1c9`), so it
+is the same blend that failed G1 in `docs/CLIMBLEND.md`; only the shocked path differs. The unblended row reproduces
+the recorded val S 51.11. Reports: `evaluation/results/blend_delta/`.
+
+| Val 2020 | Unblended | Rung-4 blend (CLIMBLEND, failed) | Shock-preserving blend |
+|---|---|---|---|
+| S / 70 | 51.11 | 58.31 | **58.85** |
+| RMSE / 30 | 16.11 | — | 24.10 |
+| CSI / 15 | 11.07 | — | 10.81 |
+| Anti-blur / 10 | 10.0 | 10.0 | 10.0 |
+| Causality / 15 | 13.92 | 13.41 | 13.95 |
+
+| Gate | Result |
+|---|---|
+| G1 spread | warm_ocean propagates 97.7% → 97.7% (0.0 pp); monsoon_stall 57.1% → 57.3% (+0.3 pp); causality points +0.03. **PASS** |
+| G2 variance | anti-blur 10/10; day-8 ratios t2m 1.008, tp 0.460, u10 0.741, v10 0.734, msl 0.948, tcwv 0.885, all in [0.4, 2.5]. **PASS** |
+| G3 null | zero shock bit-identical to the unperturbed run in the evaluator. **PASS** |
+| G4 gain | +7.75 S. **PASS** |
+| G5 cost | not yet checked: needs the serving change in `inference_adapter.py`, which waits for Mass and the mentor. |
+
+The fallback (floor 0.5) was not needed and was not run.
+
+**Follow-up, 2021 (scored once, after the gates were decided; does not change the decision):** unblended S 50.72,
+shock-preserving blend S **57.49** (+6.77). Propagates 96.9% / 60.6% unblended vs 96.9% / 60.9% blended; anti-blur 10/10;
+null bit-identical; tp day-8 variance ratio 0.759 → 0.591.
+
+**Risks, stated plainly.**
+- tp's day-8 variance ratio on val is 0.460, close to the 0.4 floor. If the hidden 2023–24 windows push it below 0.4, part
+  of the anti-blur points would be lost. In 2021 it was 0.591. The share of windows with all six ratios in band falls
+  from 88.5% to 84.7% on val.
+- CSI points fall slightly (val 11.07 → 10.81, 2021 11.84 → 11.43): blending rain toward the seasonal normal costs some
+  heavy-rain hits. The RMSE gain is far larger.
+- A shocked request runs the model twice. G5 measures that cost once the serving change exists.
+- The served-adapter version of G3 (as in `tests/test_clim_blend.py`) is not yet written.
