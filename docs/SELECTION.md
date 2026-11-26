@@ -1,6 +1,6 @@
 # Model selection rule (fixed before any test-2021 scoring)
 
-This file is committed before the seed results and before any test-2021 scoring. Test 2021 does not change the choice.
+The selection rule was recorded after reviewing seed-0 validation results, before reviewing seeds 1 and 2 and before full 2021 skill scoring. A prior check of 2021 temperature ranges informed validity testing. Candidate selection used 2020 results.
 
 ## Splits
 - Train 2005–2019. Normalisation and climatology use train years only.

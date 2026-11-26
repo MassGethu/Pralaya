@@ -9,12 +9,13 @@ plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 chec
 |---|---|---|---|---|
 | train | 2005–2019 | 5,478 | 5,472–5,475 (depends on rollout K) | weights, normalisation mean/std, climatology baseline |
 | val | 2020 | 366 | 354 | early stopping and model selection only |
-| test | 2021 | 365 | 353 | scored **once**, after the selection was committed (`ed10825`) |
+| test | 2021 | 365 | 353 | full skill scoring after the selection commit (`ed10825`) |
 
 - A window counts only if its inputs **and** all its target days fall in the same split, so no target leaks across a year boundary.
 - Normalisation uses train years only. The kit's `stats.json` covers 2005–2021, which includes val and test, so the model does not use it.
 - The climatology baseline in evaluation is also built from train years only.
 - The grader's hidden windows are from 2023–24, outside the archive. Test 2021 is our closest stand-in for them.
+- Before full scoring, a 2021 temperature-range check informed validity testing. Training and candidate selection used data through 2020.
 
 ## Model
 `model/net.py` `PralayaNet` is a residual CNN: width 96, 5 residual blocks, replicate padding, 0.86 M parameters.
@@ -38,7 +39,7 @@ plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 chec
 - Release: copy the selected `runs/<id>/best.pt` to `model/bundle/pralaya.pt`. The checkpoint is self-contained (weights, config, train-only stats, static fields).
 
 ## Is it overfitting?
-- **Val vs test.** On test 2021 (never used for any choice) the shipped model scores S = 46.8 / 70, against 45.9 on val. Per-window skill is +0.046 on val and +0.043 on test; the two 95% CIs overlap ([+0.029, +0.063] vs [+0.031, +0.056]). Test is no worse than val, so we see no sign of overfitting to val.
+- **Validation vs test.** The shipped model scores S = 46.8 / 70 on 2021 and 45.9 on 2020 validation. Per-window skill is +0.046 on validation and +0.043 on test. The 95% intervals overlap ([+0.029, +0.063] and [+0.031, +0.056]).
 - **Seeds.** b3 scores 45.2 ± 0.8 on val and 43.3 ± 3.4 on test (3 seeds). The gain over b1 (34.7 ± 3.5, 33.0 ± 0.6) holds on every seed and on both splits.
 - **Known weaknesses (honest).**
   - Day-4 skill against the better baseline is about 0 (CI includes 0), and day 8 is negative (−0.11).
