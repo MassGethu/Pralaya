@@ -4,10 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PRALAYA · Monsoon Command</title>
-    <!-- Tomorrow (SIL OFL). Loaded from Google Fonts for now; falls back to the system font offline. Bundle locally before the venue. -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Tomorrow:wght@400;500;600;700&family=Michroma&family=Noto+Sans+Devanagari:wght@800&family=Noto+Sans+Bengali:wght@800&family=Noto+Sans+Tamil:wght@800&family=Noto+Sans+Telugu:wght@800&family=Noto+Sans+Kannada:wght@800&family=Noto+Sans+Malayalam:wght@800&family=Noto+Sans+Gujarati:wght@800&family=Noto+Sans+Gurmukhi:wght@800&family=Noto+Sans+Oriya:wght@800&family=Noto+Nastaliq+Urdu:wght@700&family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet" />
+    <!-- Fonts are self-hosted (public/fonts, SIL OFL) so the demo looks the same with no Wi-Fi. -->
+    <link rel="preload" href="/fonts/tomorrow-400-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/tomorrow-600-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="/fonts/fonts.css" />
     <link rel="stylesheet" href="/src/style.css" />
   </head>
   <body>
@@ -100,6 +100,10 @@
               <label>Lat max<input id="shock-lat1" type="number" step="1" /></label>
               <label>Lon min<input id="shock-lon0" type="number" step="1" /></label>
               <label>Lon max<input id="shock-lon1" type="number" step="1" /></label>
+            </div>
+            <div class="field-msg-row">
+              <p id="box-msg" class="field-msg err" role="status" aria-live="polite"></p>
+              <button id="box-swap" type="button" class="btn btn-quiet btn-small" hidden>Swap min and max</button>
             </div>
           </details>
           <div id="components"></div>

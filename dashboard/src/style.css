@@ -107,6 +107,12 @@ body.is-fixture .stage { height: calc(100vh - var(--bar-h) - 31px); }
 .ok { color: #86efac; font-size: 12px; }
 .warn { color: var(--shock); font-weight: 500; }
 .info:empty { display: none; }
+.note { color: #ffd28a; font-size: 12px; }
+.field-msg-row { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 8px; }
+.field-msg-row:has(.field-msg:empty) { margin-top: 0; }
+.field-msg { font-size: 12px; line-height: 1.4; }
+.field-msg:not(:empty)::before { content: "!"; display: inline-grid; place-items: center; width: 15px; height: 15px; margin-right: 6px; border-radius: 50%; background: var(--alarm); color: #1a0705; font: 700 10px var(--sans); vertical-align: 1px; }
+input[aria-invalid="true"] { border-color: rgba(255, 93, 93, 0.7); }
 .pulse { animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.45; } }
 

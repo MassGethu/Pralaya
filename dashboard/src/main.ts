@@ -6,6 +6,7 @@ import {
 import { type ViewVar, VIEW_VARS, difference, displayField, maxAbs, sharedRange } from "./fields";
 import { fixtureSimulate, syntheticInput } from "./fixture";
 import { type ImpactResult, computeImpact } from "./impact";
+import { type BoxFieldResult, type TypedBox, boxFromFields } from "./boxinput";
 import { type Box, boxCellCount, boxFromDegrees, boxMask, clampBox, describeBox } from "./region";
 import { type AgriMode, agriChartSvg, indicatorTableHtml, legendHtml, outcomeCardsHtml, rippleChartSvg } from "./charts";
 import { escapeHtml, fmt, signed } from "./format";
@@ -19,6 +20,7 @@ import { type AppApi, buildCommands, nextAction } from "./actions";
 import { introEnabled, playIntro } from "./intro";
 import { ScenarioPanel, type ScenarioReplay } from "./scenarios";
 import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
+import { componentSummary, rainCap } from "./shocklabel";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
 // ---------------- state ----------------
@@ -59,6 +61,8 @@ const S = {
   hover: null as number | null,
   fixtureEngine: false,
   health: null as Health | null,
+  /** Feedback for the typed lat/lon fields; shown only while the box it describes is still the shock box. */
+  boxMsg: null as (BoxFieldResult & { typed: TypedBox; forBox: string }) | null,
 };
 
 type MapMode = "prime" | "swipe" | "branch" | "diff";
@@ -186,13 +190,11 @@ function setupControls() {
   });
   for (const id of ["shock-lat0", "shock-lat1", "shock-lon0", "shock-lon1"]) {
     $<HTMLInputElement>(id).addEventListener("change", () => {
-      const v = (k: string) => Number($<HTMLInputElement>(k).value);
-      const box = boxFromDegrees(v("shock-lat0"), v("shock-lat1"), v("shock-lon0"), v("shock-lon1"));
-      if (box) S.shock = { ...S.shock, box, label: "Custom shock" };
-      else $("shock-preview").innerHTML = `<p class="err">No cell centres inside that box.</p>`;
-      renderAll();
+      const v = (k: string) => { const raw = $<HTMLInputElement>(k).value.trim(); return raw === "" ? NaN : Number(raw); };
+      applyTypedBox({ latMin: v("shock-lat0"), latMax: v("shock-lat1"), lonMin: v("shock-lon0"), lonMax: v("shock-lon1") });
     });
   }
+  $("box-swap").addEventListener("click", () => { if (S.boxMsg?.fix) applyTypedBox(S.boxMsg.fix); });
   document.querySelectorAll<HTMLButtonElement>("[data-brush]").forEach((b) =>
     b.addEventListener("click", () => {
       drawingScenarioRegion = false;
@@ -261,6 +263,15 @@ function setupControls() {
     if (e.key === "ArrowRight") { stopPlay(); step(1); e.preventDefault(); }
   });
   for (const id of ["agri-d0", "agri-d1", "agri-dry", "agri-heavy"]) $(id).addEventListener("input", () => { renderAgri(); renderOutcome(); });
+}
+
+/** Typed lat/lon box: apply it, or keep the old box and remember the typed numbers plus why they were refused. */
+function applyTypedBox(typed: TypedBox) {
+  const res = boxFromFields(typed);
+  if (res.box) S.shock = { ...S.shock, box: res.box, label: "Custom shock" };
+  // Stored in state (not written into the preview) so renderAll() cannot wipe it.
+  S.boxMsg = res.kind === "ok" ? null : { ...res, typed, forBox: JSON.stringify(S.shock.box) };
+  renderAll();
 }
 
 async function onFile(e: Event) {
@@ -400,6 +411,12 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
 }
 
 // ---------------- derived ----------------
+/** The current draft shock as it would be sent, or null when there is no input or the shock is invalid. */
+function draftDelta(): Float32Array | null {
+  if (!S.input) return null;
+  return cached(`draft|${S.input.id}|${specKey(S.shock)}`, () => { try { return buildPerturbation(S.input!, S.shock); } catch { return null; } });
+}
+
 /** Branch and Prime are comparable only if made from the same input, horizon and engine. */
 function comparable(): boolean {
   const p = S.prime, b = S.branch;
@@ -480,9 +497,18 @@ function renderInputInfo() {
 
 function renderShockControls() {
   const b = S.shock.box;
-  const set = (id: string, v: number) => { const el = $<HTMLInputElement>(id); if (document.activeElement !== el) el.value = v.toFixed(1); };
-  set("shock-lat0", latOf(b.r0)); set("shock-lat1", latOf(b.r1)); set("shock-lon0", lonOf(b.c0)); set("shock-lon1", lonOf(b.c1));
+  // A refused edit stays visible: keep the typed numbers in the fields until the box changes some other way.
+  const m = S.boxMsg && S.boxMsg.forBox === JSON.stringify(b) ? S.boxMsg : null;
+  const set = (id: string, v: number, typed?: number) => {
+    const el = $<HTMLInputElement>(id);
+    el.setAttribute("aria-invalid", String(!!m));
+    if (document.activeElement !== el) el.value = typed !== undefined ? (Number.isFinite(typed) ? String(typed) : "") : v.toFixed(1);
+  };
+  set("shock-lat0", latOf(b.r0), m?.typed.latMin); set("shock-lat1", latOf(b.r1), m?.typed.latMax);
+  set("shock-lon0", lonOf(b.c0), m?.typed.lonMin); set("shock-lon1", lonOf(b.c1), m?.typed.lonMax);
   document.querySelectorAll<HTMLButtonElement>("[data-brush]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.brush === S.brush)));
+  $("box-msg").textContent = m?.message ?? "";
+  $("box-swap").hidden = !m?.fix;
 
   const wrap = $("components");
   wrap.replaceChildren();
@@ -524,6 +550,10 @@ function renderShockControls() {
     try {
       const delta = buildPerturbation(S.input, S.shock);
       const sums = summarisePerturbation(delta, S.shock);
+      const cap = rainCap(S.input, S.shock, delta);
+      if (cap && cap.capped > 0) {
+        lines.push(`<p class="note">Rain is capped so it never goes below 0: in ${cap.capped} of ${cap.cells} cells the requested cut is larger than the rain there. Applied tp change: ${signed(cap.appliedMean, 1)} mm/day on average (min ${signed(cap.appliedMin, 1)}).</p>`);
+      }
       lines.push(
         `<table class="mini"><thead><tr><th>Channel</th><th>Δ min</th><th>Δ mean</th><th>Δ max</th></tr></thead><tbody>` +
           sums.map((s) => `<tr><td>${s.channel} <span class="unit">${CHANNEL_INFO[s.channel].unit}</span></td><td class="mono">${signed(s.min, 3)}</td><td class="mono">${signed(s.mean, 3)}</td><td class="mono">${signed(s.max, 3)}</td></tr>`).join("") +
@@ -591,7 +621,8 @@ function renderToolbar() {
   renderOutcome();
 
   const line = $("scenario-line");
-  const r = scenarioLine(S.branch, S.prime?.runNo ?? null, specKey(S.shock));
+  const br = S.branch && !S.branch.zero && S.branch.inputId === S.input?.id ? S.branch : null;
+  const r = scenarioLine(S.branch, S.prime?.runNo ?? null, specKey(S.shock), br ? componentSummary(br.spec!, S.input, br.delta) : undefined);
   line.innerHTML = r.html;
   line.dataset.state = r.state;
 }
@@ -694,7 +725,8 @@ function renderHudNow() {
   const b = S.branch && comparable() ? S.branch : null;
   const stale = !!b && !b.zero && b.specKey !== specKey(S.shock);
   const ready = !!S.input && !!S.prime && S.prime.inputId === S.input.id && !!currentEngine();
-  const comp = S.shock.components.map((c) => `${c.channel} ${c.mode === "add" ? `${signed(c.value, 1)} ${CHANNEL_INFO[c.channel].unit}` : `${signed(c.value, 0)}%`}`).join(" · ");
+  // Label what the map shows: the Branch's applied delta when it is current, else the draft as it would be applied.
+  const comp = b && !b.zero && !stale ? componentSummary(b.spec!, S.input, b.delta) : componentSummary(S.shock, S.input, draftDelta());
   const diffs = diffFields();
   const peak: [string, string][] = b && !b.zero && !stale && diffs ? [[`Peak Δ today`, `${fmt(maxAbs(diffs[S.day - 1]), 1)} ${varInfo().unit}`]] : [];
   const shock: HudTag = {
