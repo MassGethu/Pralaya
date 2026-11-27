@@ -423,3 +423,29 @@ takes longer"). Started 05:20:50. If the owner later asks for a cut, it is recor
 Fail any gate → not promoted, with one line on why. The idea, the recipe and these gates are not changed after
 seeing val. Seeds 1/2 (whole chain with `--seed {1,2}`) run only if seed 0 passes and they fit before 06:45.
 Pass or fail is reported by 06:45 either way.
+
+### Round 3 result (seed 0, val 2020, served) — scored 06:29–06:31 IST
+**`a3_anomaly`: NOT PROMOTED.** It fails gates 1, 2 and 3 and passes 4 and 5.
+
+| val 2020 | S | rmse / csi / blur / causal pts | paired Δ skill [95 % CI] | propagates warm / stall | stable warm / stall | null exact | day-8 in band |
+|---|---|---|---|---|---|---|---|
+| served `e3_rainstab` (base) | 57.92 | 22.92 / 11.07 / 10 / 13.92 | – | 97.7 / 57.1 % | 92.9 / 94.9 % | yes | 0.870 |
+| served `a3_anomaly` | **58.37** | 23.01 / 11.73 / 10 / 13.63 | +0.0004 [−0.0045, +0.0049] | **83.3 / 53.1 %** | 92.9 / 97.7 % | yes | 0.870 |
+| raw `a3_anomaly` | 52.62 | 17.26 / 11.73 / 10 / 13.63 | – | 83.3 / 53.1 % | 92.9 / 97.7 % | yes | 0.886 |
+
+- Gate 1: S 58.37 < 58.92 (+0.45 over the base, under the +1.0 bar). **Fail.**
+- Gate 2: the paired CI includes 0. **Fail.**
+- Gate 3: propagation falls 14.4 pp (warm Bay) and 4.0 pp (Arabian Sea wind), both past the 2 pp limit; stability
+  holds (+0.0 / +2.8 pp). **Fail.**
+- Gate 4: null exact. Pass. Gate 5: anti-blur 10/10, in-band 0.870 vs 0.870. Pass.
+- What a3 changed: raw S rose 51.11 → 52.62. Heavy-rain CSI rose 11.07 → 11.73 points, which survives
+  calibration because rain stays at weight 1. Calibration removes most of the raw skill gain (served rmse points
+  22.92 → 23.01). Shock spread is weaker, probably because the anomaly target pulls a shocked state back toward
+  the normal. No seeds were run.
+- Recipe as registered, unshortened: stage-1 best epoch 20 (0.4229), stage-2 best 0.4058, stage-3 best epoch 3
+  (0.4010). Checkpoint SHA-256 `135a3ee5…24fdcf8`; refitted `calibration.pt` `3924a8ab…f0e7e97` (rung 4,
+  floor 0.3, rain weights pinned to 1). The refit's harmonic coefficients equal the reused ones exactly
+  (max |Δ| = 0). The same pipeline on the e3_rainstab bundle reproduced `main`'s `calibration.pt` field for field.
+- **Base used:** `codex/rainstab-demo` was still not on origin at 06:31, so the served base and the served
+  adapter are `origin/main` @ `b97d7d8` (calibrated `e3_rainstab`, the release named in the brief). Its served S
+  of 57.92 matches docs/CALIBRATION.md. Reports: `evaluation/results/a3_anomaly/`.

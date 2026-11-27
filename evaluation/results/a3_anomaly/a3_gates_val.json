@@ -1,0 +1,64 @@
+{
+ "S": {
+  "value": 58.369305021449236,
+  "base": 57.91758355286467,
+  "pass": false
+ },
+ "paired_ci": {
+  "mean": 0.00035227467975984967,
+  "ci95": [
+   -0.0044684880362200275,
+   0.004877065075590328
+  ],
+  "p05": -0.055224515019953145,
+  "min": -0.13880136714947347,
+  "n": 354,
+  "pass": false
+ },
+ "shocks": {
+  "warm_ocean.propagates": {
+   "value": 0.8333333333333334,
+   "base": 0.9774011299435028,
+   "pass": false
+  },
+  "warm_ocean.stable": {
+   "value": 0.9293785310734464,
+   "base": 0.9293785310734464,
+   "pass": true
+  },
+  "monsoon_stall.propagates": {
+   "value": 0.5310734463276836,
+   "base": 0.5706214689265536,
+   "pass": false
+  },
+  "monsoon_stall.stable": {
+   "value": 0.9774011299435028,
+   "base": 0.9491525423728814,
+   "pass": true
+  },
+  "pass": false
+ },
+ "null_exact": {
+  "value": true,
+  "pass": true
+ },
+ "anti_blur": {
+  "points": 10.0,
+  "in_band": 0.8700564971751412,
+  "base_in_band": 0.8695856873822976,
+  "pass": true
+ },
+ "points": {
+  "rmse": 23.009015277246164,
+  "csi": 11.726815167931889,
+  "blur": 10.0,
+  "causal": 13.633474576271187
+ },
+ "base_points": {
+  "rmse": 22.9209466073062,
+  "csi": 11.071848809965253,
+  "blur": 10.0,
+  "causal": 13.92478813559322
+ },
+ "PASS": false
+}
