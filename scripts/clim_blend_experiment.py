@@ -18,7 +18,7 @@ from monsoon_r1.contract import CHANNELS, lat_weights
 from evaluation.data import clim_index, climatology, doy, sincos, split_mask, window_starts
 from evaluation.evaluate import LEADS, SHOCK_BOX, STEPS
 from evaluation.uncertainty import ci
-from inference_adapter import clip_forecast, parse_simulation
+from inference_adapter import parse_simulation
 from model.forecaster import Forecaster
 from postprocess.clim_blend import ClimBlend, DAY_ANGLE, MIN_ALPHA, harmonic_basis
 
@@ -28,6 +28,15 @@ KEYS = ("nonzero", "localized", "propagates", "stable")
 FIELDS = ("coefficients", "alpha", "land", "persistence")
 LEAD_IDX = np.array(LEADS) - 1
 TOL = 1e-12
+
+
+def clip_forecast(rollout):
+    """The adapter's physical clipping (t2m to 233.15..333.15 K, rain >= 0), applied in place."""
+    if not np.isfinite(rollout).all():
+        raise ValueError("forecast returned nonfinite values")
+    np.clip(rollout[:, 0], 233.15, 333.15, out=rollout[:, 0])
+    np.maximum(rollout[:, 1], 0, out=rollout[:, 1])
+    return rollout
 
 
 def read_split(path, split):

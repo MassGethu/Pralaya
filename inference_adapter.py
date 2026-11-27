@@ -110,8 +110,8 @@ class Inference:
         except Exception as exc:
             raise RuntimeError(f"Unable to load the trained PRALAYA bundle at {bundle_dir}: {exc}") from exc
 
-    def _raw(self, history: np.ndarray, season: np.ndarray, steps: int) -> np.ndarray:
-        rollout = np.array(self._forecast(history, season, steps), dtype=np.float64)
+    def _raw(self, history: np.ndarray, season: np.ndarray, steps: int, forecast: Forecast | None = None) -> np.ndarray:
+        rollout = np.array((forecast or self._forecast)(history, season, steps), dtype=np.float64)
         if rollout.shape != (steps, *STATE_SHAPE):
             raise ValueError(f"forecast returned an unexpected shape: {rollout.shape}")
         if not np.isfinite(rollout).all():
@@ -121,11 +121,18 @@ class Inference:
     def run(self, history: np.ndarray, season: np.ndarray, steps: int, prime_history: np.ndarray | None = None) -> np.ndarray:
         # Copy model output before releasing the lock in case the backend reuses storage.
         with self._lock:
-            rollout = self._raw(history, season, steps)
-            if self._calibration is not None and prime_history is not None:
+            response = getattr(self._forecast, "response", None)
+            if response is not None and prime_history is not None:
+                # Ensemble: Prime is the member mean; the shock response is the first member's own.
                 prime = self._raw(prime_history, season, steps)
+                rollout = prime + (self._raw(history, season, steps, response)
+                                   - self._raw(prime_history, season, steps, response))
             else:
-                prime = rollout
+                rollout = self._raw(history, season, steps)
+                if self._calibration is not None and prime_history is not None:
+                    prime = self._raw(prime_history, season, steps)
+                else:
+                    prime = rollout
         if self._calibration is not None:
             last = history[-1] if prime_history is None else prime_history[-1]
             self._calibration.apply(rollout, prime, last, season)

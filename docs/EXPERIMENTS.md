@@ -412,3 +412,23 @@ Written and pushed **before** any `a5b` number was computed (27 Nov 2026, ~05:25
 uses seed 0's own paired response instead of the averaged one: Branch = calibrated ensemble Prime +
 (seed-0 raw Branch − seed-0 raw Prime). The shock response is therefore exactly the shipped release's.
 **Gates:** the same six as `a5_ens3`, against the same served baseline. 2021 follow-up once afterwards (≥ 56.92).
+
+### `a5b_ens3_resp0` result: **passes all six gates, promoted**
+| served | S | rmse | CSI | blur | causality | propagates warm / stall | stable warm / stall | day-8 in band |
+|---|---|---|---|---|---|---|---|---|
+| release, val 2020 | 57.92 | 22.92 | 11.07 | 10 | 13.92 | 97.7 / 57.1 % | 92.9 / 94.9 % | 0.870 |
+| **a5b, val 2020** | **65.92** | 29.16 | 12.79 | 10 | 13.97 | 97.7 / 57.6 % | 93.5 / 96.0 % | 0.858 |
+| release, 2021 follow-up | 56.92 | 21.00 | 11.84 | 10 | 14.08 | 96.9 / 60.6 % | 95.8 / 97.7 % | 0.856 |
+| **a5b, 2021 follow-up** | **64.93** | 27.24 | 13.58 | 10 | 14.10 | 96.9 / 60.9 % | 96.3 / 98.0 % | 0.844 |
+
+- Gate 1: S +8.00. Gate 2: paired per-window skill +0.0250 [+0.0218, +0.0276] (354 windows, block bootstrap).
+- Gate 3: propagation and stability are equal or higher in both boxes. Gate 4: null exact, 0 invalid windows.
+- Gate 5: anti-blur 10/10; in-band −1.1 pp; day-8 variance ratios 0.49 (tp) to 1.00, all inside 0.4–2.5.
+- Gate 6: 36 pytest, contract check, official schema validator and repo scan 15/15 pass. Requests take 100–167 ms
+  on the M5 (5 rollouts for a shocked request, 3 otherwise), 245 MB RSS. Native x86 timing is not measured.
+- 2021 follow-up (run once, after selection): +8.01 S, paired +0.0250 [+0.0219, +0.0285] on 353 windows.
+- **Caveat:** the calibration weights are fitted on 2020, so the 2020 number is partly in-sample. Quote the 2021
+  follow-up (64.93) as the cleaner estimate. Score aggregation differs from other teams' reports.
+- Reproduce: `scripts/clim_blend_experiment.py prepare/val --rung 4 --floor 0.3 --ckpt <bundle>/pralaya.pt` on the
+  ensemble bundle, pin rain weights to 1, then `python scripts/paired_served_eval.py <release>/pralaya.pt
+  <candidate>/pralaya.pt val <data>`. Results in `evaluation/results/a5b/`. calibration.pt sha256 `1f9d56217bf1bd5f…`.
