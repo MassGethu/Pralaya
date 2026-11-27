@@ -47,7 +47,7 @@ export class WindFlow {
     this.left = left;
     this.right = right;
     this.split = right ? split : 1;
-    if (!left) this.clear();
+    if (!left) { this.stop(); this.clear(); } // stop the loop, or its next frame reads a null field and dies
     this.start();
   }
 
@@ -70,7 +70,11 @@ export class WindFlow {
     if (!this.enabled || !this.left || !this.geo || this.raf || document.hidden) return;
     const n = Math.round(NLAT * NLON * DENSITY);
     if (this.ps.length !== n) this.ps = Array.from({ length: n }, () => this.spawn());
-    const tick = () => { this.step(); this.raf = requestAnimationFrame(tick); };
+    const tick = () => {
+      if (!this.left) { this.raf = 0; return; } // wind cleared between frames: end cleanly so start() can restart
+      this.step();
+      this.raf = requestAnimationFrame(tick);
+    };
     this.raf = requestAnimationFrame(tick);
   }
 
