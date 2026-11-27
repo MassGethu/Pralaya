@@ -1,8 +1,14 @@
 # Experiments after b3_roll4 (pre-registered)
 
-> **Current status (added 27 Nov; the pre-registered text below is unchanged):** shipped `e3_rainstab`, sha256
-> `90605130…68d88db`, promoted in round 2 (see the end of this file). Rollback to e3: `git checkout 3578dd2 --
-> model/bundle/pralaya.pt`. The "Baseline and rollback" section below describes the state when round 1 was registered.
+> **Current status (updated 27 Nov 07:15 IST; the pre-registered text below is unchanged):** served
+> `a5b_ens3_resp0`, promoted in round 3b (see the end of this file): the three `e3_rainstab` seeds averaged and
+> calibrated, with seed 0's shock response. Val 2020 S 65.92 (partly in-sample), 2021 follow-up 64.93
+> ([CALIBRATION.md](CALIBRATION.md)). Seed 0 (`pralaya.pt`, sha256 `90605130…68d88db`) was promoted in round 2.
+> Rollback to the single calibrated `e3_rainstab`: `git checkout b97d7d8 -- model/bundle` and delete
+> `model/bundle/ensemble.json`, `member_s1.pt` and `member_s2.pt`. Rollback to e3: `git checkout 3578dd2 --
+> model/bundle/pralaya.pt` and delete the rest of `model/bundle`. The "Baseline and rollback" section below
+> describes the state when round 1 was registered. Experiments recorded only on other branches are summarised in
+> [the last section](#experiments-recorded-on-other-branches).
 
 Written and committed **before** any of these runs was evaluated. The rule below decides promotion and is not edited
 afterwards; results are appended in the log at the end.
@@ -432,3 +438,31 @@ uses seed 0's own paired response instead of the averaged one: Branch = calibrat
 - Reproduce: `scripts/clim_blend_experiment.py prepare/val --rung 4 --floor 0.3 --ckpt <bundle>/pralaya.pt` on the
   ensemble bundle, pin rain weights to 1, then `python scripts/paired_served_eval.py <release>/pralaya.pt
   <candidate>/pralaya.pt val <data>`. Results in `evaluation/results/a5b/`. calibration.pt sha256 `1f9d56217bf1bd5f…`.
+
+## Experiments recorded on other branches
+Added 27 Nov 07:15 IST so that main holds every result. Each run was pre-registered and scored on its own branch;
+nothing here changes a decision above. Code, result files and the full write-ups stay on the branches named.
+`a3_anomaly` and `a4_rainhead` were both called "Round 3" on their branches, in parallel with main's `a5_ens3`.
+Both were gated against the single calibrated release (S 57.92), because the ensemble was not yet on main.
+
+| run | owner / branch @ commit | idea | val 2020 S (served unless marked raw) | outcome |
+|---|---|---|---|---|
+| `b2_unet` | Mass / `mass/b2-unet` @ `224672a` | compact U-Net (round 2) | raw, stage 1 only: 33.18 vs `b1_onestep` 38.67 | not promoted; chain stopped at stage 1 ([B2_REPORT.md](B2_REPORT.md)) |
+| `b5_transport` | Hridhin / `hridhin/b5-transport` @ `5ef8f0f` | wind-guided transport input (round 2) | raw: 52.35 vs e3 49.37 | not promoted: paired CI includes 0, warm-ocean stability −2.5 pp ([B5_REPORT.md](B5_REPORT.md)) |
+| clim blend on e3 / `e3_rainstab` | Mass / `mass/clim-blend-e3` @ `bd573d1` | seasonal blend on both runs | 57.33 / 58.31 | not shipped: shock spread (G1) fails ([CLIMBLEND.md](CLIMBLEND.md)) |
+| shock-preserving blend | Jarvis / `jarvis/blend-delta` @ `1d406dd` | blend Prime, add raw paired response | 58.85 | passed G1–G4, not shipped; main shipped the rain-unblended version, 57.92 ([BLEND_DELTA.md](BLEND_DELTA.md)) |
+| rain quantile map | Jarvis / `jarvis/blend-delta` @ `1d406dd` | quantile-map rain on that blend | 53.36 | not shipped: fails G1 ([RAIN_QM.md](RAIN_QM.md)) |
+| 3-seed ensemble + blend | Jarvis / `jarvis/blend-delta` @ `1d406dd` | averaged shock response | 65.82 | not shipped: monsoon_stall −12.2 pp (G1); same result as main's `a5_ens3` ([ENSEMBLE.md](ENSEMBLE.md)) |
+| `a4_rainhead` | Hridhin / `hridhin/a4-rainhead` @ `fcecd64` | two-part rain output (occurrence × amount) | 51.68 (raw 42.48) | not promoted: fails gates 1, 2, 3 (stall −12.4 pp) and 6 (day-8 CSI) |
+| `a3_anomaly` | Jarvis / `jarvis/a3-anomaly` @ `7701705` | net predicts the anomaly from the seasonal normal | 58.37 (raw 52.62) | not promoted: +0.45 under the +1.0 bar, paired CI includes 0, warm-Bay propagation −14.4 pp |
+
+- **`a4_rainhead`:** rain became drier, not sharper (day-8 25 mm/day frequency bias 0.25 vs 0.31, tp variance ratio
+  0.51 vs 0.61). The occurrence loss dominated the first epoch. Checkpoint sha256 `717038a6…16297f11`; its refitted
+  `calibration.pt` (`263289d4…736ff6a`) was not committed.
+- **`a3_anomaly`:** the raw gain (51.11 → 52.62, heavy-rain CSI 11.07 → 11.73) mostly disappears after calibration,
+  and the anomaly target pulls shocked states back toward the normal. Checkpoint sha256 `135a3ee5…24fdcf8`;
+  refitted `calibration.pt` `3924a8ab…f0e7e97`. No seeds were run.
+- **Duplicated work, for the record:** the shock-preserving blend (Jarvis, 03:42–03:48) and main's calibrated
+  release (Mass, `cce926d`, 03:38) were built separately; the rain-unblended fallback in RAIN_QM.md reproduces main's
+  57.92. The 3-seed ensemble was tested on `jarvis/blend-delta` (04:20–04:33) and again as `a5_ens3` (05:11–05:20)
+  with the same 65.82 and the same propagation failure.

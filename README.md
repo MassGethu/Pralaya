@@ -17,6 +17,14 @@ python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 
 python train.py --data /path/to/india_climate_train.nc --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1
 ```
 
+The served ensemble adds seeds 1 and 2: repeat all three commands with `--seed 1` (then `--seed 2`), names ending `_s1` (`_s2`) and `--init` pointing at the same seed's previous run, for example:
+
+```sh
+python train.py --data /path/to/india_climate_train.nc --name e3_rainstab_s1 --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4_s1/best.pt --seed 1 --ocean-t2m-weight 4 --stab-weight 1
+```
+
+To assemble the bundle, copy `runs/e3_rainstab/best.pt` to `model/bundle/pralaya.pt` and the seed 1 and 2 checkpoints to `model/bundle/member_s1.pt` and `member_s2.pt`; `model/bundle/ensemble.json` lists the three files with `pralaya.pt` first. Then refit `model/bundle/calibration.pt` and pin its rain weights as described in [Refit the calibration](docs/CALIBRATION.md#refit-the-calibration). The server refuses a calibration file that does not match the bundle.
+
 Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint selection. The server loads `e3_rainstab` from `model/bundle/pralaya.pt`. The raw model scored 51.11/70 on 2020 validation, up from 49.37 for `e3_roll8_ocean`. Its three-seed mean is 50.85 ± 1.54. The bundled calibration improves Prime's non-rain fields while retaining the model's response to each shock. The served forecast averages the three `e3_rainstab` seeds (`model/bundle/ensemble.json`), calibrates that mean, and takes each shock's response from seed 0 alone, so the response is the single model's. It scored 65.92/70 on 2020 validation (partly in-sample for the calibration weights) and 64.93/70 on the 2021 follow-up, up from 57.92 and 56.92 for the single calibrated model, with shock propagation and stability equal or higher ([evidence](docs/EXPERIMENTS.md#a5b_ens3_resp0-result-passes-all-six-gates-promoted)). These are local estimates using the kit scoring functions. [Training recipe](docs/TRAINING.md) · [Calibration evidence](docs/CALIBRATION.md)
 
 ## Serve and validate

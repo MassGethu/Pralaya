@@ -29,7 +29,11 @@ forecast = load_cpu(Path("model/bundle"))           # loads model/bundle/pralaya
 out = forecast(history, doy_sincos, steps)          # history already shocked by the adapter
 # out: np.float32 [steps,6,32,36] physical units
 ```
-- `forecast.model_id` is the checkpoint ID.
+- `forecast.model_id` is the checkpoint ID, with `-ens<N>` appended for an ensemble bundle (`e3_rainstab-ens3` today).
+- **Ensemble bundle:** when `model/bundle/ensemble.json` lists members, `forecast` returns the members' mean and
+  `forecast.response(history, doy_sincos, steps)` returns seed 0 alone. The adapter builds Branch from seed 0's paired
+  response (see [CALIBRATION.md](CALIBRATION.md)). Single-checkpoint bundles have no `response` attribute.
+- **Calibration:** the adapter, not this loader, applies `model/bundle/calibration.pt` when it exists.
 - Season: the model conditions on the TARGET day, so it rotates the supplied last-input pair by 2*pi/365 before the first transition and once per step after.
 - It raises `ValueError` on bad shapes/NaN, so map that to HTTP 422.
 - It is deterministic, keeps no state between calls and never mutates its inputs.
@@ -39,7 +43,11 @@ out = forecast(history, doy_sincos, steps)          # history already shocked by
 `{"state_dict", "config": {"width", "blocks"}, "mean" [6], "std" [6], "static" [2,32,36], "meta": {"model_id", "train_years", ...}}`.
 Self-contained: no stats.json, no climatology and no archive are needed at inference. Expected size ~3.5 MB (no LFS needed).
 
-## Measured serve.py resources (jarvis/model with the e3_rainstab bundle, `evaluation/memprobe.py`)
+## Measured serve.py resources
+The served 3-seed ensemble (`a5b_ens3_resp0`, main `e824255`) measured 245 MB RSS and 100–167 ms per request on an
+Apple M5 (5 rollouts for a shocked request, 3 otherwise). The figures below are for the single model.
+
+### Single `e3_rainstab` bundle (jarvis/model, `evaluation/memprobe.py`)
 - **Memory:** peak RSS 241 MB (server + children, sampled every 20 ms). The probe ran the official validator,
   the 8-call check and 20 14-step calls. Limit 6 GB, about 25x headroom.
 - **Speed:** ready (POST /health) after 0.8 s; 14-step HTTP call median 63 ms, max 67 ms. Measured on macOS

@@ -24,13 +24,13 @@ plus 2 static fields. The audit (`python -m evaluation.audit`) passes 30/30 chec
 - **Rain:** ReLU, so rain is never negative.
 - **Rollout:** autoregressive, one day per step. The season encoding advances by 2π/365 per step.
 
-## Recipe (the shipped `e3_rainstab`; previous releases `e3_roll8_ocean`, `b3_roll4`)
+## Recipe (`e3_rainstab`, served as a 3-seed ensemble; previous releases `e3_roll8_ocean`, `b3_roll4`)
 | stage | command | what it does |
 |---|---|---|
 | b1 | `python train.py --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0` | one-step training from scratch |
 | b3 | `python train.py --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0` | fine-tunes through a 4-day rollout, which reduces drift and shock blow-up |
 | e3 | `python train.py --name e3_roll8_ocean --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4` | fine-tunes through an 8-day rollout with ocean t2m weighted 4× in the loss (best epoch 3); previous release |
-| **e3_rainstab (shipped)** | `python train.py --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1` | e3's recipe plus the shock-stability hinge (`--stab-tau 3` default), also from b3 (best epoch 3) |
+| **e3_rainstab (shipped, seeds 0–2)** | `python train.py --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1` | e3's recipe plus the shock-stability hinge (`--stab-tau 3` default), also from b3 (best epoch 3) |
 
 How e3 and e3_rainstab were chosen, and the other experiments, are in [EXPERIMENTS.md](EXPERIMENTS.md). Optional `train.py` flags
 used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--stab-tau`, `--grad-loss`, `--ms-levels`, `--advect`.
@@ -41,7 +41,11 @@ used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--st
 - Each run writes `runs/<name>/{config.json, log.jsonl, train.log, last.pt, best.pt, resume.pt}` (gitignored). Use `--resume` to continue an interrupted run.
 - `best.pt` is the epoch with the lowest training-time val score (every 2nd val window, leads 1/4/8).
 - Seeds 1 and 2 use the same commands with `--seed 1|2`, `_s1|_s2` names and the same-seed `--init`.
-- Release: copy the selected `runs/<id>/best.pt` to `model/bundle/pralaya.pt`. The checkpoint is self-contained (weights, config, train-only stats, static fields).
+- Release (current, `a5b_ens3_resp0`): copy seed 0's `runs/e3_rainstab/best.pt` to `model/bundle/pralaya.pt` and
+  seeds 1 and 2 (`runs/e3_rainstab_s1|_s2/best.pt`) to `model/bundle/member_s1.pt` and `member_s2.pt`;
+  `model/bundle/ensemble.json` lists the three files with `pralaya.pt` first. Then refit `calibration.pt` on the
+  bundle ([CALIBRATION.md](CALIBRATION.md#refit-the-calibration)). Each checkpoint is self-contained (weights,
+  config, train-only stats, static fields). A bundle with only `pralaya.pt` serves the raw single model.
 
 ## Is it overfitting?
 - **First release (`b3_roll4`).** S is 46.8 / 70 in 2021 and 45.9 on 2020 validation. Per-window skill is
@@ -57,10 +61,12 @@ used only by those experiments: `--heavy-rain-weight/--heavy-rain-thresh`, `--st
   - Promoted on val only (round 2, [EXPERIMENTS.md](EXPERIMENTS.md)): S 51.11 (+1.74 over e3), paired per-window
     skill +0.0055 [+0.0014, +0.0097], stable 92.9 / 94.9 % (e3 88.1 / 88.4 %).
   - 3-seed mean 50.85 ± 1.54 against e3's 49.49 ± 1.14. The seeds vary a lot: **seed 1 (49.19) is below e3**,
-    and its paired CI includes 0. We ship seed 0, as registered.
+    and its paired CI includes 0. Round 2 shipped seed 0, as registered; since round 3b all three seeds are served as
+    an ensemble, with seed 0's shock response ([CALIBRATION.md](CALIBRATION.md)).
   - *Follow-up evaluation on 2021*, scored once after promotion: S 50.72, **0.20 below e3's 50.92** (fewer CSI
     points), with warm-Bay shock stability 95.8 % against 89.5 %. Per-window skill +0.059 [+0.049, +0.071].
-- **Known weaknesses of the shipped model (honest).**
+- **Known weaknesses of the single `e3_rainstab` model (honest; the served ensemble's numbers are in
+  [CALIBRATION.md](CALIBRATION.md)).**
   - Skill against the better baseline (persistence or climatology) turns negative at day 8 for the mean over
     channels (−0.015; day 6 for rain).
   - Ocean t2m is still worse than persistence from day 1.

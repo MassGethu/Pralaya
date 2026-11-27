@@ -1,0 +1,47 @@
+{
+ "method": "Served bundle (3-seed e3_rainstab, calibrated) via inference_adapter.Inference; window ending 2021-07-15 (doy 196) from the kit NetCDF; shock = kit warm_ocean (+3 K t2m, +15% of last-day tcwv, box lat 8-20, lon 82-94); farm region 18.5-25.5N, 74.5-83.5E, land_sea_mask >= 0.5 (80 cells), forecast days 1-7; dashboard formulas (cos-lat weighted regional mean, dry < 2.5 mm/day, heavy >= 10 mm/day).",
+ "prime": {
+  "daily": [
+   2.24,
+   3.47,
+   6.73,
+   10.05,
+   12.36,
+   13.55,
+   14.85
+  ],
+  "cum": 63.25,
+  "dry": 1,
+  "spell": 1,
+  "heavy": 45.89,
+  "t": 28.458
+ },
+ "branch": {
+  "daily": [
+   2.52,
+   3.98,
+   7.65,
+   10.62,
+   12.11,
+   11.86,
+   15.13
+  ],
+  "cum": 63.87,
+  "dry": 0,
+  "spell": 0,
+  "heavy": 44.46,
+  "t": 28.652
+ },
+ "peak_abs_tp_diff_by_day_mm": [
+  7.23,
+  12.45,
+  15.67,
+  15.48,
+  17.72,
+  25.56,
+  25.26,
+  11.0,
+  15.4,
+  15.76
+ ]
+}
