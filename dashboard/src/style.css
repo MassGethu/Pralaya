@@ -541,6 +541,8 @@ button.hud-hero { cursor: pointer; }
 .scenario-chart-key .key-median::before { border-color: var(--signal-2); }
 .scenario-chart-key .key-prime::before { border-top-style: dashed; }
 .scenario-table th[scope="row"] { text-align: left; }
+.scenario-tradeoff td { vertical-align: top; white-space: nowrap; }
+.scenario-tradeoff td small { display: block; color: var(--ink-2); font-size: 10px; }
 .scenario-table-scroll { overflow-x: auto; }
 .scenario-candidates { list-style: none; padding: 0; margin: 5px 0 0; font-size: 12px; }
 .scenario-candidates li { display: grid; grid-template-columns: 1fr auto; gap: 5px; padding: 4px 0; border-bottom: 1px solid var(--line); }

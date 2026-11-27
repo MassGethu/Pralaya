@@ -1,0 +1,5626 @@
+{
+ "ckpt": "model/bundle/pralaya.pt",
+ "model_id": "e3_roll8_ocean",
+ "split": "val",
+ "windows": 354,
+ "jjas_windows": 122,
+ "impact_days": 7,
+ "regions_deg": {
+  "central_india": [
+   18,
+   26,
+   74,
+   84
+  ],
+  "odisha_coast": [
+   17,
+   23,
+   82,
+   88
+  ],
+  "west_coast": [
+   8,
+   20,
+   72,
+   77
+  ]
+ },
+ "obs_jjas_p90_7day_rain": {
+  "central_india": 94.1588801795387,
+  "odisha_coast": 114.88975744256042,
+  "west_coast": 125.75181653521047
+ },
+ "families": {
+  "bob_temp": {
+   "label": "Bay of Bengal temperature (t2m add, tcwv +5 %/K)",
+   "box_deg": [
+    8,
+    20,
+    82,
+    94
+   ],
+   "unit": "K",
+   "plausible": [
+    -2.0,
+    3.0
+   ],
+   "why": "Bay of Bengal marine heatwaves reach about +1 to +3 K; cool anomalies after cyclones are about -1 to -2 K. +3 K is the kit's own warm_ocean shock. 4-5 K are outside the plausible range and tested only to find where the model stops being trustworthy.",
+   "rows": [
+    {
+     "mag": -3,
+     "plausible": false,
+     "stable_frac": 0.8785310734463276,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.787630438804622,
+     "central_india": {
+      "d_cum_rain_median": -0.9989716032383278,
+      "d_cum_rain_p10": -8.37776047118321,
+      "d_cum_rain_p90": 5.155125607414948,
+      "d_t2m_median": -0.1513628551365116
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -2.658824582880925,
+      "d_cum_rain_p10": -12.35809521245573,
+      "d_cum_rain_p90": 5.947211178769332,
+      "d_t2m_median": -0.8196864841600586
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.9822689308201973,
+      "d_cum_rain_p10": -9.550465513643948,
+      "d_cum_rain_p90": 2.99895911219879,
+      "d_t2m_median": 0.030421341471850383
+     },
+     "trusted": false
+    },
+    {
+     "mag": -2,
+     "plausible": true,
+     "stable_frac": 0.9265536723163842,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.239173221588128,
+     "central_india": {
+      "d_cum_rain_median": -0.7399477997890394,
+      "d_cum_rain_p10": -4.449028709677781,
+      "d_cum_rain_p90": 3.706160901025034,
+      "d_t2m_median": -0.09561371963079068
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -1.3440393717056054,
+      "d_cum_rain_p10": -8.429419380309149,
+      "d_cum_rain_p90": 3.9553899613222514,
+      "d_t2m_median": -0.5423574520614807
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.7658090534111359,
+      "d_cum_rain_p10": -5.797098940654629,
+      "d_cum_rain_p90": 2.5361288389729517,
+      "d_t2m_median": 0.02023589707442852
+     },
+     "trusted": false
+    },
+    {
+     "mag": -1,
+     "plausible": true,
+     "stable_frac": 0.9717514124293786,
+     "valid_frac": 1.0,
+     "max_std_p95": 3.9308536410331643,
+     "central_india": {
+      "d_cum_rain_median": -0.36279290996433744,
+      "d_cum_rain_p10": -2.143536978911463,
+      "d_cum_rain_p90": 1.844547329447905,
+      "d_t2m_median": -0.049337097804340146
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.5635969960934943,
+      "d_cum_rain_p10": -4.1290666303305,
+      "d_cum_rain_p90": 2.147043600847336,
+      "d_t2m_median": -0.27203910021589195
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.2931231235775904,
+      "d_cum_rain_p10": -2.667639415488689,
+      "d_cum_rain_p90": 1.531483817879702,
+      "d_t2m_median": 0.007476739223932327
+     },
+     "trusted": true
+    },
+    {
+     "mag": -0.5,
+     "plausible": true,
+     "stable_frac": 0.9971751412429378,
+     "valid_frac": 1.0,
+     "max_std_p95": 2.2137260913848853,
+     "central_india": {
+      "d_cum_rain_median": -0.16980848401700133,
+      "d_cum_rain_p10": -0.9848385880984452,
+      "d_cum_rain_p90": 0.9150372228220093,
+      "d_t2m_median": -0.024929978735428904
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.2603247065291683,
+      "d_cum_rain_p10": -1.9623683708881712,
+      "d_cum_rain_p90": 1.0347319102943138,
+      "d_t2m_median": -0.13511728909404042
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.12446886833818738,
+      "d_cum_rain_p10": -1.177639616452209,
+      "d_cum_rain_p90": 0.7308377822121609,
+      "d_t2m_median": 0.003993915883484078
+     },
+     "trusted": true
+    },
+    {
+     "mag": 0.5,
+     "plausible": true,
+     "stable_frac": 0.9971751412429378,
+     "valid_frac": 1.0,
+     "max_std_p95": 1.9425628185272181,
+     "central_india": {
+      "d_cum_rain_median": 0.17644248256656692,
+      "d_cum_rain_p10": -0.7750953558669166,
+      "d_cum_rain_p90": 0.9333616001967616,
+      "d_t2m_median": 0.02630227215391301
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.1674550445274523,
+      "d_cum_rain_p10": -1.065418191683884,
+      "d_cum_rain_p90": 1.978857936727456,
+      "d_t2m_median": 0.1368455206446697
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.18128398248237687,
+      "d_cum_rain_p10": -0.6234802821230296,
+      "d_cum_rain_p90": 1.0510417167255568,
+      "d_t2m_median": -0.0030981461979138203
+     },
+     "trusted": true
+    },
+    {
+     "mag": 1,
+     "plausible": true,
+     "stable_frac": 0.9689265536723164,
+     "valid_frac": 1.0,
+     "max_std_p95": 3.2858002185821515,
+     "central_india": {
+      "d_cum_rain_median": 0.32145171201638423,
+      "d_cum_rain_p10": -1.567192584227598,
+      "d_cum_rain_p90": 1.831770393795327,
+      "d_t2m_median": 0.053120055922420306
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.36698077992490497,
+      "d_cum_rain_p10": -2.0262759185621917,
+      "d_cum_rain_p90": 3.4844256116766656,
+      "d_t2m_median": 0.2727739660094528
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.370237776630983,
+      "d_cum_rain_p10": -1.1574281069594612,
+      "d_cum_rain_p90": 1.9793929474750838,
+      "d_t2m_median": -0.006016786129833918
+     },
+     "trusted": true
+    },
+    {
+     "mag": 1.5,
+     "plausible": true,
+     "stable_frac": 0.9519774011299436,
+     "valid_frac": 1.0,
+     "max_std_p95": 4.7291764259338285,
+     "central_india": {
+      "d_cum_rain_median": 0.42390245051212005,
+      "d_cum_rain_p10": -2.275369698643792,
+      "d_cum_rain_p90": 2.8467195931239595,
+      "d_t2m_median": 0.07944302695847227
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.6287335329524382,
+      "d_cum_rain_p10": -3.429208532751289,
+      "d_cum_rain_p90": 4.727098698939683,
+      "d_t2m_median": 0.4083219489994008
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.62633301770461,
+      "d_cum_rain_p10": -1.6334064032595421,
+      "d_cum_rain_p90": 2.637868856875264,
+      "d_t2m_median": -0.008358221045568826
+     },
+     "trusted": true
+    },
+    {
+     "mag": 2,
+     "plausible": true,
+     "stable_frac": 0.9350282485875706,
+     "valid_frac": 1.0,
+     "max_std_p95": 5.915362715721128,
+     "central_india": {
+      "d_cum_rain_median": 0.59256891304641,
+      "d_cum_rain_p10": -2.7175213140261114,
+      "d_cum_rain_p90": 3.5152836106482526,
+      "d_t2m_median": 0.10212707986985947
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 1.0053316505212528,
+      "d_cum_rain_p10": -4.91702622262378,
+      "d_cum_rain_p90": 6.11041752158608,
+      "d_t2m_median": 0.5425436089030313
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.92452856378398,
+      "d_cum_rain_p10": -2.0445078367933274,
+      "d_cum_rain_p90": 3.638258309598027,
+      "d_t2m_median": -0.010147085549590429
+     },
+     "trusted": false
+    },
+    {
+     "mag": 2.5,
+     "plausible": true,
+     "stable_frac": 0.9096045197740112,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.085249352455133,
+     "central_india": {
+      "d_cum_rain_median": 0.8926116725116486,
+      "d_cum_rain_p10": -3.484578888854575,
+      "d_cum_rain_p90": 4.232732639320287,
+      "d_t2m_median": 0.12740992082069624
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 1.3546390480220296,
+      "d_cum_rain_p10": -5.3200348318460415,
+      "d_cum_rain_p90": 6.621282709275431,
+      "d_t2m_median": 0.6744875605813547
+     },
+     "west_coast": {
+      "d_cum_rain_median": 1.3303794177108053,
+      "d_cum_rain_p10": -2.0290107712544425,
+      "d_cum_rain_p90": 4.469417628709137,
+      "d_t2m_median": -0.01383165414571863
+     },
+     "trusted": false
+    },
+    {
+     "mag": 3,
+     "plausible": true,
+     "stable_frac": 0.8813559322033898,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.861073350906367,
+     "central_india": {
+      "d_cum_rain_median": 0.9867862241239678,
+      "d_cum_rain_p10": -4.627994219978374,
+      "d_cum_rain_p90": 4.582583949621468,
+      "d_t2m_median": 0.14877984799707633
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 1.5127522294464555,
+      "d_cum_rain_p10": -6.196411032162935,
+      "d_cum_rain_p90": 7.841119231652568,
+      "d_t2m_median": 0.812461884001749
+     },
+     "west_coast": {
+      "d_cum_rain_median": 1.6675291385334035,
+      "d_cum_rain_p10": -2.35691792718998,
+      "d_cum_rain_p90": 5.166431327262835,
+      "d_t2m_median": -0.01811678704743258
+     },
+     "trusted": false
+    },
+    {
+     "mag": 4,
+     "plausible": false,
+     "stable_frac": 0.827683615819209,
+     "valid_frac": 1.0,
+     "max_std_p95": 8.407097005844111,
+     "central_india": {
+      "d_cum_rain_median": 1.1965073373901056,
+      "d_cum_rain_p10": -5.097882618908992,
+      "d_cum_rain_p90": 5.439011603397368,
+      "d_t2m_median": 0.19350179384051103
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 1.7307034430582604,
+      "d_cum_rain_p10": -6.904633492904281,
+      "d_cum_rain_p90": 9.357404514869053,
+      "d_t2m_median": 1.0875099298727093
+     },
+     "west_coast": {
+      "d_cum_rain_median": 2.4687599840957475,
+      "d_cum_rain_p10": -2.5508880859121827,
+      "d_cum_rain_p90": 6.569827571214988,
+      "d_t2m_median": -0.027922113208262545
+     },
+     "trusted": false
+    },
+    {
+     "mag": 5,
+     "plausible": false,
+     "stable_frac": 0.7909604519774012,
+     "valid_frac": 1.0,
+     "max_std_p95": 9.615228462219237,
+     "central_india": {
+      "d_cum_rain_median": 1.794450465960817,
+      "d_cum_rain_p10": -6.008893048579749,
+      "d_cum_rain_p90": 7.009498293400405,
+      "d_t2m_median": 0.2413752578615629
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 1.4609604700779357,
+      "d_cum_rain_p10": -7.468889393588245,
+      "d_cum_rain_p90": 10.595086802243154,
+      "d_t2m_median": 1.3694123176857431
+     },
+     "west_coast": {
+      "d_cum_rain_median": 3.489472339294558,
+      "d_cum_rain_p10": -2.4207077258234118,
+      "d_cum_rain_p90": 8.432422202041579,
+      "d_t2m_median": -0.04023051905983266
+     },
+     "trusted": false
+    }
+   ],
+   "trusted_mags": [
+    -1,
+    -0.5,
+    0.5,
+    1,
+    1.5
+   ],
+   "recommended_range": [
+    -1,
+    1.5
+   ]
+  },
+  "as_wind": {
+   "label": "Arabian Sea 10 m wind (u10, v10 percent)",
+   "box_deg": [
+    8,
+    20,
+    65,
+    75
+   ],
+   "unit": "%",
+   "plausible": [
+    -50.0,
+    30.0
+   ],
+   "why": "Monsoon breaks weaken the low-level jet over the Arabian Sea by up to about half; active spells strengthen it by about a third. -40 % is the kit's monsoon_stall shock.",
+   "rows": [
+    {
+     "mag": -60,
+     "plausible": false,
+     "stable_frac": 0.8587570621468926,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.848191499710081,
+     "central_india": {
+      "d_cum_rain_median": -0.23496251842527727,
+      "d_cum_rain_p10": -4.381212667614273,
+      "d_cum_rain_p90": 3.6915491851690496,
+      "d_t2m_median": 0.036993681425116165
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.7814070583272397,
+      "d_cum_rain_p10": -2.9119538259644853,
+      "d_cum_rain_p90": 4.1207087367271615,
+      "d_t2m_median": -0.0036167032440630464
+     },
+     "west_coast": {
+      "d_cum_rain_median": 2.5867616808201888,
+      "d_cum_rain_p10": -9.257195074140032,
+      "d_cum_rain_p90": 19.700595803469483,
+      "d_t2m_median": 0.19356794861298
+     },
+     "trusted": false
+    },
+    {
+     "mag": -50,
+     "plausible": true,
+     "stable_frac": 0.8700564971751412,
+     "valid_frac": 1.0,
+     "max_std_p95": 6.525480437278746,
+     "central_india": {
+      "d_cum_rain_median": 0.12697049222254364,
+      "d_cum_rain_p10": -3.299397596837384,
+      "d_cum_rain_p90": 3.5468006739712328,
+      "d_t2m_median": 0.03454942965234409
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.8109884169050954,
+      "d_cum_rain_p10": -2.475234851628992,
+      "d_cum_rain_p90": 4.179599004567847,
+      "d_t2m_median": -0.00282878922584473
+     },
+     "west_coast": {
+      "d_cum_rain_median": 2.650336641067028,
+      "d_cum_rain_p10": -8.558639726863111,
+      "d_cum_rain_p90": 15.506161054560202,
+      "d_t2m_median": 0.16455109631223763
+     },
+     "trusted": false
+    },
+    {
+     "mag": -40,
+     "plausible": true,
+     "stable_frac": 0.884180790960452,
+     "valid_frac": 1.0,
+     "max_std_p95": 5.829685664176941,
+     "central_india": {
+      "d_cum_rain_median": 0.2506959271007174,
+      "d_cum_rain_p10": -2.840529999295935,
+      "d_cum_rain_p90": 3.1296841941746374,
+      "d_t2m_median": 0.0214377433567563
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.5729580080880048,
+      "d_cum_rain_p10": -2.43433406559876,
+      "d_cum_rain_p90": 3.3287443977354862,
+      "d_t2m_median": -0.0008075347232363583
+     },
+     "west_coast": {
+      "d_cum_rain_median": 1.7548383310400903,
+      "d_cum_rain_p10": -6.269593969830531,
+      "d_cum_rain_p90": 14.380618134767804,
+      "d_t2m_median": 0.11964208189797887
+     },
+     "trusted": false
+    },
+    {
+     "mag": -30,
+     "plausible": true,
+     "stable_frac": 0.9322033898305084,
+     "valid_frac": 1.0,
+     "max_std_p95": 5.353111028671261,
+     "central_india": {
+      "d_cum_rain_median": 0.2525684414240672,
+      "d_cum_rain_p10": -2.3621154493506182,
+      "d_cum_rain_p90": 2.9948582152866443,
+      "d_t2m_median": 0.014994862767224504
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.46575569750297774,
+      "d_cum_rain_p10": -1.8429936479653741,
+      "d_cum_rain_p90": 2.6784270682561586,
+      "d_t2m_median": -0.005628434602016341
+     },
+     "west_coast": {
+      "d_cum_rain_median": 1.373317454449995,
+      "d_cum_rain_p10": -5.587443665823754,
+      "d_cum_rain_p90": 11.233505399423386,
+      "d_t2m_median": 0.11468679961231487
+     },
+     "trusted": false
+    },
+    {
+     "mag": -20,
+     "plausible": true,
+     "stable_frac": 0.9689265536723164,
+     "valid_frac": 1.0,
+     "max_std_p95": 4.345185208320613,
+     "central_india": {
+      "d_cum_rain_median": 0.18116236459518653,
+      "d_cum_rain_p10": -1.547434057159801,
+      "d_cum_rain_p90": 2.0316504779840794,
+      "d_t2m_median": 0.006453125133987214
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.4670936729555706,
+      "d_cum_rain_p10": -1.0990387863269895,
+      "d_cum_rain_p90": 1.7639428373341546,
+      "d_t2m_median": -0.005284681479281517
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.49653968884039656,
+      "d_cum_rain_p10": -5.126383671334217,
+      "d_cum_rain_p90": 7.246394649471599,
+      "d_t2m_median": 0.07439366756929644
+     },
+     "trusted": true
+    },
+    {
+     "mag": -10,
+     "plausible": true,
+     "stable_frac": 0.9887005649717514,
+     "valid_frac": 1.0,
+     "max_std_p95": 2.439349114894865,
+     "central_india": {
+      "d_cum_rain_median": 0.10133286747925041,
+      "d_cum_rain_p10": -0.8939030470048127,
+      "d_cum_rain_p90": 1.017180585919985,
+      "d_t2m_median": 0.0017847890460984672
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": 0.18448928585135604,
+      "d_cum_rain_p10": -0.6335113294524869,
+      "d_cum_rain_p90": 0.9598848284277267,
+      "d_t2m_median": -0.0013143741608132586
+     },
+     "west_coast": {
+      "d_cum_rain_median": 0.3584810070274074,
+      "d_cum_rain_p10": -3.9792508310055603,
+      "d_cum_rain_p90": 3.263525867674358,
+      "d_t2m_median": 0.041059260587218205
+     },
+     "trusted": true
+    },
+    {
+     "mag": 10,
+     "plausible": true,
+     "stable_frac": 0.9915254237288136,
+     "valid_frac": 1.0,
+     "max_std_p95": 2.5971105813980055,
+     "central_india": {
+      "d_cum_rain_median": -0.0320978163095873,
+      "d_cum_rain_p10": -0.8569702826931135,
+      "d_cum_rain_p90": 1.3870929078941914,
+      "d_t2m_median": -0.003300231078668503
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.1628856131655354,
+      "d_cum_rain_p10": -0.9431422949019627,
+      "d_cum_rain_p90": 0.6475375884913704,
+      "d_t2m_median": 0.0019827201810755923
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.3591579288267255,
+      "d_cum_rain_p10": -2.763823475284731,
+      "d_cum_rain_p90": 3.3438707856297,
+      "d_t2m_median": -0.04706433677327482
+     },
+     "trusted": true
+    },
+    {
+     "mag": 20,
+     "plausible": true,
+     "stable_frac": 0.9689265536723164,
+     "valid_frac": 1.0,
+     "max_std_p95": 4.210621190071103,
+     "central_india": {
+      "d_cum_rain_median": 0.0777822976144229,
+      "d_cum_rain_p10": -1.515696333356473,
+      "d_cum_rain_p90": 2.7135372100996653,
+      "d_t2m_median": -0.007444882899562799
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.36880800946153514,
+      "d_cum_rain_p10": -1.5424065343856312,
+      "d_cum_rain_p90": 0.947240630069481,
+      "d_t2m_median": 0.006524497751541958
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.3216165110249758,
+      "d_cum_rain_p10": -5.167046112350891,
+      "d_cum_rain_p90": 5.318533217198951,
+      "d_t2m_median": -0.0969848624679912
+     },
+     "trusted": true
+    },
+    {
+     "mag": 30,
+     "plausible": true,
+     "stable_frac": 0.9576271186440678,
+     "valid_frac": 1.0,
+     "max_std_p95": 4.536344599723811,
+     "central_india": {
+      "d_cum_rain_median": 0.2379957960330792,
+      "d_cum_rain_p10": -2.1282893215944414,
+      "d_cum_rain_p90": 3.556104353285822,
+      "d_t2m_median": -0.011588812546051486
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.5170140140838857,
+      "d_cum_rain_p10": -2.316135637541916,
+      "d_cum_rain_p90": 1.3105446065616315,
+      "d_t2m_median": 0.009843506920418577
+     },
+     "west_coast": {
+      "d_cum_rain_median": -0.47814812665794904,
+      "d_cum_rain_p10": -7.067536014631135,
+      "d_cum_rain_p90": 8.228053238955479,
+      "d_t2m_median": -0.15439924108292757
+     },
+     "trusted": true
+    },
+    {
+     "mag": 40,
+     "plausible": false,
+     "stable_frac": 0.9293785310734464,
+     "valid_frac": 1.0,
+     "max_std_p95": 5.650255846977233,
+     "central_india": {
+      "d_cum_rain_median": 0.6668421998243943,
+      "d_cum_rain_p10": -2.5282586271771166,
+      "d_cum_rain_p90": 4.498394486964901,
+      "d_t2m_median": -0.023459885970282812
+     },
+     "odisha_coast": {
+      "d_cum_rain_median": -0.5439799564681422,
+      "d_cum_rain_p10": -3.0611527401606025,
+      "d_cum_rain_p90": 1.5232623815743394,
+      "d_t2m_median": 0.011493193827078585
+     },
+     "west_coast": {
+      "d_cum_rain_median": -1.4334344250349602,
+      "d_cum_rain_p10": -8.88072724473087,
+      "d_cum_rain_p90": 10.359362242539735,
+      "d_t2m_median": -0.20547941629902766
+     },
+     "trusted": false
+    }
+   ],
+   "trusted_mags": [
+    -20,
+    -10,
+    10,
+    20,
+    30
+   ],
+   "recommended_range": [
+    -20,
+    30
+   ]
+  }
+ },
+ "inverse": {
+  "odisha_wet_week": {
+   "text": "coastal Odisha 7-day rain >= 115 mm (observed JJAS 2020 90th percentile of 7-day totals)",
+   "eligible_windows": 114,
+   "crossed_plausible_trusted": 4,
+   "crossed_any_tested": 5,
+   "windows": [
+    {
+     "init_day": "2020-06-01",
+     "base": 47.638,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 53.593
+     }
+    },
+    {
+     "init_day": "2020-06-02",
+     "base": 34.455,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 44.887
+     }
+    },
+    {
+     "init_day": "2020-06-03",
+     "base": 51.167,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 53.979
+     }
+    },
+    {
+     "init_day": "2020-06-04",
+     "base": 24.438,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 34.24
+     }
+    },
+    {
+     "init_day": "2020-06-05",
+     "base": 40.345,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 42.786
+     }
+    },
+    {
+     "init_day": "2020-06-06",
+     "base": 62.312,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 67.772
+     }
+    },
+    {
+     "init_day": "2020-06-07",
+     "base": 88.614,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 90.737
+     }
+    },
+    {
+     "init_day": "2020-06-08",
+     "base": 93.374,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -0.5,
+      "value": 95.17
+     }
+    },
+    {
+     "init_day": "2020-06-09",
+     "base": 86.801,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 90.907
+     }
+    },
+    {
+     "init_day": "2020-06-10",
+     "base": 100.589,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 109.795
+     }
+    },
+    {
+     "init_day": "2020-06-11",
+     "base": 113.809,
+     "crossing": {
+      "family": "as_wind",
+      "mag": -20,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": true,
+      "base": 113.809,
+      "shocked": 115.355
+     },
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 117.168
+     }
+    },
+    {
+     "init_day": "2020-06-12",
+     "base": 87.095,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 94.233
+     }
+    },
+    {
+     "init_day": "2020-06-13",
+     "base": 100.793,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 111.15
+     }
+    },
+    {
+     "init_day": "2020-06-14",
+     "base": 85.998,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 92.509
+     }
+    },
+    {
+     "init_day": "2020-06-15",
+     "base": 85.151,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 91.712
+     }
+    },
+    {
+     "init_day": "2020-06-16",
+     "base": 83.795,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 96.03
+     }
+    },
+    {
+     "init_day": "2020-06-17",
+     "base": 91.09,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 97.039
+     }
+    },
+    {
+     "init_day": "2020-06-18",
+     "base": 83.673,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 94.574
+     }
+    },
+    {
+     "init_day": "2020-06-19",
+     "base": 80.867,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 90.225
+     }
+    },
+    {
+     "init_day": "2020-06-20",
+     "base": 71.767,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 74.818
+     }
+    },
+    {
+     "init_day": "2020-06-21",
+     "base": 58.972,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 67.296
+     }
+    },
+    {
+     "init_day": "2020-06-22",
+     "base": 39.077,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 42.432
+     }
+    },
+    {
+     "init_day": "2020-06-23",
+     "base": 58.61,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 63.604
+     }
+    },
+    {
+     "init_day": "2020-06-24",
+     "base": 57.736,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 65.349
+     }
+    },
+    {
+     "init_day": "2020-06-25",
+     "base": 71.186,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 86.677
+     }
+    },
+    {
+     "init_day": "2020-06-26",
+     "base": 85.814,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 91.658
+     }
+    },
+    {
+     "init_day": "2020-06-27",
+     "base": 75.1,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 76.286
+     }
+    },
+    {
+     "init_day": "2020-06-28",
+     "base": 72.331,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 87.792
+     }
+    },
+    {
+     "init_day": "2020-06-29",
+     "base": 99.019,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2,
+      "value": 109.451
+     }
+    },
+    {
+     "init_day": "2020-07-01",
+     "base": 107.515,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": 3,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 107.515,
+      "shocked": 116.219
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 118.517
+     }
+    },
+    {
+     "init_day": "2020-07-05",
+     "base": 102.19,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 108.435
+     }
+    },
+    {
+     "init_day": "2020-07-06",
+     "base": 67.893,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 75.279
+     }
+    },
+    {
+     "init_day": "2020-07-07",
+     "base": 69.379,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 77.419
+     }
+    },
+    {
+     "init_day": "2020-07-08",
+     "base": 64.021,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 70.4
+     }
+    },
+    {
+     "init_day": "2020-07-09",
+     "base": 70.993,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 78.334
+     }
+    },
+    {
+     "init_day": "2020-07-10",
+     "base": 65.537,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 74.234
+     }
+    },
+    {
+     "init_day": "2020-07-11",
+     "base": 63.545,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 70.848
+     }
+    },
+    {
+     "init_day": "2020-07-12",
+     "base": 73.89,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 78.992
+     }
+    },
+    {
+     "init_day": "2020-07-13",
+     "base": 87.325,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 92.03
+     }
+    },
+    {
+     "init_day": "2020-07-14",
+     "base": 75.262,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 80.875
+     }
+    },
+    {
+     "init_day": "2020-07-15",
+     "base": 69.162,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 70.424
+     }
+    },
+    {
+     "init_day": "2020-07-16",
+     "base": 57.595,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 61.73
+     }
+    },
+    {
+     "init_day": "2020-07-17",
+     "base": 63.427,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 66.725
+     }
+    },
+    {
+     "init_day": "2020-07-18",
+     "base": 71.645,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 74.009
+     }
+    },
+    {
+     "init_day": "2020-07-19",
+     "base": 74.876,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 76.977
+     }
+    },
+    {
+     "init_day": "2020-07-20",
+     "base": 79.515,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 81.016
+     }
+    },
+    {
+     "init_day": "2020-07-21",
+     "base": 82.076,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -1,
+      "value": 82.557
+     }
+    },
+    {
+     "init_day": "2020-07-22",
+     "base": 67.857,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 76.459
+     }
+    },
+    {
+     "init_day": "2020-07-23",
+     "base": 43.551,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 50.773
+     }
+    },
+    {
+     "init_day": "2020-07-24",
+     "base": 51.218,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 65.946
+     }
+    },
+    {
+     "init_day": "2020-07-25",
+     "base": 51.729,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 59.644
+     }
+    },
+    {
+     "init_day": "2020-07-26",
+     "base": 56.854,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 69.859
+     }
+    },
+    {
+     "init_day": "2020-07-27",
+     "base": 63.322,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 77.134
+     }
+    },
+    {
+     "init_day": "2020-07-28",
+     "base": 68.071,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 70.168
+     }
+    },
+    {
+     "init_day": "2020-07-29",
+     "base": 109.051,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": 1,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": true,
+      "base": 109.051,
+      "shocked": 115.084
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1.5,
+      "value": 116.182
+     }
+    },
+    {
+     "init_day": "2020-07-30",
+     "base": 93.454,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 104.701
+     }
+    },
+    {
+     "init_day": "2020-07-31",
+     "base": 93.085,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 109.063
+     }
+    },
+    {
+     "init_day": "2020-08-01",
+     "base": 105.802,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1.5,
+      "value": 108.665
+     }
+    },
+    {
+     "init_day": "2020-08-02",
+     "base": 101.83,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 112.154
+     }
+    },
+    {
+     "init_day": "2020-08-04",
+     "base": 94.793,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 105.872
+     }
+    },
+    {
+     "init_day": "2020-08-05",
+     "base": 96.896,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 103.519
+     }
+    },
+    {
+     "init_day": "2020-08-06",
+     "base": 113.957,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": 0.5,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": true,
+      "base": 113.957,
+      "shocked": 115.473
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 124.238
+     }
+    },
+    {
+     "init_day": "2020-08-07",
+     "base": 103.129,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 109.494
+     }
+    },
+    {
+     "init_day": "2020-08-08",
+     "base": 87.207,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 93.591
+     }
+    },
+    {
+     "init_day": "2020-08-09",
+     "base": 78.003,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 83.097
+     }
+    },
+    {
+     "init_day": "2020-08-10",
+     "base": 86.621,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 91.16
+     }
+    },
+    {
+     "init_day": "2020-08-11",
+     "base": 82.468,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 89.711
+     }
+    },
+    {
+     "init_day": "2020-08-13",
+     "base": 106.933,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": 1.5,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": true,
+      "base": 106.933,
+      "shocked": 117.787
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 121.474
+     }
+    },
+    {
+     "init_day": "2020-08-14",
+     "base": 110.315,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 113.795
+     }
+    },
+    {
+     "init_day": "2020-08-15",
+     "base": 83.839,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 95.78
+     }
+    },
+    {
+     "init_day": "2020-08-16",
+     "base": 86.629,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 93.024
+     }
+    },
+    {
+     "init_day": "2020-08-17",
+     "base": 84.88,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 90.171
+     }
+    },
+    {
+     "init_day": "2020-08-20",
+     "base": 86.24,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 87.192
+     }
+    },
+    {
+     "init_day": "2020-08-21",
+     "base": 96.692,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1,
+      "value": 100.992
+     }
+    },
+    {
+     "init_day": "2020-08-22",
+     "base": 89.657,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 92.835
+     }
+    },
+    {
+     "init_day": "2020-08-23",
+     "base": 82.69,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 90.067
+     }
+    },
+    {
+     "init_day": "2020-08-24",
+     "base": 82.243,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 88.177
+     }
+    },
+    {
+     "init_day": "2020-08-25",
+     "base": 101.844,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -10,
+      "value": 101.907
+     }
+    },
+    {
+     "init_day": "2020-08-26",
+     "base": 69.79,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 71.533
+     }
+    },
+    {
+     "init_day": "2020-08-27",
+     "base": 40.384,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 41.805
+     }
+    },
+    {
+     "init_day": "2020-08-28",
+     "base": 36.519,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 37.25
+     }
+    },
+    {
+     "init_day": "2020-08-29",
+     "base": 30.544,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 31.454
+     }
+    },
+    {
+     "init_day": "2020-08-30",
+     "base": 38.649,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 42.476
+     }
+    },
+    {
+     "init_day": "2020-08-31",
+     "base": 48.891,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 50.576
+     }
+    },
+    {
+     "init_day": "2020-09-01",
+     "base": 45.445,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 51.155
+     }
+    },
+    {
+     "init_day": "2020-09-02",
+     "base": 30.721,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 36.468
+     }
+    },
+    {
+     "init_day": "2020-09-03",
+     "base": 36.878,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 40.691
+     }
+    },
+    {
+     "init_day": "2020-09-04",
+     "base": 46.346,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 48.259
+     }
+    },
+    {
+     "init_day": "2020-09-05",
+     "base": 47.525,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 55.381
+     }
+    },
+    {
+     "init_day": "2020-09-06",
+     "base": 52.864,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 64.947
+     }
+    },
+    {
+     "init_day": "2020-09-07",
+     "base": 49.111,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 56.603
+     }
+    },
+    {
+     "init_day": "2020-09-08",
+     "base": 55.836,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 63.208
+     }
+    },
+    {
+     "init_day": "2020-09-09",
+     "base": 67.511,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 71.542
+     }
+    },
+    {
+     "init_day": "2020-09-10",
+     "base": 54.309,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 59.264
+     }
+    },
+    {
+     "init_day": "2020-09-11",
+     "base": 57.481,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 61.263
+     }
+    },
+    {
+     "init_day": "2020-09-12",
+     "base": 65.647,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 68.934
+     }
+    },
+    {
+     "init_day": "2020-09-13",
+     "base": 65.643,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 66.347
+     }
+    },
+    {
+     "init_day": "2020-09-14",
+     "base": 52.234,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2,
+      "value": 53.964
+     }
+    },
+    {
+     "init_day": "2020-09-15",
+     "base": 55.835,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 66.251
+     }
+    },
+    {
+     "init_day": "2020-09-16",
+     "base": 64.314,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 68.023
+     }
+    },
+    {
+     "init_day": "2020-09-17",
+     "base": 70.106,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 72.531
+     }
+    },
+    {
+     "init_day": "2020-09-18",
+     "base": 78.448,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 91.261
+     }
+    },
+    {
+     "init_day": "2020-09-19",
+     "base": 75.537,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 85.228
+     }
+    },
+    {
+     "init_day": "2020-09-20",
+     "base": 78.139,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 89.973
+     }
+    },
+    {
+     "init_day": "2020-09-21",
+     "base": 51.847,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 63.773
+     }
+    },
+    {
+     "init_day": "2020-09-22",
+     "base": 50.538,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 54.337
+     }
+    },
+    {
+     "init_day": "2020-09-23",
+     "base": 29.107,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 30.514
+     }
+    },
+    {
+     "init_day": "2020-09-24",
+     "base": 20.736,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 21.751
+     }
+    },
+    {
+     "init_day": "2020-09-25",
+     "base": 18.568,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 19.565
+     }
+    },
+    {
+     "init_day": "2020-09-26",
+     "base": 24.773,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 25.528
+     }
+    },
+    {
+     "init_day": "2020-09-27",
+     "base": 48.908,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 57.847
+     }
+    },
+    {
+     "init_day": "2020-09-28",
+     "base": 57.575,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1,
+      "value": 64.12
+     }
+    },
+    {
+     "init_day": "2020-09-29",
+     "base": 87.399,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1,
+      "value": 89.197
+     }
+    },
+    {
+     "init_day": "2020-09-30",
+     "base": 76.819,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 94.381
+     }
+    }
+   ],
+   "example": {
+    "init_day": "2020-08-13",
+    "base": 106.933,
+    "crossing": {
+     "family": "bob_temp",
+     "mag": 1.5,
+     "plausible": true,
+     "stable_this_window": true,
+     "trusted_mag": true,
+     "base": 106.933,
+     "shocked": 117.787
+    },
+    "closest": {
+     "family": "bob_temp",
+     "mag": 2.5,
+     "value": 121.474
+    }
+   },
+   "no_shock_qualifies_example": {
+    "init_day": "2020-09-30",
+    "base": 76.819,
+    "crossing": null,
+    "closest": {
+     "family": "bob_temp",
+     "mag": 4,
+     "value": 94.381
+    }
+   }
+  },
+  "central_india_deficit": {
+   "text": "central India 7-day rain at least 50 % below the base forecast",
+   "eligible_windows": 122,
+   "crossed_plausible_trusted": 0,
+   "crossed_any_tested": 1,
+   "windows": [
+    {
+     "init_day": "2020-06-01",
+     "base": 45.654,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 42.378
+     }
+    },
+    {
+     "init_day": "2020-06-02",
+     "base": 28.519,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 25.235
+     }
+    },
+    {
+     "init_day": "2020-06-03",
+     "base": 24.763,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 23.642
+     }
+    },
+    {
+     "init_day": "2020-06-04",
+     "base": 8.043,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 5.666
+     }
+    },
+    {
+     "init_day": "2020-06-05",
+     "base": 26.956,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 22.175
+     }
+    },
+    {
+     "init_day": "2020-06-06",
+     "base": 42.693,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 40.515
+     }
+    },
+    {
+     "init_day": "2020-06-07",
+     "base": 52.802,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 46.004
+     }
+    },
+    {
+     "init_day": "2020-06-08",
+     "base": 51.236,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 44.039
+     }
+    },
+    {
+     "init_day": "2020-06-09",
+     "base": 43.814,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 38.931
+     }
+    },
+    {
+     "init_day": "2020-06-10",
+     "base": 55.778,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1,
+      "value": 55.24
+     }
+    },
+    {
+     "init_day": "2020-06-11",
+     "base": 72.521,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 69.619
+     }
+    },
+    {
+     "init_day": "2020-06-12",
+     "base": 87.904,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 77.284
+     }
+    },
+    {
+     "init_day": "2020-06-13",
+     "base": 86.129,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 82.729
+     }
+    },
+    {
+     "init_day": "2020-06-14",
+     "base": 84.037,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 75.826
+     }
+    },
+    {
+     "init_day": "2020-06-15",
+     "base": 65.826,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 59.58
+     }
+    },
+    {
+     "init_day": "2020-06-16",
+     "base": 45.59,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 42.781
+     }
+    },
+    {
+     "init_day": "2020-06-17",
+     "base": 59.043,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 54.328
+     }
+    },
+    {
+     "init_day": "2020-06-18",
+     "base": 59.633,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1.5,
+      "value": 57.345
+     }
+    },
+    {
+     "init_day": "2020-06-19",
+     "base": 57.791,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 54.967
+     }
+    },
+    {
+     "init_day": "2020-06-20",
+     "base": 59.452,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -1,
+      "value": 58.755
+     }
+    },
+    {
+     "init_day": "2020-06-21",
+     "base": 67.949,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 64.362
+     }
+    },
+    {
+     "init_day": "2020-06-22",
+     "base": 59.872,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 56.825
+     }
+    },
+    {
+     "init_day": "2020-06-23",
+     "base": 52.772,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 45.126
+     }
+    },
+    {
+     "init_day": "2020-06-24",
+     "base": 54.716,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 48.325
+     }
+    },
+    {
+     "init_day": "2020-06-25",
+     "base": 59.7,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 56.222
+     }
+    },
+    {
+     "init_day": "2020-06-26",
+     "base": 68.79,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 59.272
+     }
+    },
+    {
+     "init_day": "2020-06-27",
+     "base": 68.779,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 58.961
+     }
+    },
+    {
+     "init_day": "2020-06-28",
+     "base": 69.123,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 63.659
+     }
+    },
+    {
+     "init_day": "2020-06-29",
+     "base": 72.258,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 62.951
+     }
+    },
+    {
+     "init_day": "2020-06-30",
+     "base": 85.136,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 78.128
+     }
+    },
+    {
+     "init_day": "2020-07-01",
+     "base": 82.954,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 78.254
+     }
+    },
+    {
+     "init_day": "2020-07-02",
+     "base": 93.834,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 89.742
+     }
+    },
+    {
+     "init_day": "2020-07-03",
+     "base": 99.303,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 93.993
+     }
+    },
+    {
+     "init_day": "2020-07-04",
+     "base": 82.339,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 76.882
+     }
+    },
+    {
+     "init_day": "2020-07-05",
+     "base": 94.533,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 92.969
+     }
+    },
+    {
+     "init_day": "2020-07-06",
+     "base": 65.174,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 60.968
+     }
+    },
+    {
+     "init_day": "2020-07-07",
+     "base": 45.208,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 36.746
+     }
+    },
+    {
+     "init_day": "2020-07-08",
+     "base": 41.196,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 38.412
+     }
+    },
+    {
+     "init_day": "2020-07-09",
+     "base": 47.405,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 45.204
+     }
+    },
+    {
+     "init_day": "2020-07-10",
+     "base": 39.173,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 35.553
+     }
+    },
+    {
+     "init_day": "2020-07-11",
+     "base": 52.103,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 48.839
+     }
+    },
+    {
+     "init_day": "2020-07-12",
+     "base": 76.302,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 71.249
+     }
+    },
+    {
+     "init_day": "2020-07-13",
+     "base": 74.152,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 71.137
+     }
+    },
+    {
+     "init_day": "2020-07-14",
+     "base": 76.157,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 73.595
+     }
+    },
+    {
+     "init_day": "2020-07-15",
+     "base": 68.468,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 65.594
+     }
+    },
+    {
+     "init_day": "2020-07-16",
+     "base": 60.437,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 57.924
+     }
+    },
+    {
+     "init_day": "2020-07-17",
+     "base": 41.098,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -1,
+      "value": 40.35
+     }
+    },
+    {
+     "init_day": "2020-07-18",
+     "base": 56.849,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 53.098
+     }
+    },
+    {
+     "init_day": "2020-07-19",
+     "base": 51.16,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 47.014
+     }
+    },
+    {
+     "init_day": "2020-07-20",
+     "base": 65.559,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 60.632
+     }
+    },
+    {
+     "init_day": "2020-07-21",
+     "base": 77.229,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 73.318
+     }
+    },
+    {
+     "init_day": "2020-07-22",
+     "base": 79.275,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 76.3
+     }
+    },
+    {
+     "init_day": "2020-07-23",
+     "base": 64.088,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 61.712
+     }
+    },
+    {
+     "init_day": "2020-07-24",
+     "base": 54.476,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 52.59
+     }
+    },
+    {
+     "init_day": "2020-07-25",
+     "base": 62.112,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 58.614
+     }
+    },
+    {
+     "init_day": "2020-07-26",
+     "base": 59.793,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 56.833
+     }
+    },
+    {
+     "init_day": "2020-07-27",
+     "base": 64.317,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 59.68
+     }
+    },
+    {
+     "init_day": "2020-07-28",
+     "base": 75.873,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 74.228
+     }
+    },
+    {
+     "init_day": "2020-07-29",
+     "base": 90.317,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 75.644
+     }
+    },
+    {
+     "init_day": "2020-07-30",
+     "base": 87.87,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 82.959
+     }
+    },
+    {
+     "init_day": "2020-07-31",
+     "base": 84.912,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 80.097
+     }
+    },
+    {
+     "init_day": "2020-08-01",
+     "base": 87.059,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 79.539
+     }
+    },
+    {
+     "init_day": "2020-08-02",
+     "base": 87.081,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 10,
+      "value": 87.032
+     }
+    },
+    {
+     "init_day": "2020-08-03",
+     "base": 100.946,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 94.719
+     }
+    },
+    {
+     "init_day": "2020-08-04",
+     "base": 88.841,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 87.822
+     }
+    },
+    {
+     "init_day": "2020-08-05",
+     "base": 72.681,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2,
+      "value": 66.698
+     }
+    },
+    {
+     "init_day": "2020-08-06",
+     "base": 101.517,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 88.208
+     }
+    },
+    {
+     "init_day": "2020-08-07",
+     "base": 85.779,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -1,
+      "value": 82.554
+     }
+    },
+    {
+     "init_day": "2020-08-08",
+     "base": 92.652,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 79.69
+     }
+    },
+    {
+     "init_day": "2020-08-09",
+     "base": 102.157,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 93.386
+     }
+    },
+    {
+     "init_day": "2020-08-10",
+     "base": 61.707,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 52.768
+     }
+    },
+    {
+     "init_day": "2020-08-11",
+     "base": 56.841,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 49.914
+     }
+    },
+    {
+     "init_day": "2020-08-12",
+     "base": 124.631,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 112.266
+     }
+    },
+    {
+     "init_day": "2020-08-13",
+     "base": 97.386,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 90.599
+     }
+    },
+    {
+     "init_day": "2020-08-14",
+     "base": 91.805,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 83.029
+     }
+    },
+    {
+     "init_day": "2020-08-15",
+     "base": 72.371,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 63.851
+     }
+    },
+    {
+     "init_day": "2020-08-16",
+     "base": 83.854,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 74.768
+     }
+    },
+    {
+     "init_day": "2020-08-17",
+     "base": 91.649,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 86.186
+     }
+    },
+    {
+     "init_day": "2020-08-18",
+     "base": 104.024,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 97.418
+     }
+    },
+    {
+     "init_day": "2020-08-19",
+     "base": 113.249,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 107.105
+     }
+    },
+    {
+     "init_day": "2020-08-20",
+     "base": 89.103,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 79.372
+     }
+    },
+    {
+     "init_day": "2020-08-21",
+     "base": 78.413,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 69.202
+     }
+    },
+    {
+     "init_day": "2020-08-22",
+     "base": 72.732,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 69.59
+     }
+    },
+    {
+     "init_day": "2020-08-23",
+     "base": 52.722,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 52.007
+     }
+    },
+    {
+     "init_day": "2020-08-24",
+     "base": 47.134,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 46.821
+     }
+    },
+    {
+     "init_day": "2020-08-25",
+     "base": 64.986,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 59.737
+     }
+    },
+    {
+     "init_day": "2020-08-26",
+     "base": 74.493,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 72.843
+     }
+    },
+    {
+     "init_day": "2020-08-27",
+     "base": 55.146,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 54.178
+     }
+    },
+    {
+     "init_day": "2020-08-28",
+     "base": 57.785,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 55.447
+     }
+    },
+    {
+     "init_day": "2020-08-29",
+     "base": 29.467,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 27.416
+     }
+    },
+    {
+     "init_day": "2020-08-30",
+     "base": 22.433,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 22.267
+     }
+    },
+    {
+     "init_day": "2020-08-31",
+     "base": 34.736,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 33.658
+     }
+    },
+    {
+     "init_day": "2020-09-01",
+     "base": 39.34,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 35.856
+     }
+    },
+    {
+     "init_day": "2020-09-02",
+     "base": 37.575,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 33.959
+     }
+    },
+    {
+     "init_day": "2020-09-03",
+     "base": 41.622,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 36.657
+     }
+    },
+    {
+     "init_day": "2020-09-04",
+     "base": 36.125,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 33.528
+     }
+    },
+    {
+     "init_day": "2020-09-05",
+     "base": 37.805,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 1.5,
+      "value": 37.443
+     }
+    },
+    {
+     "init_day": "2020-09-06",
+     "base": 42.923,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 40.715
+     }
+    },
+    {
+     "init_day": "2020-09-07",
+     "base": 37.383,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 37.058
+     }
+    },
+    {
+     "init_day": "2020-09-08",
+     "base": 48.642,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 44.072
+     }
+    },
+    {
+     "init_day": "2020-09-09",
+     "base": 55.184,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 54.669
+     }
+    },
+    {
+     "init_day": "2020-09-10",
+     "base": 52.024,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 48.483
+     }
+    },
+    {
+     "init_day": "2020-09-11",
+     "base": 42.926,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 40.771
+     }
+    },
+    {
+     "init_day": "2020-09-12",
+     "base": 49.447,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 47.512
+     }
+    },
+    {
+     "init_day": "2020-09-13",
+     "base": 59.353,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 58.551
+     }
+    },
+    {
+     "init_day": "2020-09-14",
+     "base": 52.503,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 51.991
+     }
+    },
+    {
+     "init_day": "2020-09-15",
+     "base": 59.748,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 58.204
+     }
+    },
+    {
+     "init_day": "2020-09-16",
+     "base": 56.186,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 51.613
+     }
+    },
+    {
+     "init_day": "2020-09-17",
+     "base": 56.574,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 54.85
+     }
+    },
+    {
+     "init_day": "2020-09-18",
+     "base": 72.219,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 59.966
+     }
+    },
+    {
+     "init_day": "2020-09-19",
+     "base": 67.066,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 63.198
+     }
+    },
+    {
+     "init_day": "2020-09-20",
+     "base": 55.269,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 54.377
+     }
+    },
+    {
+     "init_day": "2020-09-21",
+     "base": 57.684,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 53.589
+     }
+    },
+    {
+     "init_day": "2020-09-22",
+     "base": 32.289,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 29.65
+     }
+    },
+    {
+     "init_day": "2020-09-23",
+     "base": 15.148,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 12.431
+     }
+    },
+    {
+     "init_day": "2020-09-24",
+     "base": 7.832,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 7.032
+     }
+    },
+    {
+     "init_day": "2020-09-25",
+     "base": 10.744,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 9.622
+     }
+    },
+    {
+     "init_day": "2020-09-26",
+     "base": 10.815,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 8.837
+     }
+    },
+    {
+     "init_day": "2020-09-27",
+     "base": 12.228,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2.5,
+      "value": 10.419
+     }
+    },
+    {
+     "init_day": "2020-09-28",
+     "base": 13.048,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 2,
+      "value": 11.923
+     }
+    },
+    {
+     "init_day": "2020-09-29",
+     "base": 23.819,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 17.676
+     }
+    },
+    {
+     "init_day": "2020-09-30",
+     "base": 17.002,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": -3,
+      "plausible": false,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 17.002,
+      "shocked": 7.983
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 7.983
+     }
+    }
+   ],
+   "example": null,
+   "no_shock_qualifies_example": {
+    "init_day": "2020-07-29",
+    "base": 90.317,
+    "crossing": null,
+    "closest": {
+     "family": "bob_temp",
+     "mag": 5,
+     "value": 75.644
+    }
+   }
+  },
+  "west_coast_heavy": {
+   "text": "west coast heavy-rain share (>= 10 mm/day) up by >= 20 points",
+   "eligible_windows": 120,
+   "crossed_plausible_trusted": 0,
+   "crossed_any_tested": 5,
+   "windows": [
+    {
+     "init_day": "2020-06-01",
+     "base": 0.527,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.581
+     }
+    },
+    {
+     "init_day": "2020-06-02",
+     "base": 0.167,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.281
+     }
+    },
+    {
+     "init_day": "2020-06-03",
+     "base": 0.153,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.182
+     }
+    },
+    {
+     "init_day": "2020-06-04",
+     "base": 0.128,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 0.207
+     }
+    },
+    {
+     "init_day": "2020-06-05",
+     "base": 0.394,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.498
+     }
+    },
+    {
+     "init_day": "2020-06-06",
+     "base": 0.493,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.557
+     }
+    },
+    {
+     "init_day": "2020-06-07",
+     "base": 0.404,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.532
+     }
+    },
+    {
+     "init_day": "2020-06-08",
+     "base": 0.478,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.552
+     }
+    },
+    {
+     "init_day": "2020-06-09",
+     "base": 0.443,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.552
+     }
+    },
+    {
+     "init_day": "2020-06-10",
+     "base": 0.537,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.67
+     }
+    },
+    {
+     "init_day": "2020-06-11",
+     "base": 0.557,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 10,
+      "value": 0.64
+     }
+    },
+    {
+     "init_day": "2020-06-12",
+     "base": 0.512,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.645
+     }
+    },
+    {
+     "init_day": "2020-06-13",
+     "base": 0.453,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.571
+     }
+    },
+    {
+     "init_day": "2020-06-14",
+     "base": 0.365,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.468
+     }
+    },
+    {
+     "init_day": "2020-06-15",
+     "base": 0.498,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.581
+     }
+    },
+    {
+     "init_day": "2020-06-16",
+     "base": 0.251,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.325
+     }
+    },
+    {
+     "init_day": "2020-06-17",
+     "base": 0.389,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.409
+     }
+    },
+    {
+     "init_day": "2020-06-18",
+     "base": 0.148,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.34
+     }
+    },
+    {
+     "init_day": "2020-06-19",
+     "base": 0.158,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.34
+     }
+    },
+    {
+     "init_day": "2020-06-20",
+     "base": 0.3,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.414
+     }
+    },
+    {
+     "init_day": "2020-06-21",
+     "base": 0.419,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.527
+     }
+    },
+    {
+     "init_day": "2020-06-22",
+     "base": 0.517,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 0.576
+     }
+    },
+    {
+     "init_day": "2020-06-23",
+     "base": 0.567,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.626
+     }
+    },
+    {
+     "init_day": "2020-06-24",
+     "base": 0.68,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.744
+     }
+    },
+    {
+     "init_day": "2020-06-27",
+     "base": 0.724,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.857
+     }
+    },
+    {
+     "init_day": "2020-06-28",
+     "base": 0.64,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.808
+     }
+    },
+    {
+     "init_day": "2020-06-29",
+     "base": 0.695,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.768
+     }
+    },
+    {
+     "init_day": "2020-06-30",
+     "base": 0.522,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.596
+     }
+    },
+    {
+     "init_day": "2020-07-01",
+     "base": 0.581,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 0.611
+     }
+    },
+    {
+     "init_day": "2020-07-02",
+     "base": 0.601,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.719
+     }
+    },
+    {
+     "init_day": "2020-07-03",
+     "base": 0.463,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.567
+     }
+    },
+    {
+     "init_day": "2020-07-04",
+     "base": 0.335,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.414
+     }
+    },
+    {
+     "init_day": "2020-07-05",
+     "base": 0.355,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.399
+     }
+    },
+    {
+     "init_day": "2020-07-06",
+     "base": 0.374,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.414
+     }
+    },
+    {
+     "init_day": "2020-07-07",
+     "base": 0.266,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.36
+     }
+    },
+    {
+     "init_day": "2020-07-08",
+     "base": 0.34,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.429
+     }
+    },
+    {
+     "init_day": "2020-07-09",
+     "base": 0.438,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 0.498
+     }
+    },
+    {
+     "init_day": "2020-07-10",
+     "base": 0.502,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.537
+     }
+    },
+    {
+     "init_day": "2020-07-11",
+     "base": 0.576,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 0.66
+     }
+    },
+    {
+     "init_day": "2020-07-12",
+     "base": 0.68,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.734
+     }
+    },
+    {
+     "init_day": "2020-07-13",
+     "base": 0.567,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.645
+     }
+    },
+    {
+     "init_day": "2020-07-14",
+     "base": 0.502,
+     "crossing": {
+      "family": "as_wind",
+      "mag": -40,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 0.502,
+      "shocked": 0.704
+     },
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 0.704
+     }
+    },
+    {
+     "init_day": "2020-07-15",
+     "base": 0.552,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.645
+     }
+    },
+    {
+     "init_day": "2020-07-16",
+     "base": 0.571,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.591
+     }
+    },
+    {
+     "init_day": "2020-07-17",
+     "base": 0.3,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.35
+     }
+    },
+    {
+     "init_day": "2020-07-18",
+     "base": 0.478,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.527
+     }
+    },
+    {
+     "init_day": "2020-07-19",
+     "base": 0.611,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.675
+     }
+    },
+    {
+     "init_day": "2020-07-20",
+     "base": 0.606,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 0.635
+     }
+    },
+    {
+     "init_day": "2020-07-21",
+     "base": 0.65,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 10,
+      "value": 0.695
+     }
+    },
+    {
+     "init_day": "2020-07-22",
+     "base": 0.724,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.823
+     }
+    },
+    {
+     "init_day": "2020-07-23",
+     "base": 0.645,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.69
+     }
+    },
+    {
+     "init_day": "2020-07-24",
+     "base": 0.547,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.621
+     }
+    },
+    {
+     "init_day": "2020-07-25",
+     "base": 0.493,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 0.522
+     }
+    },
+    {
+     "init_day": "2020-07-26",
+     "base": 0.635,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.685
+     }
+    },
+    {
+     "init_day": "2020-07-27",
+     "base": 0.709,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.739
+     }
+    },
+    {
+     "init_day": "2020-07-28",
+     "base": 0.798,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.847
+     }
+    },
+    {
+     "init_day": "2020-07-29",
+     "base": 0.68,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.729
+     }
+    },
+    {
+     "init_day": "2020-07-30",
+     "base": 0.704,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.818
+     }
+    },
+    {
+     "init_day": "2020-07-31",
+     "base": 0.734,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.759
+     }
+    },
+    {
+     "init_day": "2020-08-01",
+     "base": 0.537,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.596
+     }
+    },
+    {
+     "init_day": "2020-08-02",
+     "base": 0.502,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.68
+     }
+    },
+    {
+     "init_day": "2020-08-03",
+     "base": 0.576,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.606
+     }
+    },
+    {
+     "init_day": "2020-08-04",
+     "base": 0.493,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.552
+     }
+    },
+    {
+     "init_day": "2020-08-05",
+     "base": 0.232,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.35
+     }
+    },
+    {
+     "init_day": "2020-08-06",
+     "base": 0.197,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.315
+     }
+    },
+    {
+     "init_day": "2020-08-07",
+     "base": 0.217,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.384
+     }
+    },
+    {
+     "init_day": "2020-08-08",
+     "base": 0.414,
+     "crossing": {
+      "family": "as_wind",
+      "mag": -50,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 0.414,
+      "shocked": 0.645
+     },
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.645
+     }
+    },
+    {
+     "init_day": "2020-08-09",
+     "base": 0.507,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.532
+     }
+    },
+    {
+     "init_day": "2020-08-10",
+     "base": 0.202,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.31
+     }
+    },
+    {
+     "init_day": "2020-08-11",
+     "base": 0.133,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 0.172
+     }
+    },
+    {
+     "init_day": "2020-08-12",
+     "base": 0.414,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.488
+     }
+    },
+    {
+     "init_day": "2020-08-13",
+     "base": 0.384,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.433
+     }
+    },
+    {
+     "init_day": "2020-08-14",
+     "base": 0.305,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.365
+     }
+    },
+    {
+     "init_day": "2020-08-15",
+     "base": 0.271,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.414
+     }
+    },
+    {
+     "init_day": "2020-08-16",
+     "base": 0.222,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.355
+     }
+    },
+    {
+     "init_day": "2020-08-17",
+     "base": 0.138,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.202
+     }
+    },
+    {
+     "init_day": "2020-08-18",
+     "base": 0.187,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.246
+     }
+    },
+    {
+     "init_day": "2020-08-19",
+     "base": 0.241,
+     "crossing": {
+      "family": "as_wind",
+      "mag": -60,
+      "plausible": false,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 0.241,
+      "shocked": 0.473
+     },
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.473
+     }
+    },
+    {
+     "init_day": "2020-08-20",
+     "base": 0.261,
+     "crossing": {
+      "family": "as_wind",
+      "mag": -50,
+      "plausible": true,
+      "stable_this_window": true,
+      "trusted_mag": false,
+      "base": 0.261,
+      "shocked": 0.463
+     },
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.463
+     }
+    },
+    {
+     "init_day": "2020-08-21",
+     "base": 0.138,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.335
+     }
+    },
+    {
+     "init_day": "2020-08-22",
+     "base": 0.172,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.36
+     }
+    },
+    {
+     "init_day": "2020-08-23",
+     "base": 0.03,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.158
+     }
+    },
+    {
+     "init_day": "2020-08-24",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.01
+     }
+    },
+    {
+     "init_day": "2020-08-25",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.034
+     }
+    },
+    {
+     "init_day": "2020-08-26",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.128
+     }
+    },
+    {
+     "init_day": "2020-08-27",
+     "base": 0.059,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.167
+     }
+    },
+    {
+     "init_day": "2020-08-28",
+     "base": 0.108,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.207
+     }
+    },
+    {
+     "init_day": "2020-08-29",
+     "base": 0.143,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 30,
+      "value": 0.266
+     }
+    },
+    {
+     "init_day": "2020-08-30",
+     "base": 0.099,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.212
+     }
+    },
+    {
+     "init_day": "2020-08-31",
+     "base": 0.128,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.227
+     }
+    },
+    {
+     "init_day": "2020-09-01",
+     "base": 0.365,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.532
+     }
+    },
+    {
+     "init_day": "2020-09-02",
+     "base": 0.537,
+     "crossing": {
+      "family": "bob_temp",
+      "mag": 5,
+      "plausible": false,
+      "stable_this_window": false,
+      "trusted_mag": false,
+      "base": 0.537,
+      "shocked": 0.764
+     },
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.764
+     }
+    },
+    {
+     "init_day": "2020-09-03",
+     "base": 0.478,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.64
+     }
+    },
+    {
+     "init_day": "2020-09-04",
+     "base": 0.404,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.522
+     }
+    },
+    {
+     "init_day": "2020-09-05",
+     "base": 0.557,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.64
+     }
+    },
+    {
+     "init_day": "2020-09-06",
+     "base": 0.635,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.67
+     }
+    },
+    {
+     "init_day": "2020-09-07",
+     "base": 0.69,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.714
+     }
+    },
+    {
+     "init_day": "2020-09-08",
+     "base": 0.665,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 0.729
+     }
+    },
+    {
+     "init_day": "2020-09-09",
+     "base": 0.542,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.709
+     }
+    },
+    {
+     "init_day": "2020-09-10",
+     "base": 0.704,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.813
+     }
+    },
+    {
+     "init_day": "2020-09-11",
+     "base": 0.246,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.3
+     }
+    },
+    {
+     "init_day": "2020-09-12",
+     "base": 0.488,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 0.527
+     }
+    },
+    {
+     "init_day": "2020-09-13",
+     "base": 0.433,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.581
+     }
+    },
+    {
+     "init_day": "2020-09-14",
+     "base": 0.498,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.562
+     }
+    },
+    {
+     "init_day": "2020-09-15",
+     "base": 0.483,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.517
+     }
+    },
+    {
+     "init_day": "2020-09-16",
+     "base": 0.581,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 0.611
+     }
+    },
+    {
+     "init_day": "2020-09-17",
+     "base": 0.798,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 0.877
+     }
+    },
+    {
+     "init_day": "2020-09-18",
+     "base": 0.704,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -20,
+      "value": 0.749
+     }
+    },
+    {
+     "init_day": "2020-09-19",
+     "base": 0.562,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 20,
+      "value": 0.601
+     }
+    },
+    {
+     "init_day": "2020-09-20",
+     "base": 0.409,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 3,
+      "value": 0.414
+     }
+    },
+    {
+     "init_day": "2020-09-21",
+     "base": 0.246,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.271
+     }
+    },
+    {
+     "init_day": "2020-09-22",
+     "base": 0.118,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.158
+     }
+    },
+    {
+     "init_day": "2020-09-23",
+     "base": 0.084,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 0.099
+     }
+    },
+    {
+     "init_day": "2020-09-24",
+     "base": 0.103,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.108
+     }
+    },
+    {
+     "init_day": "2020-09-25",
+     "base": 0.103,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 0.138
+     }
+    },
+    {
+     "init_day": "2020-09-26",
+     "base": 0.005,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -40,
+      "value": 0.054
+     }
+    },
+    {
+     "init_day": "2020-09-27",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 0.005
+     }
+    },
+    {
+     "init_day": "2020-09-28",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.02
+     }
+    },
+    {
+     "init_day": "2020-09-29",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.0
+     }
+    },
+    {
+     "init_day": "2020-09-30",
+     "base": 0.0,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 0.0
+     }
+    }
+   ],
+   "example": null,
+   "no_shock_qualifies_example": {
+    "init_day": "2020-08-21",
+    "base": 0.138,
+    "crossing": null,
+    "closest": {
+     "family": "as_wind",
+     "mag": -60,
+     "value": 0.335
+    }
+   }
+  },
+  "central_india_heat": {
+   "text": "central India 7-day mean t2m >= 1 K above the base forecast",
+   "eligible_windows": 122,
+   "crossed_plausible_trusted": 0,
+   "crossed_any_tested": 0,
+   "windows": [
+    {
+     "init_day": "2020-06-01",
+     "base": 303.268,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 303.842
+     }
+    },
+    {
+     "init_day": "2020-06-02",
+     "base": 302.111,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.286
+     }
+    },
+    {
+     "init_day": "2020-06-03",
+     "base": 301.868,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.09
+     }
+    },
+    {
+     "init_day": "2020-06-04",
+     "base": 300.966,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.194
+     }
+    },
+    {
+     "init_day": "2020-06-05",
+     "base": 301.871,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.235
+     }
+    },
+    {
+     "init_day": "2020-06-06",
+     "base": 302.836,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 303.189
+     }
+    },
+    {
+     "init_day": "2020-06-07",
+     "base": 303.108,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 303.568
+     }
+    },
+    {
+     "init_day": "2020-06-08",
+     "base": 303.47,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 304.015
+     }
+    },
+    {
+     "init_day": "2020-06-09",
+     "base": 304.16,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 304.69
+     }
+    },
+    {
+     "init_day": "2020-06-10",
+     "base": 303.363,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 303.672
+     }
+    },
+    {
+     "init_day": "2020-06-11",
+     "base": 302.145,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.407
+     }
+    },
+    {
+     "init_day": "2020-06-12",
+     "base": 301.586,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.922
+     }
+    },
+    {
+     "init_day": "2020-06-13",
+     "base": 301.523,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.793
+     }
+    },
+    {
+     "init_day": "2020-06-14",
+     "base": 301.601,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.878
+     }
+    },
+    {
+     "init_day": "2020-06-15",
+     "base": 301.586,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.148
+     }
+    },
+    {
+     "init_day": "2020-06-16",
+     "base": 301.398,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.664
+     }
+    },
+    {
+     "init_day": "2020-06-17",
+     "base": 300.804,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.97
+     }
+    },
+    {
+     "init_day": "2020-06-18",
+     "base": 301.453,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.681
+     }
+    },
+    {
+     "init_day": "2020-06-19",
+     "base": 301.7,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.852
+     }
+    },
+    {
+     "init_day": "2020-06-20",
+     "base": 301.592,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -30,
+      "value": 301.61
+     }
+    },
+    {
+     "init_day": "2020-06-21",
+     "base": 301.518,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.695
+     }
+    },
+    {
+     "init_day": "2020-06-22",
+     "base": 301.299,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.562
+     }
+    },
+    {
+     "init_day": "2020-06-23",
+     "base": 301.171,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.299
+     }
+    },
+    {
+     "init_day": "2020-06-24",
+     "base": 302.158,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 302.301
+     }
+    },
+    {
+     "init_day": "2020-06-25",
+     "base": 302.374,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.495
+     }
+    },
+    {
+     "init_day": "2020-06-26",
+     "base": 301.517,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.836
+     }
+    },
+    {
+     "init_day": "2020-06-27",
+     "base": 301.71,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.776
+     }
+    },
+    {
+     "init_day": "2020-06-28",
+     "base": 301.608,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 301.803
+     }
+    },
+    {
+     "init_day": "2020-06-29",
+     "base": 301.333,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.638
+     }
+    },
+    {
+     "init_day": "2020-06-30",
+     "base": 301.538,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.668
+     }
+    },
+    {
+     "init_day": "2020-07-01",
+     "base": 301.397,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 301.612
+     }
+    },
+    {
+     "init_day": "2020-07-02",
+     "base": 301.632,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 301.902
+     }
+    },
+    {
+     "init_day": "2020-07-03",
+     "base": 301.474,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.861
+     }
+    },
+    {
+     "init_day": "2020-07-04",
+     "base": 301.106,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.395
+     }
+    },
+    {
+     "init_day": "2020-07-05",
+     "base": 300.267,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.526
+     }
+    },
+    {
+     "init_day": "2020-07-06",
+     "base": 300.245,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.47
+     }
+    },
+    {
+     "init_day": "2020-07-07",
+     "base": 301.047,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -2,
+      "value": 301.077
+     }
+    },
+    {
+     "init_day": "2020-07-08",
+     "base": 302.107,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.286
+     }
+    },
+    {
+     "init_day": "2020-07-09",
+     "base": 301.418,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.47
+     }
+    },
+    {
+     "init_day": "2020-07-10",
+     "base": 301.124,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.245
+     }
+    },
+    {
+     "init_day": "2020-07-11",
+     "base": 301.264,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -50,
+      "value": 301.437
+     }
+    },
+    {
+     "init_day": "2020-07-12",
+     "base": 300.487,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.701
+     }
+    },
+    {
+     "init_day": "2020-07-13",
+     "base": 300.705,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.955
+     }
+    },
+    {
+     "init_day": "2020-07-14",
+     "base": 300.417,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.622
+     }
+    },
+    {
+     "init_day": "2020-07-15",
+     "base": 300.284,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.618
+     }
+    },
+    {
+     "init_day": "2020-07-16",
+     "base": 300.613,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.775
+     }
+    },
+    {
+     "init_day": "2020-07-17",
+     "base": 301.322,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.467
+     }
+    },
+    {
+     "init_day": "2020-07-18",
+     "base": 301.756,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.97
+     }
+    },
+    {
+     "init_day": "2020-07-19",
+     "base": 301.479,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.718
+     }
+    },
+    {
+     "init_day": "2020-07-20",
+     "base": 300.458,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.72
+     }
+    },
+    {
+     "init_day": "2020-07-21",
+     "base": 300.367,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.611
+     }
+    },
+    {
+     "init_day": "2020-07-22",
+     "base": 301.234,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.406
+     }
+    },
+    {
+     "init_day": "2020-07-23",
+     "base": 300.523,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.741
+     }
+    },
+    {
+     "init_day": "2020-07-24",
+     "base": 300.267,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.452
+     }
+    },
+    {
+     "init_day": "2020-07-25",
+     "base": 300.757,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.871
+     }
+    },
+    {
+     "init_day": "2020-07-26",
+     "base": 301.781,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 301.885
+     }
+    },
+    {
+     "init_day": "2020-07-27",
+     "base": 302.073,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": -60,
+      "value": 302.243
+     }
+    },
+    {
+     "init_day": "2020-07-28",
+     "base": 301.295,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.602
+     }
+    },
+    {
+     "init_day": "2020-07-29",
+     "base": 300.604,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.017
+     }
+    },
+    {
+     "init_day": "2020-07-30",
+     "base": 301.054,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.246
+     }
+    },
+    {
+     "init_day": "2020-07-31",
+     "base": 301.536,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.698
+     }
+    },
+    {
+     "init_day": "2020-08-01",
+     "base": 300.935,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.217
+     }
+    },
+    {
+     "init_day": "2020-08-02",
+     "base": 301.044,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.324
+     }
+    },
+    {
+     "init_day": "2020-08-03",
+     "base": 299.862,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.177
+     }
+    },
+    {
+     "init_day": "2020-08-04",
+     "base": 299.867,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.315
+     }
+    },
+    {
+     "init_day": "2020-08-05",
+     "base": 299.738,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.974
+     }
+    },
+    {
+     "init_day": "2020-08-06",
+     "base": 299.593,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.85
+     }
+    },
+    {
+     "init_day": "2020-08-07",
+     "base": 300.305,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.439
+     }
+    },
+    {
+     "init_day": "2020-08-08",
+     "base": 299.909,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.233
+     }
+    },
+    {
+     "init_day": "2020-08-09",
+     "base": 299.461,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.745
+     }
+    },
+    {
+     "init_day": "2020-08-10",
+     "base": 299.837,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.036
+     }
+    },
+    {
+     "init_day": "2020-08-11",
+     "base": 299.941,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.261
+     }
+    },
+    {
+     "init_day": "2020-08-12",
+     "base": 298.991,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.284
+     }
+    },
+    {
+     "init_day": "2020-08-13",
+     "base": 298.584,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 298.886
+     }
+    },
+    {
+     "init_day": "2020-08-14",
+     "base": 298.33,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 298.662
+     }
+    },
+    {
+     "init_day": "2020-08-15",
+     "base": 298.778,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.184
+     }
+    },
+    {
+     "init_day": "2020-08-16",
+     "base": 299.011,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.273
+     }
+    },
+    {
+     "init_day": "2020-08-17",
+     "base": 299.358,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.635
+     }
+    },
+    {
+     "init_day": "2020-08-18",
+     "base": 298.998,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.324
+     }
+    },
+    {
+     "init_day": "2020-08-19",
+     "base": 298.426,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 298.867
+     }
+    },
+    {
+     "init_day": "2020-08-20",
+     "base": 299.126,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.568
+     }
+    },
+    {
+     "init_day": "2020-08-21",
+     "base": 299.11,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.463
+     }
+    },
+    {
+     "init_day": "2020-08-22",
+     "base": 299.405,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.603
+     }
+    },
+    {
+     "init_day": "2020-08-23",
+     "base": 299.983,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.142
+     }
+    },
+    {
+     "init_day": "2020-08-24",
+     "base": 300.282,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.425
+     }
+    },
+    {
+     "init_day": "2020-08-25",
+     "base": 300.098,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.187
+     }
+    },
+    {
+     "init_day": "2020-08-26",
+     "base": 299.167,
+     "crossing": null,
+     "closest": {
+      "family": "as_wind",
+      "mag": 40,
+      "value": 299.169
+     }
+    },
+    {
+     "init_day": "2020-08-27",
+     "base": 299.298,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.464
+     }
+    },
+    {
+     "init_day": "2020-08-28",
+     "base": 299.226,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.423
+     }
+    },
+    {
+     "init_day": "2020-08-29",
+     "base": 299.729,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.905
+     }
+    },
+    {
+     "init_day": "2020-08-30",
+     "base": 300.761,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.93
+     }
+    },
+    {
+     "init_day": "2020-08-31",
+     "base": 301.033,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.237
+     }
+    },
+    {
+     "init_day": "2020-09-01",
+     "base": 300.521,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.644
+     }
+    },
+    {
+     "init_day": "2020-09-02",
+     "base": 300.376,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.829
+     }
+    },
+    {
+     "init_day": "2020-09-03",
+     "base": 301.009,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.288
+     }
+    },
+    {
+     "init_day": "2020-09-04",
+     "base": 302.038,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.281
+     }
+    },
+    {
+     "init_day": "2020-09-05",
+     "base": 301.967,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.14
+     }
+    },
+    {
+     "init_day": "2020-09-06",
+     "base": 301.655,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.924
+     }
+    },
+    {
+     "init_day": "2020-09-07",
+     "base": 301.618,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 4,
+      "value": 301.716
+     }
+    },
+    {
+     "init_day": "2020-09-08",
+     "base": 301.681,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.747
+     }
+    },
+    {
+     "init_day": "2020-09-09",
+     "base": 301.732,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.96
+     }
+    },
+    {
+     "init_day": "2020-09-10",
+     "base": 301.483,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.786
+     }
+    },
+    {
+     "init_day": "2020-09-11",
+     "base": 300.876,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.077
+     }
+    },
+    {
+     "init_day": "2020-09-12",
+     "base": 301.641,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.854
+     }
+    },
+    {
+     "init_day": "2020-09-13",
+     "base": 301.187,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.418
+     }
+    },
+    {
+     "init_day": "2020-09-14",
+     "base": 301.018,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.33
+     }
+    },
+    {
+     "init_day": "2020-09-15",
+     "base": 300.657,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.911
+     }
+    },
+    {
+     "init_day": "2020-09-16",
+     "base": 301.225,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.545
+     }
+    },
+    {
+     "init_day": "2020-09-17",
+     "base": 301.864,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 302.096
+     }
+    },
+    {
+     "init_day": "2020-09-18",
+     "base": 301.564,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.965
+     }
+    },
+    {
+     "init_day": "2020-09-19",
+     "base": 301.094,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.561
+     }
+    },
+    {
+     "init_day": "2020-09-20",
+     "base": 300.705,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.916
+     }
+    },
+    {
+     "init_day": "2020-09-21",
+     "base": 299.926,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.189
+     }
+    },
+    {
+     "init_day": "2020-09-22",
+     "base": 299.68,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 299.957
+     }
+    },
+    {
+     "init_day": "2020-09-23",
+     "base": 299.696,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.017
+     }
+    },
+    {
+     "init_day": "2020-09-24",
+     "base": 300.647,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.969
+     }
+    },
+    {
+     "init_day": "2020-09-25",
+     "base": 301.178,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.376
+     }
+    },
+    {
+     "init_day": "2020-09-26",
+     "base": 300.636,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 300.934
+     }
+    },
+    {
+     "init_day": "2020-09-27",
+     "base": 300.809,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.09
+     }
+    },
+    {
+     "init_day": "2020-09-28",
+     "base": 301.17,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.484
+     }
+    },
+    {
+     "init_day": "2020-09-29",
+     "base": 300.661,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": 5,
+      "value": 301.005
+     }
+    },
+    {
+     "init_day": "2020-09-30",
+     "base": 300.253,
+     "crossing": null,
+     "closest": {
+      "family": "bob_temp",
+      "mag": -3,
+      "value": 300.38
+     }
+    }
+   ],
+   "example": null,
+   "no_shock_qualifies_example": {
+    "init_day": "2020-06-01",
+    "base": 303.268,
+    "crossing": null,
+    "closest": {
+     "family": "bob_temp",
+     "mag": 5,
+     "value": 303.842
+    }
+   }
+  }
+ }
+}

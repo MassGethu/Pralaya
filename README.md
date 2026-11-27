@@ -2,7 +2,7 @@
 
 PRALAYA forecasts daily weather over India and lets users compare an unperturbed forecast with a forecast that starts from a localized atmospheric shock. The dashboard shows how the forecasts differ and calculates regional agricultural weather-stress indicators from the same rollouts.
 
-**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact.
+**Brief:** [two-page project brief (PDF)](brief/PRALAYA_brief.pdf), covering model design, drift and blur, failure cases, the live visualization and agricultural impact. The brief reports 2021 follow-up results for the bundled `e3_rainstab` with paired calibration.
 
 ## Train
 
@@ -14,9 +14,10 @@ From the repo root, run:
 python -m pip install -r requirements-train.txt
 python train.py --data /path/to/india_climate_train.nc --name b1_onestep --epochs 40 --rollout 1 --lr 1e-3 --seed 0
 python train.py --data /path/to/india_climate_train.nc --name b3_roll4 --epochs 12 --rollout 4 --lr 3e-4 --init runs/b1_onestep/best.pt --seed 0
+python train.py --data /path/to/india_climate_train.nc --name e3_rainstab --epochs 12 --rollout 8 --lr 1e-4 --init runs/b3_roll4/best.pt --seed 0 --ocean-t2m-weight 4 --stab-weight 1
 ```
 
-Training uses 2005–2019 for fitting and normalization, 2020 for checkpoint and candidate selection, and 2021 for evaluation after selection. The selected run writes `runs/b3_roll4/best.pt`. The server's default bundle loads `model/bundle/pralaya.pt`. [Training recipe](docs/TRAINING.md) · [Selection rule](docs/SELECTION.md) · [2021 evaluation](evaluation/results/report_test.md)
+Training uses 2005–2019 for fitting and normalization and 2020 for checkpoint selection. The server loads `e3_rainstab` from `model/bundle/pralaya.pt`. The raw model scored 51.11/70 on 2020 validation, up from 49.37 for `e3_roll8_ocean`. Its three-seed mean is 50.85 ± 1.54. The bundled calibration improves Prime's non-rain fields while retaining the model's response to each shock. The served path scored 57.92/70 on 2020 validation and 56.92/70 on the 2021 follow-up, with unchanged rain scores and shock propagation rates. These are local estimates using the kit scoring functions. [Training recipe](docs/TRAINING.md) · [Calibration evidence](docs/CALIBRATION.md)
 
 ## Serve and validate
 

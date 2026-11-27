@@ -16,6 +16,7 @@ data/
 runs/
 demo_inputs/
 evaluation/results/*.npy
-# only the selected release checkpoint under model/bundle/ is committed
+# Only release weights and their fitted calibration under model/bundle/ are committed.
 *.pt
 !model/bundle/pralaya.pt
+!model/bundle/calibration.pt

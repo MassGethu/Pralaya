@@ -7,7 +7,7 @@ from scripts.scenario_service import ScenarioRequest, Shock, build_delta, evalua
 
 
 class ControlledForecast:
-    def run(self, history, season, steps):
+    def run(self, history, season, steps, prime_history=None):
         # Translate an average temperature shock into a predictable rainfall deficit.
         state = history[-1].astype(np.float64)
         state[1] = 6 - (state[0].mean() - 295)
@@ -66,6 +66,27 @@ class ScenarioServiceTest(unittest.TestCase):
             report = evaluate(request, ControlledForecast(), self.land, {})
             self.assertEqual(report["best"] is not None, crosses)
             self.assertEqual(report["baseline_meets_threshold"], not crosses)
+
+    def test_defaults_and_range_follow_checkpoint(self):
+        self.parameters.pop("candidates")
+        request = ScenarioRequest(**self.parameters, deficit_mm=0.2)
+        b3 = evaluate(request, ControlledForecast(), self.land, {"model_id": "b3_roll4"})
+        e3 = evaluate(request, ControlledForecast(), self.land, {"model_id": "e3_roll8_ocean"})
+        self.assertEqual(b3["ensemble"]["scenario_count"], 9)
+        self.assertEqual(e3["ensemble"]["scenario_count"], 10)
+        warm = next(c for c in e3["candidates"] if c["recipe"] == "warm_ocean" and c["amplitude"] == 1.5)
+        self.assertTrue(warm["within_recommended_range"])
+        self.assertFalse(warm["within_b3_recommended_range"])
+
+    def test_rainstab_profile_uses_its_own_validated_ranges(self):
+        self.parameters.pop("candidates")
+        request = ScenarioRequest(**self.parameters, deficit_mm=0.2)
+        report = evaluate(request, ControlledForecast(), self.land, {"model_id": "e3_rainstab"})
+        self.assertEqual(report["ensemble"]["scenario_count"], 13)
+        by = {(c["recipe"], c["amplitude"]): c for c in report["candidates"]}
+        self.assertTrue(by[("warm_ocean", 2)]["within_recommended_range"])
+        self.assertTrue(by[("monsoon_stall", -30)]["within_recommended_range"])
+        self.assertFalse(by[("warm_ocean", 2)]["within_b3_recommended_range"])
 
 
 if __name__ == "__main__":

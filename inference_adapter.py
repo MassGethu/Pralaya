@@ -50,7 +50,7 @@ def _array(value: object, shape: tuple[int, ...], field: str) -> np.ndarray:
     return array
 
 
-def parse_simulation(body: object) -> tuple[np.ndarray, np.ndarray, int]:
+def prepare_simulation(body: object) -> tuple[np.ndarray, np.ndarray, int, np.ndarray | None]:
     if not isinstance(body, dict):
         raise ValueError("request must be a JSON object")
     steps = body.get("steps")
@@ -61,12 +61,22 @@ def parse_simulation(body: object) -> tuple[np.ndarray, np.ndarray, int]:
     if body.get("perturbation") is not None:
         delta = _array(body["perturbation"], STATE_SHAPE, "perturbation")
         if np.any(delta):
-            # Decoding always creates a writable, request-owned history array.
-            with np.errstate(over="ignore", invalid="ignore"):
-                history[-1] += delta
-            if not np.isfinite(history[-1]).all():
-                raise ValueError("perturbed last state must contain finite float32 values")
+            return apply_perturbation(history, delta), season, steps, history
+    return history, season, steps, None
+
+
+def parse_simulation(body: object) -> tuple[np.ndarray, np.ndarray, int]:
+    history, season, steps, _ = prepare_simulation(body)
     return history, season, steps
+
+
+def apply_perturbation(history: np.ndarray, delta: np.ndarray) -> np.ndarray:
+    shocked = history.copy()
+    with np.errstate(over="ignore", invalid="ignore"):
+        shocked[-1] += delta
+    if not np.isfinite(shocked[-1]).all():
+        raise ValueError("perturbed last state must contain finite float32 values")
+    return shocked
 
 
 def _persistence(history: np.ndarray, season: np.ndarray, steps: int) -> np.ndarray:
@@ -78,6 +88,12 @@ class Inference:
         self._lock = Lock()
         self.model_name = DEVELOPMENT_NAME if development else "PRALAYA"
         self._forecast: Forecast = _persistence if development else self._load(bundle_dir)
+        self.model_id = getattr(self._forecast, "model_id", self.model_name)
+        self._calibration = None
+        if not development:
+            from model.calibration import Calibration
+
+            self._calibration = Calibration.load_optional(bundle_dir)
         # Exercise the actual 10-step inference path before starting the listener.
         air = np.array([295, 4, 2, 1, 100500, 35], dtype=np.float32)
         history = np.broadcast_to(air[None, :, None, None], HISTORY_SHAPE).copy()
@@ -94,12 +110,25 @@ class Inference:
         except Exception as exc:
             raise RuntimeError(f"Unable to load the trained PRALAYA bundle at {bundle_dir}: {exc}") from exc
 
-    def run(self, history: np.ndarray, season: np.ndarray, steps: int) -> np.ndarray:
-        # Copy model output before releasing the lock in case the backend reuses storage.
-        with self._lock:
-            rollout = np.array(self._forecast(history, season, steps), dtype=np.float64)
+    def _raw(self, history: np.ndarray, season: np.ndarray, steps: int) -> np.ndarray:
+        rollout = np.array(self._forecast(history, season, steps), dtype=np.float64)
         if rollout.shape != (steps, *STATE_SHAPE):
             raise ValueError(f"forecast returned an unexpected shape: {rollout.shape}")
+        if not np.isfinite(rollout).all():
+            raise ValueError("forecast returned nonfinite values")
+        return rollout
+
+    def run(self, history: np.ndarray, season: np.ndarray, steps: int, prime_history: np.ndarray | None = None) -> np.ndarray:
+        # Copy model output before releasing the lock in case the backend reuses storage.
+        with self._lock:
+            rollout = self._raw(history, season, steps)
+            if self._calibration is not None and prime_history is not None:
+                prime = self._raw(prime_history, season, steps)
+            else:
+                prime = rollout
+        if self._calibration is not None:
+            last = history[-1] if prime_history is None else prime_history[-1]
+            self._calibration.apply(rollout, prime, last, season)
         if not np.isfinite(rollout).all():
             raise ValueError("forecast returned nonfinite values")
         temperature = rollout[:, 0]
