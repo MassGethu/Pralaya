@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scenarioReportHtml } from "../src/scenarios";
+import { multiverseStrip, scenarioReportHtml } from "../src/scenarios";
 
 type Report = Parameters<typeof scenarioReportHtml>[0];
 type Candidate = Report["candidates"][number];
@@ -61,5 +61,21 @@ describe("scenario decision results", () => {
     expect(html).toContain("Prime already meets this rainfall target");
     expect(html).not.toContain("Closest tested shock");
     expect(html).not.toContain("Replay as Branch");
+  });
+});
+
+describe("multiverse strip", () => {
+  it("draws one dot per tested shock, fills the ones that reach the target and marks the winner", () => {
+    const svg = multiverseStrip(report());
+    expect(svg.match(/<circle /g)).toHaveLength(2);
+    expect(svg.match(/class="mv-dot hit best"/g)).toHaveLength(1);
+    expect(svg).toContain("Bay of Bengal +2 K: 115.60 mm (+2.50 mm vs Prime), reaches the target");
+    expect(svg).toContain(">Prime<");
+    expect(svg).toContain("Target: total ≥ 115.0 mm");
+  });
+
+  it("shades the drier side for a deficit target", () => {
+    const svg = multiverseStrip(report({ rainfall_at_least_mm: null, deficit_threshold_mm: 5 }));
+    expect(svg).toContain("Target: ≥ 5.00 mm drier");
   });
 });
