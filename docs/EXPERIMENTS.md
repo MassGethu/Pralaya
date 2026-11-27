@@ -415,7 +415,7 @@ If any gate fails, or the run is not evaluated by 06:45, `a4_rainhead` is not pr
 
 ### `a4_rainhead` result (val 2020, reported 06:04 IST): **FAIL, not promoted**
 Training 05:14–06:01, best epoch 10 (val_score 0.4076; start 0.4091; e3_rainstab 0.3999). `best.pt` sha256
-`717038a6…16297f11`. `codex/rainstab-demo` was not pushed by 06:01, so the calibration was refitted with
+`717038a6…16297f11`. The `codex/rainstab-demo` changes went to main (`b97d7d8`; later main commits touch only `dashboard/`). Main has no fit script, so the calibration was refitted with
 `scripts/clim_blend_experiment.py` on `mass/clim-blend-e3` `bd573d1` (rung 4, floor 0.3), rain weights then pinned to 1
 and bound to the checkpoint hash (`calibration.pt` sha256 `263289d4…736ff6a`, not committed). The same procedure on the
 release checkpoint reproduces main's `calibration.pt` exactly (max |Δ| 0). The served path is main `b97d7d8`'s
