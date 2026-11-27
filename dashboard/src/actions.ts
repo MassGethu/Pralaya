@@ -54,6 +54,6 @@ export function buildCommands(a: AppApi): Command[] {
     { id: "ripple", group: "Details", label: "Ripple reach", enabled: always, run: () => a.open("ripple") },
     { id: "scenarios", group: "Details", label: "Scenario analysis", hint: "inverse search, rainfall spread and preparedness", enabled: always, run: () => a.open("scenarios") },
     { id: "setup", group: "Details", label: "Setup", hint: "run info, display, developer", enabled: always, run: () => a.open("setup") },
-    { id: "intro", group: "Details", label: "Replay intro", hint: "Pralaya in 12 languages", enabled: always, run: a.replayIntro },
+    { id: "intro", group: "Details", label: "Replay intro", hint: "rain and the PRALAYA title", enabled: always, run: a.replayIntro },
   ];
 }

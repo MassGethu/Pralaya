@@ -1,24 +1,9 @@
 /**
- * Opening film: "pralaya" in twelve Indian scripts over rain and ripples, resolving into the PRALAYA title, then the
- * dashboard. Runs over the app while it loads and never blocks it: Skip, Esc, Enter or Space close it at once; other keys or a click
- * jumps to the title. With prefers-reduced-motion it shows only the still title for a moment. ?nointro disables it.
- * Spellings should be checked by native speakers before the demo.
+ * Opening film: rain and ripples build into a short storm, then the PRALAYA title (English only), then the dashboard.
+ * Runs over the app while it loads and never blocks it: Skip, Esc, Enter or Space close it at once; other keys or a
+ * click jump to the title. With prefers-reduced-motion it shows only the still title for a moment. ?nointro disables it.
  */
-const WORDS: { w: string; lang: string; font: string }[] = [
-  { w: "प्रलय", lang: "Hindi", font: "'Noto Sans Devanagari'" },
-  { w: "প্রলয়", lang: "Bengali", font: "'Noto Sans Bengali'" },
-  { w: "பிரளயம்", lang: "Tamil", font: "'Noto Sans Tamil'" },
-  { w: "ప్రళయం", lang: "Telugu", font: "'Noto Sans Telugu'" },
-  { w: "ಪ್ರಳಯ", lang: "Kannada", font: "'Noto Sans Kannada'" },
-  { w: "പ്രളയം", lang: "Malayalam", font: "'Noto Sans Malayalam'" },
-  { w: "પ્રલય", lang: "Gujarati", font: "'Noto Sans Gujarati'" },
-  { w: "ਪਰਲੋ", lang: "Punjabi", font: "'Noto Sans Gurmukhi'" },
-  { w: "ପ୍ରଳୟ", lang: "Odia", font: "'Noto Sans Oriya'" },
-  { w: "প্ৰলয়", lang: "Assamese", font: "'Noto Sans Bengali'" },
-  { w: "پرلے", lang: "Urdu", font: "'Noto Nastaliq Urdu'" },
-  { w: "प्रलयः", lang: "Sanskrit", font: "'Tiro Devanagari Sanskrit'" },
-];
-
+const STORM_MS = 1200; // rain builds before the title lands
 const HOLD_AFTER_TITLE_MS = 2200;
 const HOLD_REDUCED_MS = 1400; // reduced motion: still title only, then straight to the app
 const EXIT_MS = 380; // exits are quicker than the ~1 s entrances
@@ -26,17 +11,15 @@ const EXIT_MS = 380; // exits are quicker than the ~1 s entrances
 export function playIntro(): void {
   document.querySelector(".intro")?.remove();
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const perWord = 820;
   const root = document.createElement("div");
   root.className = "intro";
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-label", "PRALAYA intro. Press Escape or Enter to skip.");
-  root.innerHTML = `<canvas class="intro-rain"></canvas><div class="intro-vignette"></div><div class="intro-halo"></div>
-    <div class="intro-stage"></div><div class="intro-ticker"></div>
+  root.innerHTML = `<canvas class="intro-rain"></canvas><div class="intro-vignette"></div>
+    <div class="intro-stage"></div>
     <button class="intro-skip" type="button">Skip ▸</button>`;
   document.body.append(root);
-  const stage = root.querySelector<HTMLElement>(".intro-stage")!, ticker = root.querySelector<HTMLElement>(".intro-ticker")!;
-  const halo = root.querySelector<HTMLElement>(".intro-halo")!, cv = root.querySelector<HTMLCanvasElement>(".intro-rain")!;
+  const stage = root.querySelector<HTMLElement>(".intro-stage")!, cv = root.querySelector<HTMLCanvasElement>(".intro-rain")!;
   const timers: number[] = [];
   const later = (ms: number, f: () => void) => timers.push(window.setTimeout(f, ms));
   let running = true, intensity = 0.35, finaleShown = false;
@@ -68,37 +51,24 @@ export function playIntro(): void {
   };
   frame();
 
-  WORDS.forEach((x) => { const s = document.createElement("span"); s.textContent = x.lang; ticker.append(s); });
   if (reduce) { root.classList.add("reduced"); later(0, () => finale()); }
-  else WORDS.forEach((x, i) => later(400 + i * perWord, () => {
-    const prev = stage.lastElementChild;
-    if (prev) { prev.classList.remove("in"); prev.classList.add("out"); later(520, () => prev.remove()); }
-    const el = document.createElement("div");
-    el.className = "intro-word in";
-    const w = document.createElement("span"); w.className = "w"; w.style.fontFamily = x.font; w.textContent = x.w;
-    const l = document.createElement("span"); l.className = "lang"; l.textContent = x.lang;
-    el.append(w, l);
-    stage.append(el);
-    [...ticker.children].forEach((s, j) => (s.className = j < i ? "done" : j === i ? "on" : ""));
-    intensity = 0.35 + (i / WORDS.length) * 0.9; // the storm builds with each language
-  }));
-  if (!reduce) later(400 + WORDS.length * perWord, () => finale());
+  else {
+    // the storm builds for a moment, then the title lands
+    const t0 = performance.now();
+    const build = () => {
+      if (finaleShown || !running) return;
+      intensity = 0.35 + Math.min(1, (performance.now() - t0) / STORM_MS) * 0.9;
+      requestAnimationFrame(build);
+    };
+    requestAnimationFrame(build);
+    later(STORM_MS, () => finale());
+  }
 
   function finale() {
     if (finaleShown) return;
     finaleShown = true;
     timers.forEach(clearTimeout);
     stage.replaceChildren();
-    ticker.style.opacity = "0";
-    WORDS.forEach((x, i) => {
-      const s = document.createElement("span");
-      s.textContent = x.w; s.style.fontFamily = x.font;
-      const a = (i / WORDS.length) * Math.PI * 2 - Math.PI / 2, rx = Math.min(W * 0.38, 520), ry = Math.min(H * 0.34, 300);
-      s.style.transform = `translate(-50%, -50%) translate(${Math.cos(a) * rx * 1.4}px, ${Math.sin(a) * ry * 1.4}px)`;
-      halo.append(s);
-      requestAnimationFrame(() => requestAnimationFrame(() => { s.style.transform = `translate(-50%, -50%) translate(${Math.cos(a) * rx}px, ${Math.sin(a) * ry}px)`; }));
-    });
-    halo.classList.add("show");
     intensity = 0.25;
     const t = document.createElement("div");
     t.className = "intro-title";
