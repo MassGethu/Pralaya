@@ -21,6 +21,7 @@ import { introEnabled, playIntro } from "./intro";
 import { ScenarioPanel, type ScenarioReplay } from "./scenarios";
 import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
 import { componentSummary, rainCap } from "./shocklabel";
+import { type ShelfItem, addToShelf, shelfHtml } from "./shelf";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
 // ---------------- state ----------------
@@ -63,6 +64,9 @@ const S = {
   health: null as Health | null,
   /** Feedback for the typed lat/lon fields; shown only while the box it describes is still the shock box. */
   boxMsg: null as (BoxFieldResult & { typed: TypedBox; forBox: string }) | null,
+  /** Multiverse shelf: every non-zero Branch for this input, newest first, recallable without re-running. */
+  shelf: [] as ShelfItem[],
+  runs: new Map<number, BranchRun>(),
 };
 
 type MapMode = "prime" | "swipe" | "branch" | "diff";
@@ -218,6 +222,10 @@ function setupControls() {
     b.addEventListener("click", () => { S.mapView = b.dataset.view as MapMode; renderAll(); }),
   );
   $("drawer-close").addEventListener("click", closeDrawer);
+  $("shelf").addEventListener("click", (e) => {
+    const card = (e.target as HTMLElement).closest<HTMLElement>("[data-run]");
+    if (card) recall(Number(card.dataset.run));
+  });
   $("open-setup").addEventListener("click", () => openDrawer("setup"));
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDrawer(); });
   document.querySelectorAll<HTMLButtonElement>(".tab[data-tab]").forEach((t) =>
@@ -313,6 +321,8 @@ function invalidateResults(_why: string) {
   S.branch = null;
   S.primeErr = "";
   S.branchErr = "";
+  S.shelf = [];
+  S.runs.clear();
 }
 
 function currentEngine(): Engine | null {
@@ -412,6 +422,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
       spec, specKey: spec ? specKey(spec) : "zero", delta, zero,
     };
     S.mapView = "diff"; // the shock's effect is the point of the demo
+    if (!zero && spec) remember(S.branch);
     announce(zero ? `Zero-shock check run ${S.branch.runNo} finished.` : `Branch run ${S.branch.runNo} ready. The map now shows Branch minus Prime.`);
     if (replay) {
       $<HTMLInputElement>("agri-d0").value = String(replay.dayStart);
@@ -428,6 +439,42 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
     if (seq === S.seq.branch) S.busy.branch = false;
     renderAll();
   }
+}
+
+// ---------------- multiverse shelf ----------------
+/** Keep a finished Branch on the shelf with its fingerprint: the biggest rain change on each day vs the current Prime. */
+function remember(run: BranchRun) {
+  if (!S.prime || !S.input) return;
+  const peaks: number[] = [];
+  for (let d = 1; d <= run.rollout.steps; d++) {
+    peaks.push(maxAbs(difference(displayField(S.prime.rollout, d, "tp"), displayField(run.rollout, d, "tp"))));
+  }
+  S.runs.set(run.runNo, run);
+  S.shelf = addToShelf(S.shelf, { runNo: run.runNo, label: run.spec!.label, detail: componentSummary(run.spec!, S.input, run.delta), peaks });
+  for (const no of [...S.runs.keys()]) if (!S.shelf.some((x) => x.runNo === no)) S.runs.delete(no);
+}
+
+/** Bring an earlier Branch back: same rollout as the server returned it, nothing re-run. */
+function recall(runNo: number) {
+  const run = S.runs.get(runNo);
+  if (!run || S.busy.branch || run.inputId !== S.input?.id) return;
+  S.branch = run;
+  S.shock = structuredClone(run.spec!);
+  S.mapView = "diff";
+  renderAll();
+  flash(document.querySelector(".map-host"));
+  announce(`Branch ${runNo}, ${run.spec!.label}, is back on the map.`);
+}
+
+function renderShelf() {
+  const el = $("shelf");
+  const active = S.branch && !S.branch.zero && comparable() ? S.branch.runNo : null;
+  const keep = el.querySelector(".shelf-list")?.scrollTop ?? 0;
+  const html = shelfHtml(S.shelf, active, S.day);
+  if (el.dataset.html !== html) { el.innerHTML = html; el.dataset.html = html; } // redraw only when something changed
+  const list = el.querySelector(".shelf-list");
+  if (list) list.scrollTop = keep;
+  el.hidden = !S.shelf.length;
 }
 
 // ---------------- derived ----------------
@@ -508,6 +555,7 @@ function renderAll() {
   renderMaps();
   renderRipple();
   renderAgri();
+  renderShelf();
 }
 
 function renderStatus() {

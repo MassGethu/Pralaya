@@ -5,6 +5,7 @@ import { boxFromDegrees } from "../src/region";
 import { buildPerturbation } from "../src/shock";
 import { componentSummary, rainCap } from "../src/shocklabel";
 import { calloutSpot, niceStep } from "../src/charts";
+import { addToShelf, shelfHtml } from "../src/shelf";
 
 describe("typed shock box (bug 1: invalid coordinates must not fail silently)", () => {
   const T = (latMin: number, latMax: number, lonMin: number, lonMax: number) => ({ latMin, latMax, lonMin, lonMax });
@@ -115,4 +116,25 @@ describe("chart axis steps", () => {
     expect(niceStep(1.4)).toBe(2);
     expect(niceStep(7)).toBe(10);
   });
+});
+
+describe("multiverse shelf", () => {
+  const item = (runNo: number, peaks = [1, 4, 2]) => ({ runNo, label: `Shock ${runNo}`, detail: "t2m +3.0 K", peaks });
+  it("keeps newest first, never twice, at most 8", () => {
+    let xs = addToShelf([], item(2));
+    xs = addToShelf(xs, item(3));
+    xs = addToShelf(xs, item(2));
+    expect(xs.map((x) => x.runNo)).toEqual([2, 3]);
+    for (let n = 4; n < 14; n++) xs = addToShelf(xs, item(n));
+    expect(xs).toHaveLength(8);
+    expect(xs[0].runNo).toBe(13);
+  });
+  it("marks the run on the map and highlights the selected day", () => {
+    const html = shelfHtml([item(5), item(2)], 2, 2);
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(html).toContain('data-run="2" aria-pressed="true"');
+    expect(html.match(/class="on"/g)).toHaveLength(2); // day-2 bar in each card
+    expect(html).toContain("4.0<small> mm/d</small>");
+  });
+  it("renders nothing when empty", () => expect(shelfHtml([], null, 1)).toBe(""));
 });

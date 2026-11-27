@@ -812,3 +812,32 @@ svg .callout { font-size: 12px; }
 .hud-peak::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 1px solid currentColor; color: rgba(103,232,249,0.7); animation: ping 2s var(--ease-out) infinite; }
 .hud-peak.neg::after { color: rgba(253,186,116,0.7); }
 @media (prefers-reduced-motion: reduce) { .hud-peak::after { animation: none; } }
+
+/* ================= Multiverse shelf (left, under the layers): every Branch you ran ================= */
+.shelf { margin-top: 14px; width: 188px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 6px; height: calc(100vh - 572px); min-height: 120px; }
+.shelf[hidden] { display: none; }
+.shelf-h { display: flex; align-items: baseline; gap: 6px; font-size: 12px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2); padding-left: 4px; }
+.shelf-h span { font: 600 12px var(--mono); color: var(--shock); letter-spacing: 0; }
+.shelf-list { list-style: none; margin: 0; padding: 2px 4px 2px 2px; display: grid; align-content: start; gap: 6px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; mask-image: linear-gradient(180deg, #000 calc(100% - 16px), transparent); }
+.shelf-card { width: 100%; display: grid; gap: 1px; padding: 7px 10px 7px; border: 0; border-radius: 10px; text-align: left; cursor: pointer; color: var(--ink);
+  background: rgba(8,12,18,0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 0 0 1px rgba(255,255,255,0.1), 0 4px 14px rgba(0,0,0,0.4);
+  transition: box-shadow 160ms var(--ease-out), background-color 160ms var(--ease-out), transform 120ms var(--ease-out); }
+.shelf-card:hover { background: rgba(20,28,40,0.92); }
+.shelf-card:active { transform: scale(0.98); }
+.shelf-card:focus-visible { outline: 2px solid var(--signal-2); outline-offset: 2px; }
+.shelf-card.on { box-shadow: 0 0 0 1.5px rgba(255,176,32,0.8), 0 0 18px rgba(255,176,32,0.18), 0 4px 14px rgba(0,0,0,0.4); }
+.shelf-top { display: flex; justify-content: space-between; align-items: baseline; }
+.shelf-no { font: 600 12px var(--mono); color: var(--ink-3); }
+.shelf-card.on .shelf-no { color: var(--shock); }
+.shelf-peak { font-size: 13px; color: #67e8f9; }
+.shelf-peak small { font-size: 11px; color: var(--ink-3); }
+.shelf-name { font-size: 13px; font-weight: 600; line-height: 1.25; }
+.shelf-detail { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.shelf-card .fp { margin-top: 4px; height: 18px; }
+.fp rect { fill: rgba(103,232,249,0.35); }
+.fp rect.on { fill: #67e8f9; }
+.shelf-note { font-size: 12px; color: var(--ink-3); padding-left: 4px; line-height: 1.35; }
+.shelf-list li { animation: shelfIn 320ms var(--ease-out) both; }
+@keyframes shelfIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .shelf-card, .shelf-list li { transition: none; animation: none; } }
+@media (max-width: 900px) { .shelf { display: none !important; } }
