@@ -22,6 +22,7 @@ import { ScenarioPanel, type ScenarioReplay } from "./scenarios";
 import { type TabName, scenarioLine, showTooltip, VAR_ICONS, flash, forecastDateLabel, inputInfoHtml, setTab, startClock } from "./ui";
 import { componentSummary, rainCap } from "./shocklabel";
 import { type ShelfItem, addToShelf, shelfHtml } from "./shelf";
+import { type GridTile, MultiGrid, signedPeak } from "./multigrid";
 import { PRESETS, type ShockComponent, type ShockSpec, ShockError, buildPerturbation, summarisePerturbation } from "./shock";
 
 // ---------------- state ----------------
@@ -67,6 +68,7 @@ const S = {
   /** Multiverse shelf: every non-zero Branch for this input, newest first, recallable without re-running. */
   shelf: [] as ShelfItem[],
   runs: new Map<number, BranchRun>(),
+  grid: false, // "All futures" overlay open
 };
 
 type MapMode = "prime" | "swipe" | "branch" | "diff";
@@ -95,7 +97,7 @@ async function boot() {
 const showFatal = (msg: string) => document.body.insertAdjacentHTML("afterbegin", `<div class="fatal">${escapeHtml(msg)}</div>`);
 
 // ---------------- maps ----------------
-let mapMain: MapView, mapShock: MapView, flow: WindFlow;
+let mapMain: MapView, mapShock: MapView, flow: WindFlow, grid: MultiGrid;
 let scenarioPanel: ScenarioPanel | null = null;
 let drawingScenarioRegion = false;
 
@@ -106,6 +108,7 @@ function setupMaps() {
   mapMain.onResize = (g) => { flow.resize(g); renderHudNow(); };
   flow.resize(mapMain.geometry());
   mapShock = new MapView($("map-shock"), geo, false, 6);
+  grid = new MultiGrid($("mg-tiles"), geo, (no) => { setGrid(false); recall(no); });
   mapShock.setOptions({ smooth: false });
   mapMain.onHover = (cell, ev) => {
     S.hover = cell;
@@ -222,6 +225,9 @@ function setupControls() {
     b.addEventListener("click", () => { S.mapView = b.dataset.view as MapMode; renderAll(); }),
   );
   $("drawer-close").addEventListener("click", closeDrawer);
+  $("mg-toggle").addEventListener("click", () => setGrid(!S.grid));
+  $("mg-close").addEventListener("click", () => setGrid(false));
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && S.grid) setGrid(false); });
   $("shelf").addEventListener("click", (e) => {
     const card = (e.target as HTMLElement).closest<HTMLElement>("[data-run]");
     if (card) recall(Number(card.dataset.run));
@@ -466,6 +472,43 @@ function recall(runNo: number) {
   announce(`Branch ${runNo}, ${run.spec!.label}, is back on the map.`);
 }
 
+function setGrid(on: boolean) {
+  S.grid = on && S.shelf.length > 0;
+  renderGrid();
+  if (S.grid) $<HTMLButtonElement>("mg-close").focus({ preventScroll: true });
+}
+
+/** All futures side by side: one small Difference map per shelf run, same day, one shared colour scale. */
+function renderGrid() {
+  const usable = S.prime && S.input ? S.shelf.filter((x) => S.runs.get(x.runNo)?.inputId === S.input!.id) : [];
+  const toggle = $<HTMLButtonElement>("mg-toggle");
+  toggle.hidden = usable.length < 2;
+  $("mg-count").textContent = String(usable.length);
+  toggle.setAttribute("aria-pressed", String(S.grid));
+  if (!usable.length) S.grid = false;
+  $("mg").hidden = !S.grid;
+  $("map-host").classList.toggle("under-grid", S.grid);
+  if (!S.grid) return;
+  const prime = S.prime!.rollout, vi = varInfo();
+  const runs = usable.map((x) => S.runs.get(x.runNo)!);
+  // fixed across days and tiles, so playing the days or switching tiles never rescales
+  const max = cached(`grid|${runs.map((r) => r.runNo).join(",")}`, () => {
+    let m = 0;
+    for (const r of runs) for (let d = 1; d <= prime.steps; d++) m = Math.max(m, maxAbs(difference(displayField(prime, d, S.view), displayField(r.rollout, d, S.view))));
+    return m;
+  });
+  const scale = divergingScale(S.view, max);
+  const active = S.branch && !S.branch.zero && comparable() ? S.branch.runNo : null;
+  const tiles: GridTile[] = runs.map((r) => {
+    const field = difference(displayField(prime, S.day, S.view), displayField(r.rollout, S.day, S.view));
+    return { runNo: r.runNo, label: r.spec!.label, field, peak: signedPeak(field), box: r.spec!.box, active: r.runNo === active };
+  });
+  grid.render(tiles, scale, vi.deltaUnit);
+  $("mg-title").textContent = `${runs.length} futures · day ${S.day}`;
+  $("mg-sub").textContent = `${vi.label} change from Prime. Same scale on every map. Click one to open it.`;
+  $("mg-legend").innerHTML = legendHtml(scale, vi.deltaUnit, "", { title: `${vi.label} change`, day: S.day, ends: S.view === "tp" ? ["drier", "wetter"] : ["lower", "higher"] });
+}
+
 function renderShelf() {
   const el = $("shelf");
   const active = S.branch && !S.branch.zero && comparable() ? S.branch.runNo : null;
@@ -556,6 +599,7 @@ function renderAll() {
   renderRipple();
   renderAgri();
   renderShelf();
+  renderGrid();
 }
 
 function renderStatus() {

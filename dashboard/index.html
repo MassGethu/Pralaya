@@ -56,7 +56,16 @@
           <button class="seg-btn" data-view="swipe">Swipe</button>
         </div>
         <div id="map-caption" class="caption"></div>
+        <button id="mg-toggle" class="mg-toggle" type="button" aria-pressed="false" hidden>All futures <span id="mg-count"></span></button>
       </div>
+      <section id="mg" class="mg" aria-label="All futures side by side" hidden>
+        <header class="mg-head">
+          <div><h2 id="mg-title">All futures</h2><p id="mg-sub" class="hint"></p></div>
+          <div id="mg-legend" class="mg-legend"></div>
+          <button id="mg-close" class="btn btn-icon" type="button" aria-label="Close all futures">×</button>
+        </header>
+        <div id="mg-tiles" class="mg-tiles"></div>
+      </section>
       <p id="pod-hint" class="float hint-pill" hidden></p>
 
       <!-- Left: slim icon rail of weather layers -->

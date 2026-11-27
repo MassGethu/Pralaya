@@ -138,3 +138,12 @@ describe("multiverse shelf", () => {
   });
   it("renders nothing when empty", () => expect(shelfHtml([], null, 1)).toBe(""));
 });
+
+describe("all futures grid", () => {
+  it("picks the value with the biggest size and keeps its sign", async () => {
+    const { signedPeak } = await import("../src/multigrid");
+    expect(signedPeak(new Float32Array([1, -6.5, 3]))).toBeCloseTo(-6.5);
+    expect(signedPeak(new Float32Array([2, 4, -3]))).toBeCloseTo(4);
+    expect(signedPeak(new Float32Array([]))).toBe(0);
+  });
+});
