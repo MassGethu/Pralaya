@@ -907,3 +907,8 @@ svg .callout { font-size: 12px; }
 /* while a box is being drawn, every overlay steps aside */
 .hud.drawing .hud-tag, .hud.drawing .hud-hero, .hud.drawing .hud-line { opacity: 0.12; pointer-events: none !important; }
 @media (prefers-reduced-motion: reduce) { .hud-body, .hud-head::after, .hud-tag:not(.compact) { transition: none !important; } }
+
+/* Dose-response panels (Scenarios): rain total against shock size, Prime on the curve */
+.dose-chart + .dose-chart { margin-top: 6px; }
+.dose-line { fill: none; stroke: var(--ink-3); stroke-width: 1.5; stroke-linejoin: round; }
+.dose-prime { fill: var(--ink-2); }

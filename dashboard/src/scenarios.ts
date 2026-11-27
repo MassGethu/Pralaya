@@ -183,12 +183,93 @@ function ensembleChart(r: Report): string {
   </svg>`;
 }
 
+/** How far a candidate is past (+) or short of (−) the rainfall target, in mm. */
+function targetMargin(r: Report): (c: Candidate) => number {
+  const deficitTarget = r.deficit_threshold_mm;
+  const totalTarget = r.rainfall_at_least_mm ?? 0;
+  return (c: Candidate) => deficitTarget === null
+    ? c.rain_mm - totalTarget
+    : r.prime_total_rain_mm - c.rain_mm - deficitTarget;
+}
+
+/** The shock the verdict reports: the best qualifying one, else the closest miss (ties go to the cheaper shock). */
+function selectedCandidate(r: Report): Candidate | null {
+  const margin = targetMargin(r);
+  return r.best ?? r.candidates.reduce<Candidate | null>((nearest, candidate) => {
+    if (!nearest) return candidate;
+    const difference = margin(candidate) - margin(nearest);
+    return difference > 0 || (difference === 0 && candidate.cost < nearest.cost) ? candidate : nearest;
+  }, null);
+}
+
+/** Round ticks covering [lo, hi] without forcing 0 in (for totals far from zero). */
+function spanAxis(lo: number, hi: number, n = 3) {
+  if (hi - lo < 1e-9) { lo -= 0.5; hi += 0.5; }
+  const step = niceStep((hi - lo) / n);
+  const a = Math.floor(lo / step + 1e-9) * step, b = Math.ceil(hi / step - 1e-9) * step;
+  const ticks: number[] = [];
+  for (let t = a; t <= b + step / 2; t += step) ticks.push(Number(t.toPrecision(12)));
+  const digits = (String(Number(step.toPrecision(6))).split(".")[1] ?? "").length;
+  return { lo: a, hi: b, ticks, digits };
+}
+
+/**
+ * Dose-response: for each shock family, total rain over the selected days against shock size, one dot per model
+ * run, joined in amplitude order through Prime at (0, Prime total). Panels with fewer than 2 runs are skipped.
+ */
+export function doseResponseChart(r: Report): string {
+  const target = r.deficit_threshold_mm !== null ? r.prime_total_rain_mm - r.deficit_threshold_mm : r.rainfall_at_least_mm;
+  const selected = r.baseline_meets_threshold ? null : selectedCandidate(r);
+  const W = 322, left = 46, right = 300, top = 26, bottom = 106, H = 140;
+  const days = `days ${r.days[0]}–${r.days.at(-1)}`;
+  const panels = (Object.keys(RECIPES) as Recipe[]).map(k => {
+    const runs = r.candidates.filter(c => c.recipe === k).sort((a, b) => a.amplitude - b.amplitude);
+    if (runs.length < 2) return "";
+    const unit = runs[0].amplitude_unit;
+    const xa = axis(Math.min(...runs.map(c => c.amplitude)), Math.max(...runs.map(c => c.amplitude)), 4);
+    const ys = [...runs.map(c => c.rain_mm), r.prime_total_rain_mm, ...(target !== null ? [target] : [])];
+    const ya = spanAxis(Math.min(...ys), Math.max(...ys));
+    const x = (v: number) => left + (v - xa.lo) * (right - left) / (xa.hi - xa.lo);
+    const y = (v: number) => bottom - (v - ya.lo) * (bottom - top) / (ya.hi - ya.lo);
+    const curve = [...runs.map(c => ({ a: c.amplitude, mm: c.rain_mm })), { a: 0, mm: r.prime_total_rain_mm }].sort((p, q) => p.a - q.a);
+    let s = `<text x="${left}" y="12" class="mv-row">${escapeHtml(RECIPES[k].label)}</text><text x="${right}" y="12" text-anchor="end" class="svg-tick">mm, ${days}</text>`;
+    for (const t of ya.ticks) s += `<line x1="${left}" x2="${right}" y1="${y(t)}" y2="${y(t)}" class="grid"/><text x="${left - 6}" y="${y(t) + 3}" text-anchor="end" class="svg-tick">${fmt(t, ya.digits)}</text>`;
+    for (const t of xa.ticks) s += `<text x="${x(t)}" y="${bottom + 15}" text-anchor="middle" class="svg-tick">${t === 0 ? "Prime" : signed(t, xa.digits)}</text>`;
+    s += `<line x1="${x(0)}" x2="${x(0)}" y1="${top}" y2="${bottom}" class="grid"/>`;
+    s += `<line x1="${left}" x2="${right}" y1="${y(r.prime_total_rain_mm)}" y2="${y(r.prime_total_rain_mm)}" class="mv-prime"/>`;
+    if (target !== null) {
+      s += `<line x1="${left}" x2="${right}" y1="${y(target)}" y2="${y(target)}" class="mv-target"/>`;
+      s += `<text x="${left + 4}" y="${y(target) < top + 12 ? y(target) + 13 : y(target) - 4}" class="svg-tick mv-target-label">target ${fmt(target, 1)}</text>`;
+    }
+    s += `<polyline points="${curve.map(p => `${x(p.a)},${y(p.mm)}`).join(" ")}" class="dose-line"/>`;
+    s += `<circle cx="${x(0)}" cy="${y(r.prime_total_rain_mm)}" r="3" class="dose-prime"><title>Prime: ${fmt(r.prime_total_rain_mm, 2)} mm</title></circle>`;
+    let label = "";
+    for (const c of runs) {
+      const on = !!selected && c.recipe === selected.recipe && c.amplitude === selected.amplitude;
+      const cx = x(c.amplitude), cy = y(c.rain_mm);
+      const tip = `${candidateLabel(c)}: ${fmt(c.rain_mm, 2)} mm${c.qualifies ? ", reaches the target" : ""}`;
+      const dot = `<circle cx="${cx}" cy="${cy}" r="${on ? 6 : 4.5}" class="mv-dot${c.qualifies ? " hit" : ""}${on ? " best" : ""}"><title>${escapeHtml(tip)}</title></circle>`;
+      if (!on) { s += dot; continue; }
+      const text = `${signed(c.amplitude, c.amplitude % 1 ? 1 : 0)} ${c.amplitude_unit} · ${fmt(c.rain_mm, 2)} mm${r.best ? "" : " (closest)"}`;
+      // beside the dot (left of it when it sits in the right half), level with it, so it clears the target line
+      const toLeft = cx > (left + right) / 2;
+      label = dot + `<text x="${cx + (toLeft ? -11 : 11)}" y="${cy + 4}" text-anchor="${toLeft ? "end" : "start"}" class="mv-best">${escapeHtml(text)}</text>`;
+    }
+    s += label;
+    s += `<text x="${(left + right) / 2}" y="${H - 2}" text-anchor="middle" class="svg-tick">Shock size, ${escapeHtml(unit)}</text>`;
+    const aria = `${RECIPES[k].label}: total rain over ${days} against shock size in ${unit}, ${runs.length} model runs plus Prime at ${fmt(r.prime_total_rain_mm, 2)} mm` +
+      `${target !== null ? `; target ${fmt(target, 2)} mm` : ""}; ${runs.filter(c => c.qualifies).length} reach the target.`;
+    return `<svg viewBox="0 0 ${W} ${H}" class="mv-strip dose-chart" role="img" aria-label="${escapeHtml(aria)}">${s}</svg>`;
+  }).filter(Boolean);
+  if (!panels.length) return "";
+  return `<div class="mv-wrap dose-wrap"><p class="mv-title" role="heading" aria-level="5"><b>How rain responds to shock size</b></p>${panels.join("")}
+    <p class="hint">Each dot is one model run. The curve is not always smooth: small shocks move regional rain by about as much as the model's own noise.</p></div>`;
+}
+
 function searchVerdict(r: Report): string {
   const deficitTarget = r.deficit_threshold_mm;
   const totalTarget = r.rainfall_at_least_mm ?? 0;
-  const margin = (c: Candidate) => deficitTarget === null
-    ? c.rain_mm - totalTarget
-    : r.prime_total_rain_mm - c.rain_mm - deficitTarget;
+  const margin = targetMargin(r);
   const target = deficitTarget === null
     ? `At least ${fmt(totalTarget, 2)} mm total`
     : `At least ${fmt(deficitTarget, 2)} mm below Prime`;
@@ -197,11 +278,7 @@ function searchVerdict(r: Report): string {
     return `${targetSummary}<p class="scenario-winner">Prime already meets this rainfall target.</p>`;
   }
 
-  const selected = r.best ?? r.candidates.reduce<Candidate | null>((nearest, candidate) => {
-    if (!nearest) return candidate;
-    const difference = margin(candidate) - margin(nearest);
-    return difference > 0 || (difference === 0 && candidate.cost < nearest.cost) ? candidate : nearest;
-  }, null);
+  const selected = selectedCandidate(r);
   if (!selected) return `${targetSummary}<p class="scenario-winner">No tested shock reaches the target.</p>`;
 
   const gap = Math.abs(margin(selected));
@@ -237,6 +314,7 @@ export function scenarioReportHtml(r: Report): string {
       <h4 id="scenario-found">Search result</h4>${searchVerdict(r)}
       <div class="mv-wrap"><p class="mv-title"><b>${r.candidates.length} futures</b> · each dot is one tested shock</p>${multiverseStrip(r)}
         <div class="scenario-chart-key"><span class="key-hit">reaches target</span><span class="key-miss">misses</span><span class="key-prime">Prime</span></div></div>
+      ${doseResponseChart(r)}
       <p class="hint">${escapeHtml(r.checkpoint.model_id)} · ${r.land_cells} land cells · days ${r.days[0]}–${r.days.at(-1)}</p>
       ${r.candidates.some(c => recommendedRange(c) === null) ? '<p class="warn">Recommended ranges have not been established for this checkpoint.</p>' : ""}
       <details class="method"><summary>Tested shocks</summary><ul class="scenario-candidates">${r.candidates.map(c => `<li><span>${escapeHtml(candidateLabel(c))}${recommendedRange(c) === false ? ' <span class="warn">· outside range</span>' : ""}</span><span class="mono">${fmt(c.rain_mm, 2)} mm${c.qualifies ? ' <span class="pos">✓</span>' : ""}</span></li>`).join("")}</ul></details>
