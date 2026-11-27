@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PRALAYA project brief, Track 2: Multiverse of Monsoon</title>
+<!-- Source for brief.html. Edit this file, then run: python brief/build_brief.py -->
+<style>
+  @font-face { font-family: "Michroma"; font-weight: 400; src: url(../dashboard/public/fonts/michroma-400-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 400; src: url(../dashboard/public/fonts/tomorrow-400-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 500; src: url(../dashboard/public/fonts/tomorrow-500-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 600; src: url(../dashboard/public/fonts/tomorrow-600-latin.woff2) format("woff2"); }
+  @page { size: A4; margin: 10mm 12mm 9mm; }
+  :root {
+    --ink: #1f2933; --muted: #5b6670; --rule: #d5dbe0; --wash: #f3f6f8;
+    --prime: #2a78d6; --shock: #b86e00; --deep: #12297a;
+    --sans: "Tomorrow", "Avenir Next", sans-serif;
+    --serif: "Charter", "Iowan Old Style", Georgia, serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { margin: 0; font-family: var(--serif); font-size: 7.45pt; line-height: 1.33; color: var(--ink); font-kerning: normal; }
+  .page { height: 277mm; overflow: hidden; break-after: page; display: flex; flex-direction: column; }
+  .page:last-child { break-after: auto; }
+  header { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 4mm;
+           padding: 3.2mm 4mm 3mm; margin-bottom: 3mm; color: #fff; border-radius: 2.4mm;
+           background: linear-gradient(120deg, #1d43b8 0%, #12297a 60%, #0c1a4d 100%); }
+  .mark { font-family: "Michroma", var(--sans); font-size: 17pt; letter-spacing: 0.08em; line-height: 1; }
+  header .what { font-family: var(--sans); font-size: 8.6pt; line-height: 1.25; opacity: 0.92; }
+  header .meta { font-family: var(--sans); font-size: 6.6pt; line-height: 1.35; text-align: right; opacity: 0.85; }
+  h2 { font-family: var(--sans); font-weight: 600; font-size: 9.4pt; line-height: 1.2; margin: 0 0 1.2mm; color: var(--deep); }
+  h3 { font-family: var(--sans); font-weight: 600; font-size: 7.4pt; line-height: 1.2; margin: 0 0 0.8mm; color: var(--ink); }
+  p { margin: 0 0 1.3mm; }
+  ul { margin: 0 0 1.3mm; padding-left: 3.4mm; }
+  li { margin-bottom: 0.6mm; }
+  li::marker { color: var(--muted); }
+  b { font-weight: 700; }
+  code { font-family: var(--sans); font-size: 7.1pt; color: var(--deep); }
+  .lead { font-size: 8.3pt; line-height: 1.36; margin-bottom: 2mm; max-width: 172mm; }
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; margin-bottom: 2.4mm; }
+  .fact { border-top: 1.4pt solid var(--prime); padding-top: 1.2mm; }
+  .fact .n { font-family: var(--sans); font-weight: 600; font-size: 12pt; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .fact .n small { font-size: 7.4pt; font-weight: 500; color: var(--muted); }
+  .fact .l { font-family: var(--sans); font-size: 6.5pt; line-height: 1.3; color: var(--muted); margin-top: 0.6mm; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5mm; }
+  section { margin-bottom: 2mm; }
+  figure { margin: 0 0 1.4mm; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { font-family: var(--sans); font-size: 6.4pt; line-height: 1.3; color: var(--muted); margin-top: 0.6mm; }
+  .chart-title { font-family: var(--sans); font-weight: 600; font-size: 7.2pt; margin: 0 0 0.6mm; }
+  .arch { padding: 1.6mm 0 0.4mm; border-top: 0.5pt solid var(--rule); border-bottom: 0.5pt solid var(--rule); margin-bottom: 2mm; }
+  .fail { counter-reset: f; list-style: none; padding: 0; columns: 2; column-gap: 5mm; }
+  .fail li { break-inside: avoid; padding-left: 3.8mm; position: relative; }
+  .fail li::before { content: ""; position: absolute; left: 0.4mm; top: 1.15mm; width: 1.6mm; height: 1.6mm; border-radius: 50%; background: var(--shock); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 6.7pt; line-height: 1.3; margin-bottom: 1.4mm; }
+  th, td { padding: 0.7mm 1.2mm; border-bottom: 0.5pt solid var(--rule); text-align: left; }
+  th { font-weight: 600; color: var(--muted); }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.6mm; margin-bottom: 2.6mm; font-family: var(--sans); font-size: 6.8pt; line-height: 1.25; }
+  .steps div { background: var(--wash); border-radius: 1.4mm; padding: 1.3mm 1.8mm; }
+  .steps b { display: block; font-weight: 600; color: var(--deep); font-size: 7.4pt; }
+  .shot img { display: block; width: 100%; border-radius: 1.6mm; }
+  .prime { color: var(--prime); font-weight: 600; }
+  .branch { color: var(--shock); font-weight: 600; }
+  footer { margin-top: auto; padding-top: 1.4mm; border-top: 0.5pt solid var(--rule); font-family: var(--sans); font-size: 6.2pt; line-height: 1.35; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <div class="mark">PRALAYA</div>
+    <div class="what">A digital twin of India's daily weather: ten days ahead, plus the alternate future after a shock</div>
+    <div class="meta">Track 2, Multiverse of Monsoon<br>Team: Mass, Jarvis and Hridhin</div>
+  </header>
+
+  <p class="lead"><b>What makes it different.</b> From three days of India's weather, PRALAYA rolls the atmosphere forward ten days in about a quarter of a second on four CPU cores. Apply a shock, such as a warmer Bay of Bengal, and a second timeline shows where its effect travels. Both timelines feed a farm-stress panel. Everything on screen is computed live by our own trained model: nothing is looked up, pre-rendered or downloaded.</p>
+
+  <div class="facts">
+    <div class="fact"><div class="n">64.9 <small>/ 70</small></div><div class="l">local kit score on the held-out 2021 year, up from 33.6 for our first model</div></div>
+    <div class="fact"><div class="n">0.22–0.59 <small>s</small></div><div class="l">per 10-day request across two 4-CPU, 6 GB container runs with no network and a read-only repo</div></div>
+    <div class="fact"><div class="n">0 <small>of 353</small></div><div class="l">2021 windows with an invalid forecast (NaN, negative rain or out-of-range temperature)</div></div>
+    <div class="fact"><div class="n">97.5<small>%</small></div><div class="l">of 2021 windows beat “repeat yesterday” at day 4 (mean skill +0.26)</div></div>
+  </div>
+
+  <h2>System architecture</h2>
+  <div class="arch">{{ARCH}}</div>
+
+  <div class="cols">
+    <section>
+      <h2>Model design and technical approach</h2>
+      <ul>
+        <li><b>Network.</b> A residual CNN (<code>model/net.py</code>): width 96, five residual blocks, replicate padding, 0.86 M parameters. Inputs: three days of the six channels, land–sea mask, orography, latitude, longitude and the season. It predicts tomorrow as a change to today, so an untrained network equals persistence.</li>
+        <li><b>Training</b> (<code>train.py</code>, latitude-weighted MSE). One-step (b1), then fine-tuning through 4-day (b3) and 8-day (e3) rollouts that feed the model its own output. e3_rainstab also weights ocean temperature 4× and penalises shock responses above 3 std. 2005–2019 train, 2020 selects, 2021 is held out; selection rules were fixed before scoring.</li>
+        <li><b>Ensemble.</b> Prime is the mean of three seeds. Branch adds seed 0's own shock response: averaging the three responses weakened how far shocks spread and failed our gate.</li>
+        <li><b>Calibration</b> (<code>model/calibration.py</code>). Weights fitted on 2020 per lead, channel and land or sea blend the mean toward a smooth seasonal curve (a mean plus three annual harmonics per cell, fitted on 2005–2019) and the last observed day. It holds no daily weather and no dates. Rain keeps weight 1: the model alone forecasts it.</li>
+      </ul>
+    </section>
+    <section>
+      <p class="chart-title">Local kit score on 2021, out of 70</p>
+      <figure>{{RELEASES}}<figcaption>Organizer scoring functions on 353 held-out windows: error 30, heavy rain 15, anti-blur 10, shock causality 15. The served model scores 27.2, 13.6, 10 and 14.1. Calibration is fitted on 2020, so 2021 is the clean estimate.</figcaption></figure>
+    </section>
+  </div>
+
+  <section>
+    <h2>How we prevent drift and blur</h2>
+    <div class="cols">
+      <div>
+        <p class="chart-title">Skill against the better baseline, 2021</p>
+        <figure>{{SKILL}}<figcaption>Skill = 1 − RMSE ÷ RMSE of the better of persistence and climatology, mean of six channels per window. Above 0 beats both.</figcaption></figure>
+        <p><b>Drift.</b> Rollout training teaches the model to correct its own errors: day-8 skill rises from −0.20 to −0.07, and the ensemble and calibration bring it to −0.01, level with the better baseline.</p>
+      </div>
+      <div>
+        <p class="chart-title">Day-8 spatial variance as a share of observed, 2021</p>
+        <figure>{{VARIANCE}}<figcaption>Below 0.4 is a blurred average; above 2.5 is noise. All six channels sit in the band, worth 10 of 10 anti-blur points.</figcaption></figure>
+        <p><b>Blur.</b> The model predicts a change to today, the rollout loss punishes smooth averages, and rain is never pulled toward climatology. The ensemble had to keep all six channels in band to ship.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Failure modes</h2>
+    <ul class="fail">
+      <li><b>Day 8 only matches the baseline.</b> Mean day-8 skill is −0.01: a typical window wins at day 4, not reliably at day 8.</li>
+      <li><b>Extreme rain is under-forecast.</b> Day-8 rain variance is 0.62 of observed; on 2020 the served model's largest day-8 rain was 49 mm/day where 250 fell.</li>
+      <li><b>The wind shock spreads weakly.</b> The Arabian Sea wind shock spreads outward by days 4–8 in 61% of 2021 windows (warm Bay: 97%).</li>
+      <li><b>Rare rain spikes after a shock.</b> In 4% of warm-Bay windows a response tops 5 std, always in rain near the box.</li>
+      <li><b>Not a physics model.</b> Physics-aware means persistence-anchored steps, terrain inputs and non-negative rain, with no conservation laws. Responses show model sensitivity, not causation.</li>
+      <li><b>Untested hardware.</b> Timed on ARM CPUs only; x86 is unmeasured, with 8× headroom under the 5 s limit.</li>
+    </ul>
+  </section>
+
+  <footer>Data: organizer kit <code>india_climate_train.nc</code> (v1.0.0), modified Copernicus Climate Change Service information (ERA5, Hersbach et al. 2020) via WeatherBench 2 (Rasp et al. 2024), CC BY 4.0. Evidence and reproduction: <code>docs/CALIBRATION.md</code>, <code>docs/EXPERIMENTS.md</code>, <code>evaluation/results/a5b/</code>.</footer>
+</div>
+
+<div class="page">
+  <header>
+    <div class="mark">PRALAYA</div>
+    <div class="what">Live visualization and agricultural impact</div>
+    <div class="meta">Dashboard: <code style="color:#fff">dashboard/</code>, separate from the server<br>Every map and number comes from live POST /simulate calls</div>
+  </header>
+
+  <div class="steps">
+    <div><b>1 Load</b>three days of state from the kit data</div>
+    <div><b>2 Run Prime</b>the unshocked 10-day forecast</div>
+    <div><b>3 Draw a shock</b>box plus a physical or percentage change</div>
+    <div><b>4 Run Branch</b>the same request with the shock</div>
+    <div><b>5 Compare</b>difference map, timeline, farm stress</div>
+  </div>
+
+  <div class="cols">
+    <figure class="shot"><img src="dashboard_diff_day6.jpg" alt="Dashboard Difference view on forecast day 6 after a warm Bay of Bengal shock"><figcaption>Difference view (Branch − Prime rain), day 6 of the window ending 15 July 2021, warm Bay of Bengal shock (+3 K, +15% moisture, dashed box). The response has spread from the Bay toward the coast and inland; peak change 25.6 mm/day. The served ensemble gives the same rain difference, because Branch's response comes from seed 0.</figcaption></figure>
+    <section>
+      <h2>Interactive map and timeline</h2>
+      <ul>
+        <li>India on the model's own 32 × 36 grid with coastlines and cities; seven variables (rain, temperature, wind speed, both wind components, pressure, moisture).</li>
+        <li>Views: <span class="prime">Prime</span>, <span class="branch">Branch</span>, a signed Difference with a zero-centred scale fixed across days, and Swipe. A 10-day timeline plays the rollout.</li>
+        <li>Shocks: draw a box or type coordinates and add a physical change (K, mm/day, m/s, Pa, kg/m²) or a percentage. Presets reproduce the organizer's two shocks exactly. A zero check confirms an all-zero shock changes nothing.</li>
+        <li>The multiverse: every Branch is kept on a shelf (up to eight), recallable in one click, and <b>All futures</b> shows each Branch's difference map side by side.</li>
+        <li>Ripple reach: the share of cells outside the box that changed, per day, so a judge can watch a shock travel.</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="cols">
+    <section>
+      <p class="chart-title">How strongly each shock acts, by forecast day (2021 mean)</p>
+      <figure>{{SHOCK}}<figcaption>Largest response anywhere on the map, in channel standard deviations. On day 1, 97% (warm Bay) and 99% (Arabian Sea wind) of the response lies within 3 cells of the box; it then spreads without jumping and stays far below the 5-std limit on average.</figcaption></figure>
+    </section>
+    <section>
+      <p class="chart-title">Central India regional rain per day, mm (worked example)</p>
+      <figure>{{WORKED}}<figcaption>Window ending 15 July 2021, warm Bay of Bengal shock, farm region 18.5–25.5°N, 74.5–83.5°E (80 land cells). Recomputed from served rollouts with the dashboard's formulas.</figcaption></figure>
+    </section>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>Agricultural impact: weather-stress indicators</h2>
+      <p>For a farm region the user draws (land cells only), computed the same way for both futures: cumulative rain (cos-latitude weighted), dry days (&lt; 2.5 mm/day) and the longest dry spell, heavy-rain exposure (share of cell-days ≥ 10 mm/day) and mean temperature.</p>
+      <table>
+        <tr><th>Days 1–7, central India</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Change</th></tr>
+        <tr><td>Cumulative rain</td><td class="n">63.3 mm</td><td class="n">63.9 mm</td><td class="n">+0.6 mm</td></tr>
+        <tr><td>Dry days, longest dry spell</td><td class="n">1, 1 d</td><td class="n">0, 0 d</td><td class="n">−1, −1 d</td></tr>
+        <tr><td>Heavy-rain exposure</td><td class="n">45.9%</td><td class="n">44.5%</td><td class="n">−1.4 pp</td></tr>
+        <tr><td>Mean 2 m temperature</td><td class="n">28.5 °C</td><td class="n">28.7 °C</td><td class="n">+0.19 K</td></tr>
+      </table>
+      <p><b>Reading.</b> A warmer, moister Bay of Bengal barely changes central India's week of rain but removes its one dry day and warms it slightly. Rain rises on days 1–4 and falls on days 5–6.</p>
+    </section>
+    <section>
+      <h2>Inverse search and preparedness</h2>
+      <p>The scenario service asks the reverse question: which tested shock pushes a region past a rainfall target? It returns the lowest-cost qualifying shock or the closest miss, and <b>Replay as Branch</b> runs it through the full model.</p>
+      <p>For coastal Odisha (17–23°N, 82–88°E, days 1–7 from 2 July 2020), Prime gives 115.1 mm. Of 13 tested shocks, only +2 K over the Bay of Bengal crosses a 117 mm target (117.5 mm); at 120 mm it is the closest miss, 2.5 mm short. With an illustrative 15 mm/day water need, supplying 0, 14 or 28 mm leaves a worst shortfall of 6.5, 2.0 or 0 mm.</p>
+      <h3>Assumptions and limits</h3>
+      <ul>
+        <li>The indicators compare two simulated futures. They are not drought declarations, yield estimates or losses, and use no crop, soil or irrigation data.</li>
+        <li>A 1° daily grid cannot resolve farm-scale conditions, hourly heat or cyclone tracks, and extreme rain is under-forecast.</li>
+        <li>A research prototype, not a replacement for IMD forecasts or agronomic advice. Next: the same comparison along sea routes for shipping.</li>
+      </ul>
+    </section>
+  </div>
+
+  <footer>Run it: <code>python serve.py --port 8000</code>, <code>python -m scripts.scenario_service --port 8001</code>, then <code>npm ci &amp;&amp; npm run dev</code> in <code>dashboard/</code> (see <code>dashboard/README.md</code>). This brief is built from the committed results by <code>python brief/build_brief.py</code>.</footer>
+</div>
+
+</body>
+</html>

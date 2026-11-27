@@ -2,175 +2,204 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>PRALAYA — Project Brief (Track 2: Multiverse of Monsoon)</title>
+<title>PRALAYA project brief, Track 2: Multiverse of Monsoon</title>
+<!-- Source for brief.html. Edit this file, then run: python brief/build_brief.py -->
 <style>
-  @page { size: A4; margin: 11mm 12mm 10mm 12mm; }
+  @font-face { font-family: "Michroma"; font-weight: 400; src: url(../dashboard/public/fonts/michroma-400-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 400; src: url(../dashboard/public/fonts/tomorrow-400-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 500; src: url(../dashboard/public/fonts/tomorrow-500-latin.woff2) format("woff2"); }
+  @font-face { font-family: "Tomorrow"; font-weight: 600; src: url(../dashboard/public/fonts/tomorrow-600-latin.woff2) format("woff2"); }
+  @page { size: A4; margin: 10mm 12mm 9mm; }
+  :root {
+    --ink: #1f2933; --muted: #5b6670; --rule: #d5dbe0; --wash: #f3f6f8;
+    --prime: #2a78d6; --shock: #b86e00; --deep: #12297a;
+    --sans: "Tomorrow", "Avenir Next", sans-serif;
+    --serif: "Charter", "Iowan Old Style", Georgia, serif;
+  }
   * { box-sizing: border-box; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 8.35pt; line-height: 1.32; color: #16202a; }
-  .page { height: 276mm; overflow: hidden; page-break-after: always; display: flex; flex-direction: column; }
-  .page:last-child { page-break-after: auto; }
-  header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.6pt solid #16202a; padding-bottom: 2.2mm; margin-bottom: 2.6mm; }
-  header h1 { font-size: 17pt; letter-spacing: 0.06em; margin: 0; }
-  header h1 span { font-weight: 400; font-size: 9.5pt; letter-spacing: 0; color: #4a5866; margin-left: 2mm; }
-  header .meta { text-align: right; font-size: 7pt; color: #4a5866; line-height: 1.35; }
-  h2 { font-size: 9.6pt; margin: 2.6mm 0 1.1mm; text-transform: uppercase; letter-spacing: 0.05em; color: #0b4f6c; }
-  h2:first-child { margin-top: 0; }
-  p { margin: 0 0 1.4mm; }
-  ul { margin: 0 0 1.4mm; padding-left: 4mm; }
-  li { margin-bottom: 0.55mm; }
-  .usp { background: #eef5f8; border-left: 2.4pt solid #0b4f6c; padding: 1.8mm 2.6mm; margin-bottom: 1.6mm; font-size: 8.7pt; }
-  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4.5mm; }
-  table { border-collapse: collapse; width: 100%; margin: 0.6mm 0 1.4mm; font-size: 7.5pt; }
-  th, td { border-bottom: 0.5pt solid #c9d3db; padding: 0.75mm 1.2mm; text-align: left; vertical-align: top; }
-  th { background: #f1f4f6; font-weight: 600; }
+  body { margin: 0; font-family: var(--serif); font-size: 7.45pt; line-height: 1.33; color: var(--ink); font-kerning: normal; }
+  .page { height: 277mm; overflow: hidden; break-after: page; display: flex; flex-direction: column; }
+  .page:last-child { break-after: auto; }
+  header { display: grid; grid-template-columns: auto 1fr auto; align-items: end; gap: 4mm;
+           padding: 3.2mm 4mm 3mm; margin-bottom: 3mm; color: #fff; border-radius: 2.4mm;
+           background: linear-gradient(120deg, #1d43b8 0%, #12297a 60%, #0c1a4d 100%); }
+  .mark { font-family: "Michroma", var(--sans); font-size: 17pt; letter-spacing: 0.08em; line-height: 1; }
+  header .what { font-family: var(--sans); font-size: 8.6pt; line-height: 1.25; opacity: 0.92; }
+  header .meta { font-family: var(--sans); font-size: 6.6pt; line-height: 1.35; text-align: right; opacity: 0.85; }
+  h2 { font-family: var(--sans); font-weight: 600; font-size: 9.4pt; line-height: 1.2; margin: 0 0 1.2mm; color: var(--deep); }
+  h3 { font-family: var(--sans); font-weight: 600; font-size: 7.4pt; line-height: 1.2; margin: 0 0 0.8mm; color: var(--ink); }
+  p { margin: 0 0 1.3mm; }
+  ul { margin: 0 0 1.3mm; padding-left: 3.4mm; }
+  li { margin-bottom: 0.6mm; }
+  li::marker { color: var(--muted); }
+  b { font-weight: 700; }
+  code { font-family: var(--sans); font-size: 7.1pt; color: var(--deep); }
+  .lead { font-size: 8.3pt; line-height: 1.36; margin-bottom: 2mm; max-width: 172mm; }
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4mm; margin-bottom: 2.4mm; }
+  .fact { border-top: 1.4pt solid var(--prime); padding-top: 1.2mm; }
+  .fact .n { font-family: var(--sans); font-weight: 600; font-size: 12pt; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  .fact .n small { font-size: 7.4pt; font-weight: 500; color: var(--muted); }
+  .fact .l { font-family: var(--sans); font-size: 6.5pt; line-height: 1.3; color: var(--muted); margin-top: 0.6mm; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; column-gap: 5mm; }
+  section { margin-bottom: 2mm; }
+  figure { margin: 0 0 1.4mm; }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption { font-family: var(--sans); font-size: 6.4pt; line-height: 1.3; color: var(--muted); margin-top: 0.6mm; }
+  .chart-title { font-family: var(--sans); font-weight: 600; font-size: 7.2pt; margin: 0 0 0.6mm; }
+  .arch { padding: 1.6mm 0 0.4mm; border-top: 0.5pt solid var(--rule); border-bottom: 0.5pt solid var(--rule); margin-bottom: 2mm; }
+  .fail { counter-reset: f; list-style: none; padding: 0; columns: 2; column-gap: 5mm; }
+  .fail li { break-inside: avoid; padding-left: 3.8mm; position: relative; }
+  .fail li::before { content: ""; position: absolute; left: 0.4mm; top: 1.15mm; width: 1.6mm; height: 1.6mm; border-radius: 50%; background: var(--shock); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 6.7pt; line-height: 1.3; margin-bottom: 1.4mm; }
+  th, td { padding: 0.7mm 1.2mm; border-bottom: 0.5pt solid var(--rule); text-align: left; }
+  th { font-weight: 600; color: var(--muted); }
   td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .good { color: #116b3a; font-weight: 600; }
-  .bad { color: #a23a12; font-weight: 600; }
-  .note { font-size: 6.9pt; color: #4a5866; }
-  .mono { font-family: Menlo, Consolas, monospace; font-size: 7.1pt; }
-  figure { margin: 0 0 1.6mm; }
-  figure img { width: 100%; display: block; border: 0.5pt solid #c9d3db; }
-  figcaption { font-size: 6.9pt; color: #4a5866; margin-top: 0.8mm; }
-  .flow { display: flex; gap: 1.2mm; flex-wrap: wrap; margin: 0.6mm 0 1.6mm; }
-  .flow span { background: #f1f4f6; border: 0.5pt solid #c9d3db; border-radius: 1.2mm; padding: 0.6mm 1.6mm; font-size: 7.4pt; }
-  .flow b { color: #0b4f6c; }
-  footer { margin-top: auto; border-top: 0.5pt solid #c9d3db; padding-top: 1.2mm; font-size: 6.6pt; color: #4a5866; }
+  .steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.6mm; margin-bottom: 2.6mm; font-family: var(--sans); font-size: 6.8pt; line-height: 1.25; }
+  .steps div { background: var(--wash); border-radius: 1.4mm; padding: 1.3mm 1.8mm; }
+  .steps b { display: block; font-weight: 600; color: var(--deep); font-size: 7.4pt; }
+  .shot img { display: block; width: 100%; border-radius: 1.6mm; }
+  .prime { color: var(--prime); font-weight: 600; }
+  .branch { color: var(--shock); font-weight: 600; }
+  footer { margin-top: auto; padding-top: 1.4mm; border-top: 0.5pt solid var(--rule); font-family: var(--sans); font-size: 6.2pt; line-height: 1.35; color: var(--muted); }
 </style>
 </head>
 <body>
 
-<!-- ============================ PAGE 1 ============================ -->
-<section class="page">
+<div class="page">
   <header>
-    <h1>PRALAYA <span>India's weather digital twin · Track 2 "Multiverse of Monsoon"</span></h1>
-    <div class="meta">Team: Mass · Jarvis · Hridhin<br>Served: 3-seed <span class="mono">e3_rainstab</span> + calibration<br>seed 0 <span class="mono">90605130…88db</span>, plain git</div>
+    <div class="mark">PRALAYA</div>
+    <div class="what">A digital twin of India's daily weather: ten days ahead, plus the alternate future after a shock</div>
+    <div class="meta">Track 2, Multiverse of Monsoon<br>Team: Mass, Jarvis and Hridhin</div>
   </header>
 
-  <div class="usp"><b>USP.</b> PRALAYA forecasts India's daily weather 10 days ahead from three days of state, lets a user inject a localized shock and watch it ripple outward, and turns the difference between the two futures into transparent agricultural stress indicators. Every number shown is computed live from our own trained model; nothing is pre-rendered, looked up or downloaded.</div>
+  <p class="lead"><b>What makes it different.</b> From three days of India's weather, PRALAYA rolls the atmosphere forward ten days in about a quarter of a second on four CPU cores. Apply a shock, such as a warmer Bay of Bengal, and a second timeline shows where its effect travels. Both timelines feed a farm-stress panel. Everything on screen is computed live by our own trained model: nothing is looked up, pre-rendered or downloaded.</p>
 
-  <div class="cols">
-  <div>
-    <h2>Model design</h2>
-    <ul>
-      <li><b>Residual CNN</b> (<span class="mono">model/net.py</span>): width 96, 5 residual blocks, replicate padding, 0.86 M parameters. Input: last 3 days × 6 channels (normalized), land–sea mask, orography, latitude, longitude, and sin/cos of the <i>target</i> day. Output: tomorrow as a change added to today, so an untrained model equals persistence.</li>
-      <li><b>Autoregressive rollout:</b> each predicted day is fed back in; the seasonal phase advances 2π/365 per step. Rain passes through a ReLU, so it is never negative.</li>
-      <li><b>Training:</b> latitude-weighted MSE throughout. b1 learns one step (40 epochs); b3 fine-tunes b1 through a <b>4-day rollout</b> (12 epochs, lr 3e-4); the shipped <b>e3_rainstab</b> fine-tunes b3 through an <b>8-day rollout</b> (12 epochs, lr 1e-4) with ocean temperature weighted 4× and a <b>stability hinge</b> that penalizes any shock response above 3 std. Trained on Apple MPS, served on CPU.</li>
-      <li><b>Shock path.</b> The physical delta is added once to the last input day. Prime is the mean of three independently trained seeds; a fitted seasonal reference then calibrates its non-rain fields. Branch adds seed 0's own paired shock response to calibrated Prime, so the response is a single model's. Null and all-zero shocks are bit-identical.</li>
-    </ul>
-
-    <h2>Data and validation</h2>
-    <ul>
-      <li>Organizer archive 2005–2021, 32 × 36 grid at 1°. Split by calendar year into <b>2005–2019</b> (training and seasonal reference), <b>2020</b> (selection and calibration weights), and <b>2021</b> (follow-up).</li>
-      <li>A window counts only if inputs and all 10 targets lie in one split. Data audit: 30/30 checks pass.</li>
-      <li>First release <span class="mono">b3_roll4</span> was chosen under a rule fixed before 2021 scoring (<span class="mono">ed10825</span>). Three later rounds were pre-registered and judged on 2020 only. <b>e3_rainstab</b> won round 2: S 51.11 / 70 on val, 3-seed mean 50.85 ± 1.54.</li>
-      <li>Round 3: the calibrated 3-seed mean passed all six gates. Kit proxy, raw → calibrated single → served: 51.11 → 57.92 → <b>65.92 / 70</b> on 2020 (calibration weights fitted here) and 50.72 → 56.92 → <b>64.93 / 70</b> in the 2021 follow-up after selection.</li>
-      <li>Tried, not promoted: U-Net (B2), heavy-rain loss (B4), wind transport (B5), anomaly targets, two-part rain head, averaged shock responses and a blend that damped shock spread (<span class="mono">docs/EXPERIMENTS.md</span>).</li>
-    </ul>
-
-    <h2>Drift and blur: what we did and measured</h2>
-    <ul>
-      <li><b>Drift.</b> In 2021, per-window day-8 skill goes from −0.204 (b1) to −0.112 (b3) to −0.072 (e3_rainstab) to <b>−0.009</b> served. Warm Bay of Bengal shock stability rises from 66% (b1) to 96% (e3_rainstab).</li>
-      <li><b>Blur.</b> Day-8 spatial variance by channel is 0.62–1.01 of observed in 2021 (kit band 0.4–2.5), with all six channels in band for 84% of windows.</li>
-      <li><b>Validity:</b> the server rejects non-finite output, clips rain to ≥ 0 and t2m to 233.15–333.15 K, and logs the total and per-channel clipping counts.</li>
-    </ul>
+  <div class="facts">
+    <div class="fact"><div class="n">64.9 <small>/ 70</small></div><div class="l">local kit score on the held-out 2021 year, up from 33.6 for our first model</div></div>
+    <div class="fact"><div class="n">0.22–0.59 <small>s</small></div><div class="l">per 10-day request across two 4-CPU, 6 GB container runs with no network and a read-only repo</div></div>
+    <div class="fact"><div class="n">0 <small>of 353</small></div><div class="l">2021 windows with an invalid forecast (NaN, negative rain or out-of-range temperature)</div></div>
+    <div class="fact"><div class="n">97.5<small>%</small></div><div class="l">of 2021 windows beat “repeat yesterday” at day 4 (mean skill +0.26)</div></div>
   </div>
 
-  <div>
-    <h2>Measured evidence (local, test year 2021)</h2>
-    <p class="note">353 windows, served 3-seed ensemble with paired calibration, kit scoring functions (<span class="mono">monsoon_r1.scoring</span>). Skill = 1 − RMSE / min(RMSE persistence, RMSE climatology), latitude-weighted mean of 6 channels per window. Intervals use block bootstrap at 95%. The official grader uses five hidden 2023–24 windows.</p>
-    <table>
-      <tr><th>Metric</th><th class="n">Day 1</th><th class="n">Day 4</th><th class="n">Day 8</th></tr>
-      <tr><td>Skill vs better baseline</td><td class="n good">+0.274</td><td class="n good">+0.062</td><td class="n">−0.009</td></tr>
-      <tr><td>Skill vs persistence only</td><td class="n">—</td><td class="n good">+0.263</td><td class="n">—</td></tr>
-      <tr><td>Heavy-rain CSI (&gt;10 mm/day, pooled): model</td><td class="n">0.547</td><td class="n">0.341</td><td class="n">0.296</td></tr>
-      <tr><td>&nbsp;&nbsp;persistence / climatology</td><td class="n">0.426 / 0.260</td><td class="n">0.209 / 0.261</td><td class="n">0.196 / 0.262</td></tr>
-    </table>
-    <table>
-      <tr><th>Check</th><th>Result (2021)</th></tr>
-      <tr><td>Beats persistence at day 4 (qualification gate)</td><td><span class="good">+0.263</span> [0.244, 0.286], 97% of windows</td></tr>
-      <tr><td>Heavy-rain CSI skill (per window)</td><td>+0.091 [0.071, 0.114]</td></tr>
-      <tr><td>Invalid windows (NaN, rain &lt; 0, t2m range)</td><td>0 of 353</td></tr>
-      <tr><td>Shock: localized near box on day 1</td><td>100% of windows, both shocks</td></tr>
-      <tr><td>Shock: spreads outward by days 4–8</td><td>warm Bay 97% · Arabian Sea wind 61%</td></tr>
-      <tr><td>Shock: stable (&lt; 5 std everywhere)</td><td>warm Bay 96% · Arabian Sea wind 98%</td></tr>
-      <tr><td>Zero shock</td><td>bit-identical to no shock</td></tr>
-    </table>
-    <p class="note">The served bundle passes the official validator and scores 15/15 on the repo scan. The offline ARM64 Linux rehearsal (no network, four cores, 6 GiB, read-only checkout) returned all eight ten-day cases in 0.32–0.59 s at 265 MiB peak memory; a shocked request runs five rollouts. Native x86 latency remains unverified.</p>
+  <h2>System architecture</h2>
+  <div class="arch"><svg viewBox="0 0 527 92" role="img" aria-label="Serving pipeline from request to Prime and Branch" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><defs><marker id="head" viewBox="0 0 6 6" refX="5" refY="3" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#5b6670"/></marker></defs><rect x="0" y="4" width="84" height="86" rx="3" fill="#fff" stroke="#1f2933" stroke-width="0.8"/><text x="6.0" y="31.6" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Request</text><text x="6.0" y="39.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">last 3 days, 6 variables</text><text x="6.0" y="46.6" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">on a 32 × 36 grid</text><text x="6.0" y="53.8" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">+ day of year</text><text x="6.0" y="61.0" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">+ optional shock δ</text><text x="6.0" y="68.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">(physical units)</text><rect x="98" y="4" width="118" height="40" rx="3" fill="#fff" stroke="#1f2933" stroke-width="0.8"/><text x="104.0" y="19.4" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Three residual CNNs</text><text x="104.0" y="27.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">seeds 0, 1, 2; each predicts</text><text x="104.0" y="34.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">tomorrow&#x27;s change, 10 steps</text><rect x="230" y="4" width="124" height="40" rx="3" fill="#fff" stroke="#1f2933" stroke-width="0.8"/><text x="236.0" y="19.4" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Mean and calibration</text><text x="236.0" y="27.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">blend toward a seasonal curve</text><text x="236.0" y="34.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">and the last day; rain untouched</text><rect x="98" y="50" width="118" height="40" rx="3" fill="#fff" stroke="#e08600" stroke-width="0.8"/><text x="104.0" y="65.4" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Shock on the last input day</text><text x="104.0" y="73.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">seed 0 runs with and</text><text x="104.0" y="80.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">without δ</text><rect x="230" y="50" width="124" height="40" rx="3" fill="#fff" stroke="#e08600" stroke-width="0.8"/><text x="236.0" y="65.4" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Paired response</text><text x="236.0" y="73.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">seed 0 shocked minus</text><text x="236.0" y="80.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">seed 0 unshocked</text><rect x="368" y="4" width="64" height="40" rx="3" fill="#fff" stroke="#2a78d6" stroke-width="0.8"/><text x="374.0" y="23.0" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Prime</text><text x="374.0" y="30.8" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">calibrated mean</text><rect x="368" y="50" width="64" height="40" rx="3" fill="#fff" stroke="#e08600" stroke-width="0.8"/><text x="374.0" y="69.0" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">Branch</text><text x="374.0" y="76.8" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">Prime + response</text><rect x="446" y="4" width="81" height="86" rx="3" fill="#fff" stroke="#1f2933" stroke-width="0.8"/><text x="452.0" y="35.2" font-size="6.6" fill="#1f2933" text-anchor="start" font-weight="600">POST /simulate</text><text x="452.0" y="43.0" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">rain ≥ 0, t2m in</text><text x="452.0" y="50.2" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">233–333 K, JSON lists</text><text x="452.0" y="57.4" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">to the dashboard and</text><text x="452.0" y="64.6" font-size="5.8" fill="#5b6670" text-anchor="start" font-weight="400">scenario service</text><line x1="84" y1="24.0" x2="97" y2="24.0" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/><line x1="84" y1="70.0" x2="97" y2="70.0" stroke="#e08600" stroke-width="0.9" marker-end="url(#head)"/><line x1="216" y1="24.0" x2="229" y2="24.0" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/><line x1="216" y1="70.0" x2="229" y2="70.0" stroke="#e08600" stroke-width="0.9" marker-end="url(#head)"/><line x1="354" y1="24.0" x2="367" y2="24.0" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/><line x1="354" y1="70.0" x2="367" y2="70.0" stroke="#e08600" stroke-width="0.9" marker-end="url(#head)"/><line x1="400" y1="44" x2="400" y2="49" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/><line x1="432" y1="24.0" x2="445" y2="24.0" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/><line x1="432" y1="70.0" x2="445" y2="70.0" stroke="#5b6670" stroke-width="0.9" marker-end="url(#head)"/></svg></div>
 
+  <div class="cols">
+    <section>
+      <h2>Model design and technical approach</h2>
+      <ul>
+        <li><b>Network.</b> A residual CNN (<code>model/net.py</code>): width 96, five residual blocks, replicate padding, 0.86 M parameters. Inputs: three days of the six channels, land–sea mask, orography, latitude, longitude and the season. It predicts tomorrow as a change to today, so an untrained network equals persistence.</li>
+        <li><b>Training</b> (<code>train.py</code>, latitude-weighted MSE). One-step (b1), then fine-tuning through 4-day (b3) and 8-day (e3) rollouts that feed the model its own output. e3_rainstab also weights ocean temperature 4× and penalises shock responses above 3 std. 2005–2019 train, 2020 selects, 2021 is held out; selection rules were fixed before scoring.</li>
+        <li><b>Ensemble.</b> Prime is the mean of three seeds. Branch adds seed 0's own shock response: averaging the three responses weakened how far shocks spread and failed our gate.</li>
+        <li><b>Calibration</b> (<code>model/calibration.py</code>). Weights fitted on 2020 per lead, channel and land or sea blend the mean toward a smooth seasonal curve (a mean plus three annual harmonics per cell, fitted on 2005–2019) and the last observed day. It holds no daily weather and no dates. Rain keeps weight 1: the model alone forecasts it.</li>
+      </ul>
+    </section>
+    <section>
+      <p class="chart-title">Local kit score on 2021, out of 70</p>
+      <figure><svg viewBox="0 0 256 108" role="img" aria-label="Local kit score on 2021 by release, out of 70" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><line x1="104.0" x2="104.0" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="104.0" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">0</text><line x1="122.6" x2="122.6" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="122.6" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">10</text><line x1="141.1" x2="141.1" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="141.1" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">20</text><line x1="159.7" x2="159.7" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="159.7" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">30</text><line x1="178.3" x2="178.3" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="178.3" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">40</text><line x1="196.9" x2="196.9" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="196.9" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">50</text><line x1="215.4" x2="215.4" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="215.4" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">60</text><line x1="234.0" x2="234.0" y1="4" y2="94" stroke="#e3e7ea" stroke-width="0.5"/><text x="234.0" y="102.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">70</text><text x="100.0" y="13.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">b1: one-step training</text><path d="M104.0,8.0 h60.4 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-60.4 z" fill="#c3cad1"/><text x="169.4" y="13.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="400">33.6</text><text x="100.0" y="28.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">b3: 4-day rollout fine-tune</text><path d="M104.0,23.0 h84.9 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-84.9 z" fill="#c3cad1"/><text x="193.9" y="28.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="400">46.8</text><text x="100.0" y="43.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">e3_roll8_ocean: 8-day rollout</text><path d="M104.0,38.0 h92.6 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-92.6 z" fill="#a2acb6"/><text x="201.6" y="43.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="400">50.9</text><text x="100.0" y="58.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">e3_rainstab: stability fine-tune</text><path d="M104.0,53.0 h92.2 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-92.2 z" fill="#a2acb6"/><text x="201.2" y="58.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="400">50.7</text><text x="100.0" y="73.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">+ seasonal calibration</text><path d="M104.0,68.0 h103.7 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-103.7 z" fill="#7f8a95"/><text x="212.7" y="73.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="400">56.9</text><text x="100.0" y="88.4" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="600">+ 3-seed ensemble (served)</text><path d="M104.0,83.0 h118.6 a2.0,2.0 0 0 1 2.0,2.0 v3.0 a2.0,2.0 0 0 1 -2.0,2.0 h-118.6 z" fill="#2a78d6"/><text x="227.6" y="88.6" font-size="6.2" fill="#1f2933" text-anchor="start" font-weight="600">64.9</text></svg><figcaption>Organizer scoring functions on 353 held-out windows: error 30, heavy rain 15, anti-blur 10, shock causality 15. The served model scores 27.2, 13.6, 10 and 14.1. Calibration is fitted on 2020, so 2021 is the clean estimate.</figcaption></figure>
+    </section>
+  </div>
+
+  <section>
+    <h2>How we prevent drift and blur</h2>
+    <div class="cols">
+      <div>
+        <p class="chart-title">Skill against the better baseline, 2021</p>
+        <figure><svg viewBox="0 0 256 96" role="img" aria-label="Forecast skill against the better baseline at days 1, 4 and 8, test year 2021" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><line x1="26" x2="204" y1="73.2" y2="73.2" stroke="#e3e7ea" stroke-width="0.5"/><text x="23.0" y="75.2" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">-0.2</text><line x1="26" x2="204" y1="59.5" y2="59.5" stroke="#e3e7ea" stroke-width="0.5"/><text x="23.0" y="61.5" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">-0.1</text><line x1="26" x2="204" y1="45.9" y2="45.9" stroke="#5b6670" stroke-width="0.8"/><text x="23.0" y="47.9" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">0</text><line x1="26" x2="204" y1="32.3" y2="32.3" stroke="#e3e7ea" stroke-width="0.5"/><text x="23.0" y="34.3" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">+0.1</text><line x1="26" x2="204" y1="18.6" y2="18.6" stroke="#e3e7ea" stroke-width="0.5"/><text x="23.0" y="20.6" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">+0.2</text><line x1="26" x2="204" y1="5.0" y2="5.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="23.0" y="7.0" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">+0.3</text><text x="28.0" y="52.9" font-size="5.4" fill="#5b6670" text-anchor="start" font-weight="400">better baseline</text><text x="26.0" y="89.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 1</text><text x="102.3" y="89.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 4</text><text x="204.0" y="89.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 8</text><polyline points="26.0,11.2 102.3,52.2 204.0,73.7" fill="none" stroke="#c3cad1" stroke-width="1.1" stroke-linejoin="round"/><circle cx="26.0" cy="11.2" r="1.9" fill="#c3cad1" stroke="#fff" stroke-width="0.8"/><circle cx="102.3" cy="52.2" r="1.9" fill="#c3cad1" stroke="#fff" stroke-width="0.8"/><circle cx="204.0" cy="73.7" r="1.9" fill="#c3cad1" stroke="#fff" stroke-width="0.8"/><polyline points="26.0,13.5 102.3,45.4 204.0,61.1" fill="none" stroke="#a2acb6" stroke-width="1.1" stroke-linejoin="round"/><circle cx="26.0" cy="13.5" r="1.9" fill="#a2acb6" stroke="#fff" stroke-width="0.8"/><circle cx="102.3" cy="45.4" r="1.9" fill="#a2acb6" stroke="#fff" stroke-width="0.8"/><circle cx="204.0" cy="61.1" r="1.9" fill="#a2acb6" stroke="#fff" stroke-width="0.8"/><polyline points="26.0,14.1 102.3,43.7 204.0,55.7" fill="none" stroke="#7f8a95" stroke-width="1.1" stroke-linejoin="round"/><circle cx="26.0" cy="14.1" r="1.9" fill="#7f8a95" stroke="#fff" stroke-width="0.8"/><circle cx="102.3" cy="43.7" r="1.9" fill="#7f8a95" stroke="#fff" stroke-width="0.8"/><circle cx="204.0" cy="55.7" r="1.9" fill="#7f8a95" stroke="#fff" stroke-width="0.8"/><polyline points="26.0,8.5 102.3,37.5 204.0,47.1" fill="none" stroke="#2a78d6" stroke-width="1.6" stroke-linejoin="round"/><circle cx="26.0" cy="8.5" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="102.3" cy="37.5" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="204.0" cy="47.1" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="208.0" y="49.1" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="600">Served -0.01</text><text x="208.0" y="57.7" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">e3_rainstab -0.07</text><text x="208.0" y="64.7" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">b3 -0.11</text><text x="208.0" y="75.7" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">b1 -0.20</text></svg><figcaption>Skill = 1 − RMSE ÷ RMSE of the better of persistence and climatology, mean of six channels per window. Above 0 beats both.</figcaption></figure>
+        <p><b>Drift.</b> Rollout training teaches the model to correct its own errors: day-8 skill rises from −0.20 to −0.07, and the ensemble and calibration bring it to −0.01, level with the better baseline.</p>
+      </div>
+      <div>
+        <p class="chart-title">Day-8 spatial variance as a share of observed, 2021</p>
+        <figure><svg viewBox="0 0 256 88.0" role="img" aria-label="Day-8 spatial variance as a share of observed, per channel, test year 2021" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><rect x="83.0" y="9" width="146.4" height="65.0" fill="#eaf2fb"/><text x="156.2" y="6.5" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">kit band 0.4–2.5 (no blur, no noise)</text><line x1="83.0" x2="83.0" y1="9" y2="74.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="83.0" y="82.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">0.4</text><line x1="156.2" x2="156.2" y1="9" y2="74.0" stroke="#5b6670" stroke-width="0.8"/><text x="156.2" y="82.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">observed</text><line x1="229.4" x2="229.4" y1="9" y2="74.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="229.4" y="82.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">2.5</text><text x="56.0" y="18.2" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">temperature</text><line x1="156.2" x2="156.6" y1="16.2" y2="16.2" stroke="#2a78d6" stroke-width="1"/><circle cx="156.6" cy="16.2" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="161.6" y="18.2" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">1.00</text><text x="56.0" y="28.8" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">rain</text><line x1="156.2" x2="117.5" y1="26.8" y2="26.8" stroke="#2a78d6" stroke-width="1"/><circle cx="117.5" cy="26.8" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="112.5" y="28.8" font-size="5.8" fill="#1f2933" text-anchor="end" font-weight="400">0.62</text><text x="56.0" y="39.2" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">east wind</text><line x1="156.2" x2="129.4" y1="37.2" y2="37.2" stroke="#2a78d6" stroke-width="1"/><circle cx="129.4" cy="37.2" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="124.4" y="39.2" font-size="5.8" fill="#1f2933" text-anchor="end" font-weight="400">0.71</text><text x="56.0" y="49.8" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">north wind</text><line x1="156.2" x2="134.5" y1="47.8" y2="47.8" stroke="#2a78d6" stroke-width="1"/><circle cx="134.5" cy="47.8" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="129.5" y="49.8" font-size="5.8" fill="#1f2933" text-anchor="end" font-weight="400">0.76</text><text x="56.0" y="60.2" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">pressure</text><line x1="156.2" x2="143.9" y1="58.2" y2="58.2" stroke="#2a78d6" stroke-width="1"/><circle cx="143.9" cy="58.2" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="138.9" y="60.2" font-size="5.8" fill="#1f2933" text-anchor="end" font-weight="400">0.86</text><text x="56.0" y="70.8" font-size="6.1" fill="#1f2933" text-anchor="end" font-weight="400">moisture</text><line x1="156.2" x2="146.4" y1="68.8" y2="68.8" stroke="#2a78d6" stroke-width="1"/><circle cx="146.4" cy="68.8" r="2.6" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="141.4" y="70.8" font-size="5.8" fill="#1f2933" text-anchor="end" font-weight="400">0.89</text></svg><figcaption>Below 0.4 is a blurred average; above 2.5 is noise. All six channels sit in the band, worth 10 of 10 anti-blur points.</figcaption></figure>
+        <p><b>Blur.</b> The model predicts a change to today, the rollout loss punishes smooth averages, and rain is never pulled toward climatology. The ensemble had to keep all six channels in band to ship.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>Failure modes</h2>
-    <ul>
-      <li><b>Day 8 only draws level with the better baseline on an average 2021 window</b> (skill −0.009 [−0.021, +0.003]). Rain stays below the stronger reference at longer leads, and weak day-to-day variation makes ocean persistence hard to beat.</li>
-      <li><b>Extreme rain is under-forecast.</b> On val 2020, frequency bias at ≥ 25 mm/day is 0.72 / 0.32 / 0.15 at days 1 / 4 / 8, and day-8 rain variance is 0.49 of observed: averaging seeds smooths extremes further. The largest day-8 forecast is 49 mm/day; 250 mm/day was observed.</li>
-      <li><b>Shock instability is rain-only.</b> The stability fine-tune cut unstable val 2020 windows from 51 to 25 (warm Bay) and 37 to 18 (Arabian Sea). Every remaining peak is in rainfall, at a median distance of 0 cells from the box, adding a median 39–40 mm/day where the model already forecasts 23–26 mm/day.</li>
-      <li><b>Not a physical model.</b> "Physics-aware" here means persistence-anchored residual steps, terrain and land–sea inputs, and non-negative rain; there is no explicit conservation law. Shock responses show model sensitivity, not proven causation.</li>
+    <ul class="fail">
+      <li><b>Day 8 only matches the baseline.</b> Mean day-8 skill is −0.01: a typical window wins at day 4, not reliably at day 8.</li>
+      <li><b>Extreme rain is under-forecast.</b> Day-8 rain variance is 0.62 of observed; on 2020 the served model's largest day-8 rain was 49 mm/day where 250 fell.</li>
+      <li><b>The wind shock spreads weakly.</b> The Arabian Sea wind shock spreads outward by days 4–8 in 61% of 2021 windows (warm Bay: 97%).</li>
+      <li><b>Rare rain spikes after a shock.</b> In 4% of warm-Bay windows a response tops 5 std, always in rain near the box.</li>
+      <li><b>Not a physics model.</b> Physics-aware means persistence-anchored steps, terrain inputs and non-negative rain, with no conservation laws. Responses show model sensitivity, not causation.</li>
+      <li><b>Untested hardware.</b> Timed on ARM CPUs only; x86 is unmeasured, with 8× headroom under the 5 s limit.</li>
     </ul>
-  </div>
-  </div>
-  <footer>Organizer kit <span class="mono">india_climate_train.nc</span> (v1.0.0, sha256 f37bdbd0…903b) contains modified Copernicus Climate Change Service information (ERA5, Hersbach et al. 2020) via Google WeatherBench 2 (Rasp et al. 2024), CC BY 4.0. Evaluation and reproduction details are in <span class="mono">docs/CALIBRATION.md</span> and <span class="mono">docs/EXPERIMENTS.md</span>.</footer>
-</section>
+  </section>
 
-<!-- ============================ PAGE 2 ============================ -->
-<section class="page">
+  <footer>Data: organizer kit <code>india_climate_train.nc</code> (v1.0.0), modified Copernicus Climate Change Service information (ERA5, Hersbach et al. 2020) via WeatherBench 2 (Rasp et al. 2024), CC BY 4.0. Evidence and reproduction: <code>docs/CALIBRATION.md</code>, <code>docs/EXPERIMENTS.md</code>, <code>evaluation/results/a5b/</code>.</footer>
+</div>
+
+<div class="page">
   <header>
-    <h1>PRALAYA <span>Live visualization and agricultural impact</span></h1>
-    <div class="meta">Dashboard: <span class="mono">dashboard/</span> (Vite + TypeScript, separate from the server)<br>Every map and indicator comes from live <span class="mono">POST /simulate</span> calls</div>
+    <div class="mark">PRALAYA</div>
+    <div class="what">Live visualization and agricultural impact</div>
+    <div class="meta">Dashboard: <code style="color:#fff">dashboard/</code>, separate from the server<br>Every map and number comes from live POST /simulate calls</div>
   </header>
 
+  <div class="steps">
+    <div><b>1 Load</b>three days of state from the kit data</div>
+    <div><b>2 Run Prime</b>the unshocked 10-day forecast</div>
+    <div><b>3 Draw a shock</b>box plus a physical or percentage change</div>
+    <div><b>4 Run Branch</b>the same request with the shock</div>
+    <div><b>5 Compare</b>difference map, timeline, farm stress</div>
+  </div>
+
   <div class="cols">
-  <div>
-    <h2>Interactive map and timeline</h2>
-    <div class="flow"><span><b>1</b> Load 3-day state</span><span><b>2</b> Run Prime (no shock)</span><span><b>3</b> Draw shock box</span><span><b>4</b> Run Branch</span><span><b>5</b> Compare &amp; play days</span></div>
-    <ul>
-      <li>India map on the model's own 32 × 36 grid (row 0 = 6.5°N, column 0 = 65.5°E), north up, coastlines and city markers, seven variables (rain, temperature, wind speed, both wind components, pressure, moisture).</li>
-      <li>Views: <b>Prime</b>, <b>Branch</b>, signed <b>Difference</b> (Branch − Prime, zero-centred diverging scale fixed across days) and <b>Swipe</b>. A 10-day timeline plays the rollout.</li>
-      <li>Shocks: draw a box or type coordinates; add physical deltas (K, mm/day, m/s, Pa, kg/m²) or a percentage of the last input day. Presets reproduce the organizer's warm Bay of Bengal and weaker Arabian Sea wind recipes exactly. Negative rain shocks are capped so shocked rain never goes below 0.</li>
-      <li>Prime and Branch always send the identical history, seasonal encoding and horizon. A zero check sends an all-zero tensor and reports the per-channel difference against the official tolerance.</li>
-      <li><b>Ripple reach:</b> share of cells outside the shock box whose |Δ| exceeds a variable-specific threshold (rain 1 mm/day), per day. It describes the model's response, not a causal claim.</li>
-    </ul>
-    <figure>
-      <img src="dashboard_diff_day6.jpg" alt="PRALAYA dashboard, Difference view on forecast day 6 after a warm Bay of Bengal shock">
-      <figcaption>Live dashboard, Difference view, forecast day 6 (21 Jul 2021): warm Bay of Bengal shock (+3 K t2m, +15% moisture, dashed box) on the window ending 15 Jul 2021. The rainfall response has grown from the box toward the coast (peak |Δ| 25.6 mm/day); the farm region gets +0.6 mm over days 1–7. Green box: farm region. Captured from the single-model release; the shipped ensemble uses the same seed-0 response, so this Difference map is unchanged (peak 25.56 mm/day).</figcaption>
-    </figure>
+    <figure class="shot"><img src="dashboard_diff_day6.jpg" alt="Dashboard Difference view on forecast day 6 after a warm Bay of Bengal shock"><figcaption>Difference view (Branch − Prime rain), day 6 of the window ending 15 July 2021, warm Bay of Bengal shock (+3 K, +15% moisture, dashed box). The response has spread from the Bay toward the coast and inland; peak change 25.6 mm/day. The served ensemble gives the same rain difference, because Branch's response comes from seed 0.</figcaption></figure>
+    <section>
+      <h2>Interactive map and timeline</h2>
+      <ul>
+        <li>India on the model's own 32 × 36 grid with coastlines and cities; seven variables (rain, temperature, wind speed, both wind components, pressure, moisture).</li>
+        <li>Views: <span class="prime">Prime</span>, <span class="branch">Branch</span>, a signed Difference with a zero-centred scale fixed across days, and Swipe. A 10-day timeline plays the rollout.</li>
+        <li>Shocks: draw a box or type coordinates and add a physical change (K, mm/day, m/s, Pa, kg/m²) or a percentage. Presets reproduce the organizer's two shocks exactly. A zero check confirms an all-zero shock changes nothing.</li>
+        <li>The multiverse: every Branch is kept on a shelf (up to eight), recallable in one click, and <b>All futures</b> shows each Branch's difference map side by side.</li>
+        <li>Ripple reach: the share of cells outside the box that changed, per day, so a judge can watch a shock travel.</li>
+      </ul>
+    </section>
   </div>
 
-  <div>
-    <h2>Agricultural impact: weather-stress indicators</h2>
-    <p>For a user-drawn farm region (land cells with land fraction ≥ 0.5) over chosen forecast days, computed identically for Prime and Branch:</p>
-    <ul>
-      <li><b>Regional daily rain</b> = cos(latitude)-weighted mean of tp over region cells; <b>cumulative rain</b> = its sum over the days.</li>
-      <li><b>Dry day</b> = regional rain &lt; 2.5 mm/day; <b>longest dry spell</b> = longest run of dry days.</li>
-      <li><b>Heavy-rain exposure</b> = share of (cell, day) pairs with tp ≥ 10 mm/day (the contract's heavy-rain level).</li>
-      <li><b>Mean 2 m temperature</b> = weighted mean of the daily-mean t2m field (not a daily maximum).</li>
-    </ul>
-
-    <h2>Worked example (live, independently recomputed)</h2>
-    <p class="note">Window ending 15 Jul 2021 (test year, never used for training or selection), served ensemble. Shock: organizer warm Bay of Bengal recipe. Farm region: central India, 18.5–25.5°N, 74.5–83.5°E, 80 land cells, days 1–7. Values are recomputed from the served rollouts with the dashboard's formulas and match the live dashboard (+0.6 mm; day-6 peak 25.56 mm/day).</p>
-    <table>
-      <tr><th>Indicator</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Branch − Prime</th></tr>
-      <tr><td>Cumulative rainfall</td><td class="n">63.3 mm</td><td class="n">63.9 mm</td><td class="n">+0.6 mm</td></tr>
-      <tr><td>Longest dry spell</td><td class="n">1 d</td><td class="n">0 d</td><td class="n">−1 d</td></tr>
-      <tr><td>Dry days (&lt; 2.5 mm/day)</td><td class="n">1</td><td class="n">0</td><td class="n">−1</td></tr>
-      <tr><td>Heavy-rain exposure (≥ 10 mm/day)</td><td class="n">45.9%</td><td class="n">44.5%</td><td class="n">−1.4 pp</td></tr>
-      <tr><td>Mean 2 m temperature</td><td class="n">28.5 °C</td><td class="n">28.7 °C</td><td class="n">+0.19 K</td></tr>
-    </table>
-    <p>Reading: a warmer, moister Bay of Bengal leaves central India's week-ahead totals almost unchanged but removes its one dry day and leaves heavy-rain exposure about level. The rainfall response starts in the Bay (5% of cells outside the box change on day 1; peak 7.2 mm/day) and spreads to the coast and inland by day 6.</p>
-
-    <h2>Inverse search and preparedness</h2>
-    <p>Scenarios shows the rainfall target, Prime, and the lowest-cost qualifying shock or closest miss. Replay as Branch checks the full returned forecast. The water table compares total supply with the worst shortfall over the tested shocks.</p>
-    <p>For coastal Odisha (17–23°N, 82–88°E, days 1–7 from 2 Jul 2020), Prime gives 115.09 mm, already at the observed JJAS 2020 p90 wet week. At a 117 mm target the +2 K Bay of Bengal shock is the only one of 13 to cross, reaching <b>117.53 mm</b>; at 120 mm it is the closest miss by 2.47 mm. With a hypothetical 15 mm/day water target, supplying 0, 14, or 28 mm leaves a worst shortfall of <b>6.51, 2.01, or 0.00 mm</b>.</p>
-
-    <h2>Assumptions and limits</h2>
-    <ul>
-      <li>Indicators compare two simulated futures. A change relative to Prime is not a climatological drought, a yield estimate or a loss figure; no crop type, soil or irrigation data are used.</li>
-      <li>The grid is 1° and daily: it cannot resolve farm-scale conditions, hourly heat or cyclone tracks, and extreme rain is under-forecast (page 1).</li>
-      <li>A shock moves the model outside its training data; the response measures model sensitivity under a controlled change, not real-world causation. Large rain responses inside the shock box are the main known artefact.</li>
-      <li>Research prototype; not a substitute for IMD forecasts or agronomic advice. Next: the same comparison along sea routes for shipping.</li>
-    </ul>
+  <div class="cols">
+    <section>
+      <p class="chart-title">How strongly each shock acts, by forecast day (2021 mean)</p>
+      <figure><svg viewBox="0 0 256 92" role="img" aria-label="Mean peak shock response in channel standard deviations by forecast day, 2021" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><line x1="22" x2="170" y1="76.0" y2="76.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="78.0" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">0</text><line x1="22" x2="170" y1="63.3" y2="63.3" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="65.3" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">1</text><line x1="22" x2="170" y1="50.5" y2="50.5" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="52.5" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">2</text><line x1="22" x2="170" y1="37.8" y2="37.8" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="39.8" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">3</text><line x1="22" x2="170" y1="25.1" y2="25.1" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="27.1" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">4</text><line x1="22" x2="170" y1="12.4" y2="12.4" stroke="#5b6670" stroke-width="0.8" stroke-dasharray="3 2"/><text x="19.0" y="14.4" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">5</text><text x="174.0" y="14.4" font-size="5.6" fill="#5b6670" text-anchor="start" font-weight="400">stability limit</text><text x="22.0" y="85.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 1</text><text x="71.3" y="85.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 4</text><text x="137.1" y="85.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 8</text><text x="170.0" y="85.0" font-size="5.8" fill="#5b6670" text-anchor="middle" font-weight="400">day 10</text><polyline points="22.0,63.2 38.4,61.3 54.9,61.6 71.3,61.5 87.8,60.8 104.2,60.6 120.7,60.7 137.1,61.7 153.6,62.5 170.0,62.5" fill="none" stroke="#e08600" stroke-width="1.6" stroke-linejoin="round"/><text x="174.0" y="61.0" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">warm Bay of Bengal</text><polyline points="22.0,59.5 38.4,61.1 54.9,62.9 71.3,64.1 87.8,64.2 104.2,64.4 120.7,64.8 137.1,65.5 153.6,65.6 170.0,65.9" fill="none" stroke="#6250d6" stroke-width="1.6" stroke-linejoin="round"/><text x="174.0" y="72.4" font-size="5.8" fill="#1f2933" text-anchor="start" font-weight="400">weaker Arabian Sea wind</text></svg><figcaption>Largest response anywhere on the map, in channel standard deviations. On day 1, 97% (warm Bay) and 99% (Arabian Sea wind) of the response lies within 3 cells of the box; it then spreads without jumping and stays far below the 5-std limit on average.</figcaption></figure>
+    </section>
+    <section>
+      <p class="chart-title">Central India regional rain per day, mm (worked example)</p>
+      <figure><svg viewBox="0 0 256 88" role="img" aria-label="Central India regional rain per day, Prime and Branch, window ending 15 July 2021" font-family="Tomorrow, 'Avenir Next', sans-serif" xmlns="http://www.w3.org/2000/svg"><line x1="22" x2="244" y1="72.0" y2="72.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="74.0" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">0</text><line x1="22" x2="244" y1="55.5" y2="55.5" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="57.5" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">4</text><line x1="22" x2="244" y1="39.0" y2="39.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="41.0" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">8</text><line x1="22" x2="244" y1="22.5" y2="22.5" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="24.5" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">12</text><line x1="22" x2="244" y1="6.0" y2="6.0" stroke="#e3e7ea" stroke-width="0.5"/><text x="19.0" y="8.0" font-size="5.6" fill="#5b6670" text-anchor="end" font-weight="400">16</text><text x="22.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 1</text><text x="59.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 2</text><text x="96.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 3</text><text x="133.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 4</text><text x="170.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 5</text><text x="207.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 6</text><text x="244.0" y="81.0" font-size="5.6" fill="#5b6670" text-anchor="middle" font-weight="400">day 7</text><polyline points="22.0,62.8 59.0,57.7 96.0,44.2 133.0,30.5 170.0,21.0 207.0,16.1 244.0,10.7" fill="none" stroke="#2a78d6" stroke-width="1.6" stroke-linejoin="round"/><circle cx="22.0" cy="62.8" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="59.0" cy="57.7" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="96.0" cy="44.2" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="133.0" cy="30.5" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="170.0" cy="21.0" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="207.0" cy="16.1" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><circle cx="244.0" cy="10.7" r="1.9" fill="#2a78d6" stroke="#fff" stroke-width="0.8"/><text x="207.0" y="11.6" font-size="5.8" fill="#1f2933" text-anchor="middle" font-weight="600">Prime</text><polyline points="22.0,61.6 59.0,55.6 96.0,40.4 133.0,28.2 170.0,22.0 207.0,23.1 244.0,9.6" fill="none" stroke="#e08600" stroke-width="1.6" stroke-linejoin="round"/><circle cx="22.0" cy="61.6" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="59.0" cy="55.6" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="96.0" cy="40.4" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="133.0" cy="28.2" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="170.0" cy="22.0" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="207.0" cy="23.1" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><circle cx="244.0" cy="9.6" r="1.9" fill="#e08600" stroke="#fff" stroke-width="0.8"/><text x="207.0" y="32.1" font-size="5.8" fill="#1f2933" text-anchor="middle" font-weight="600">Branch</text></svg><figcaption>Window ending 15 July 2021, warm Bay of Bengal shock, farm region 18.5–25.5°N, 74.5–83.5°E (80 land cells). Recomputed from served rollouts with the dashboard's formulas.</figcaption></figure>
+    </section>
   </div>
+
+  <div class="cols">
+    <section>
+      <h2>Agricultural impact: weather-stress indicators</h2>
+      <p>For a farm region the user draws (land cells only), computed the same way for both futures: cumulative rain (cos-latitude weighted), dry days (&lt; 2.5 mm/day) and the longest dry spell, heavy-rain exposure (share of cell-days ≥ 10 mm/day) and mean temperature.</p>
+      <table>
+        <tr><th>Days 1–7, central India</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Change</th></tr>
+        <tr><td>Cumulative rain</td><td class="n">63.3 mm</td><td class="n">63.9 mm</td><td class="n">+0.6 mm</td></tr>
+        <tr><td>Dry days, longest dry spell</td><td class="n">1, 1 d</td><td class="n">0, 0 d</td><td class="n">−1, −1 d</td></tr>
+        <tr><td>Heavy-rain exposure</td><td class="n">45.9%</td><td class="n">44.5%</td><td class="n">−1.4 pp</td></tr>
+        <tr><td>Mean 2 m temperature</td><td class="n">28.5 °C</td><td class="n">28.7 °C</td><td class="n">+0.19 K</td></tr>
+      </table>
+      <p><b>Reading.</b> A warmer, moister Bay of Bengal barely changes central India's week of rain but removes its one dry day and warms it slightly. Rain rises on days 1–4 and falls on days 5–6.</p>
+    </section>
+    <section>
+      <h2>Inverse search and preparedness</h2>
+      <p>The scenario service asks the reverse question: which tested shock pushes a region past a rainfall target? It returns the lowest-cost qualifying shock or the closest miss, and <b>Replay as Branch</b> runs it through the full model.</p>
+      <p>For coastal Odisha (17–23°N, 82–88°E, days 1–7 from 2 July 2020), Prime gives 115.1 mm. Of 13 tested shocks, only +2 K over the Bay of Bengal crosses a 117 mm target (117.5 mm); at 120 mm it is the closest miss, 2.5 mm short. With an illustrative 15 mm/day water need, supplying 0, 14 or 28 mm leaves a worst shortfall of 6.5, 2.0 or 0 mm.</p>
+      <h3>Assumptions and limits</h3>
+      <ul>
+        <li>The indicators compare two simulated futures. They are not drought declarations, yield estimates or losses, and use no crop, soil or irrigation data.</li>
+        <li>A 1° daily grid cannot resolve farm-scale conditions, hourly heat or cyclone tracks, and extreme rain is under-forecast.</li>
+        <li>A research prototype, not a replacement for IMD forecasts or agronomic advice. Next: the same comparison along sea routes for shipping.</li>
+      </ul>
+    </section>
   </div>
-  <footer>Reproduce with <span class="mono">python serve.py --port 8000</span> and <span class="mono">python -m scripts.scenario_service --port 8001</span> in separate terminals. See <span class="mono">dashboard/README.md</span> for the dashboard commands and local demo inputs.</footer>
-</section>
+
+  <footer>Run it: <code>python serve.py --port 8000</code>, <code>python -m scripts.scenario_service --port 8001</code>, then <code>npm ci &amp;&amp; npm run dev</code> in <code>dashboard/</code> (see <code>dashboard/README.md</code>). This brief is built from the committed results by <code>python brief/build_brief.py</code>.</footer>
+</div>
 
 </body>
 </html>
