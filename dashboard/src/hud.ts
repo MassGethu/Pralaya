@@ -24,7 +24,8 @@ export interface HudTag {
 
 export interface HudModel {
   tags: HudTag[];
-  hero: { label: string; value: string; unit: string; onClick?: () => void } | null;
+  /** Headline readout. `num` (when given) is counted to from the previous value; `tone` colours it like the legend. */
+  hero: { label: string; value: string; unit: string; sub?: string; cell?: { r: number; c: number }; num?: number; digits?: number; tone?: "pos" | "neg"; onClick?: () => void } | null;
 }
 
 interface Rect { x: number; y: number; w: number; h: number }
@@ -125,12 +126,44 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
     }
   }
   if (model.hero) {
-    const hero = el(model.hero.onClick ? "button" : "div", "hud-hero");
-    hero.append(el("span", "hud-k", model.hero.label));
-    const n = el("span", "hud-n", model.hero.value);
-    n.append(el("small", "", model.hero.unit));
+    const h = model.hero;
+    const hero = el(h.onClick ? "button" : "div", "hud-hero");
+    if (h.tone) hero.dataset.tone = h.tone;
+    hero.append(el("span", "hud-k", h.label));
+    const n = el("span", "hud-n");
+    const v = el("span", "hud-n-v", h.value);
+    n.append(v, el("small", "", h.unit));
     hero.append(n);
-    if (model.hero.onClick) hero.addEventListener("click", model.hero.onClick);
+    if (h.sub) hero.append(el("span", "hud-hero-sub", h.sub));
+    if (h.onClick) hero.addEventListener("click", h.onClick);
+    hero.style.left = `${g.padL + 12}px`;
     host.append(hero);
-  }
+    if (h.cell) {
+      // mark the cell the number refers to
+      const pin = el("div", `hud-peak${h.tone ? ` ${h.tone}` : ""}`);
+      const px = g.padL + (h.cell.c + 0.5) * g.cell, py = g.padT + (NLAT - 1 - h.cell.r + 0.5) * g.cell;
+      Object.assign(pin.style, { left: `${px}px`, top: `${py}px`, width: `${Math.max(14, g.cell * 1.6)}px`, height: `${Math.max(14, g.cell * 1.6)}px` });
+      host.append(pin);
+    }
+    countTo(v, h);
+  } else lastHero = null;
+}
+
+// Count the hero number from its previous value (ease-out, 450 ms) so a new day or Branch reads as a change.
+let lastHero: number | null = null;
+let heroRaf = 0;
+function countTo(node: HTMLElement, h: NonNullable<HudModel["hero"]>) {
+  cancelAnimationFrame(heroRaf);
+  const to = h.num;
+  const from = lastHero;
+  lastHero = to ?? null;
+  if (to == null || from == null || from === to || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const d = h.digits ?? 1, t0 = performance.now(), ms = 450;
+  const fmtN = (x: number) => (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(x).toFixed(d);
+  const tick = () => {
+    const k = Math.min(1, (performance.now() - t0) / ms), e = 1 - (1 - k) ** 3;
+    node.textContent = fmtN(from + (to - from) * e);
+    if (k < 1) heroRaf = requestAnimationFrame(tick);
+  };
+  heroRaf = requestAnimationFrame(tick);
 }

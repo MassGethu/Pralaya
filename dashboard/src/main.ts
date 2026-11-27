@@ -1,6 +1,6 @@
 import { ApiError, type Health, health, simulate } from "./api";
 import {
-  CHANNELS, CHANNEL_INFO, CHANNEL_STD, type Channel, DEFAULT_STEPS, type InitialState, NCELL, NCH, type Rollout,
+  CHANNELS, CHANNEL_INFO, CHANNEL_STD, type Channel, DEFAULT_STEPS, type InitialState, NCELL, NCH, NLON, type Rollout,
   latOf, lonOf, parseInitialState,
 } from "./contract";
 import { type ViewVar, VIEW_VARS, difference, displayField, maxAbs, sharedRange } from "./fields";
@@ -13,7 +13,7 @@ import { escapeHtml, fmt, signed } from "./format";
 import { WindFlow, type WindSource } from "./particles";
 import { CITIES, type MapContent, MapView, type Scale, classedRainScale, divergingScale, gridFrom, sequentialScale } from "./render";
 import { RIPPLE_THRESHOLDS, outsideMask, rippleFraction } from "./ripple";
-import { type HudTag, renderHud } from "./hud";
+import { type HudModel, type HudTag, renderHud } from "./hud";
 import { Timeline } from "./timeline";
 import { CommandField } from "./command";
 import { type AppApi, buildCommands, nextAction } from "./actions";
@@ -795,7 +795,23 @@ function renderHudNow() {
     sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(1)}–${latOf(f.r1).toFixed(1)}°N · ${lonOf(f.c0).toFixed(1)}–${lonOf(f.c1).toFixed(1)}°E`,
     rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–", onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
   };
-  renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: null });
+  renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: heroReadout(b, stale, diffs) });
+}
+
+/** The demo's headline: the largest change anywhere on the map today, signed, on the Difference view. */
+function heroReadout(b: BranchRun | null, stale: boolean, diffs: Float32Array[] | null): HudModel["hero"] {
+  if (S.mapView !== "diff" || !b || b.zero || stale || !diffs) return null;
+  const f = diffs[S.day - 1];
+  let k = 0;
+  for (let i = 1; i < f.length; i++) if (Math.abs(f[i]) > Math.abs(f[k])) k = i;
+  const v = f[k], vi = varInfo(), ripple = rippleSeries();
+  const where = `${latOf(Math.floor(k / NLON)).toFixed(1)}°N ${lonOf(k % NLON).toFixed(1)}°E`;
+  const wetter = S.view === "tp" ? (v >= 0 ? "wetter" : "drier") : (v >= 0 ? "higher" : "lower");
+  return {
+    label: `Biggest change · day ${S.day}`, value: signed(v, 1), num: Number(v.toFixed(1)), digits: 1, unit: vi.deltaUnit,
+    tone: v >= 0 ? "pos" : "neg", cell: { r: Math.floor(k / NLON), c: k % NLON },
+    sub: `${wetter} at ${where}${ripple ? ` · reaches ${Math.round(ripple[S.day - 1] * 100)}% of cells outside the box` : ""}`,
+  };
 }
 
 /** Tempest-style event header: what scenario the card is about and whether the maps are current. */
