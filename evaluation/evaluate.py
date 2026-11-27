@@ -131,6 +131,7 @@ def evaluate(ckpt: str, split: str, data_path: str, shock_stride: int = 1, strid
         "anti_blur_points_proxy": S.anti_blur_points(ratios),
     }
     res["uncertainty"] = uncertainty(ss_w, csi_w, ss_lead_w, d4p_w, ratios, init_days)
+    res["uncertainty"]["ss_per_window_values"] = [float(v) for v in ss_w]   # for paired comparisons
     m = spatial.mse_maps(P, T, PE, CL, LEADS)
     res["spatial"] = {"regions": spatial.region_table(m, arc.static, LEADS),
                       "weak_cells": spatial.weak_cells(m, arc.static, LEADS)}
