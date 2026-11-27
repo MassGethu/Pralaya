@@ -197,6 +197,97 @@ def worked_chart() -> str:
     return svg(width, height, body, "Central India regional rain per day, Prime and Branch, window ending 15 July 2021")
 
 
+def breakdown_chart() -> str:
+    """Served model's 2021 points per scoring part, as a filled share of each part's maximum."""
+    doc = load("a5b/served_test.json")
+    agg = doc["aggregate"]
+    rows = [("Forecast error (RMSE skill)", agg["rmse_points_proxy"], 30),
+            ("Heavy-rain hits (CSI)", agg["csi_points_proxy"], 15),
+            ("No blur (day-8 variance)", agg["anti_blur_points_proxy"], 10),
+            ("Shock causality", doc["shocks"]["causality_points_proxy_mean"], 15)]
+    width, left, right, row = 256, 104, 34, 13
+    plot = width - left - right
+    unit = plot / 30  # one point is the same length on every row
+    height = row * len(rows) + 2
+    body = []
+    for i, (name, value, cap) in enumerate(rows):
+        y = i * row + 2
+        body.append(text(left - 4, y + 7.2, name, 6.1, INK, "end"))
+        body.append(f'<rect x="{left}" y="{y + 2}" width="{unit * cap:.1f}" height="7" rx="2" fill="{GRID}"/>')
+        body.append(bar(left, y + 2, unit * value, 7, SERVED))
+        body.append(text(left + unit * cap + 3, y + 7.6, f"{value:.1f} / {cap}", 6.1, INK, "start", 600))
+    return svg(width, height, body, "Served model's 2021 points in each scoring part, against the maximum")
+
+
+def impact_chart() -> str:
+    """Prime and Branch farm-stress indicators for the worked example, one row per indicator."""
+    w = load("a5b/worked_example_2021-07-15.json")
+    p, b = w["prime"], w["branch"]
+    rows = [("Cumulative rain, mm", p["cum"], b["cum"], "{:.1f}", "{:+.1f} mm"),
+            ("Heavy-rain exposure, %", p["heavy"], b["heavy"], "{:.1f}", "{:+.1f} pp"),
+            ("Mean 2 m temperature, °C", p["t"], b["t"], "{:.1f}", "{:+.2f} K"),
+            ("Dry days", p["dry"], b["dry"], "{:.0f}", "{:+.0f} d"),
+            ("Longest dry spell, days", p["spell"], b["spell"], "{:.0f}", "{:+.0f} d")]
+    width, left, right, row = 256, 92, 40, 17
+    plot = width - left - right
+    height = row * len(rows) + 12
+    body = [f'<rect x="{left}" y="1" width="6" height="5" rx="1" fill="{SERVED}"/>', text(left + 8, 5.4, "Prime", 5.8, INK),
+            f'<rect x="{left + 34}" y="1" width="6" height="5" rx="1" fill="{SHOCK}"/>', text(left + 42, 5.4, "Branch (warm Bay shock)", 5.8, INK),
+            text(width - 2, 5.4, "change", 5.8, MUTED, "end")]
+    for i, (name, pv, bv, fmt, dfmt) in enumerate(rows):
+        y = 10 + i * row
+        scale = plot / (max(pv, bv, 1) * 1.18)  # each row on its own scale: compare Prime with Branch, not rows
+        body.append(text(left - 4, y + 9, name, 6.1, INK, "end"))
+        for j, (v, color) in enumerate(((pv, SERVED), (bv, SHOCK))):
+            yy = y + 1.5 + j * 6.5
+            if v > 0:
+                body.append(bar(left, yy, max(scale * v, 0.8), 5.2, color))
+            body.append(text(left + scale * v + 2.5, yy + 4.4, fmt.format(v), 5.6, INK))
+        delta = bv - pv
+        body.append(text(width - 2, y + 9, dfmt.format(delta), 6.1, SHOCK if abs(delta) > 1e-9 else MUTED, "end", 600))
+    return svg(width, height, body, "Farm-stress indicators for central India, Prime against Branch, days 1 to 7")
+
+
+# Coastal Odisha inverse search with the served bundle, as documented in dashboard/README.md
+# (input ending 2020-07-02, days 1-7, 13 tested shocks).
+ODISHA = {"prime": 115.09, "best": 117.53, "targets": (117, 120), "supply": ((0, 6.51), (14, 2.01), (28, 0.0))}
+
+
+def inverse_chart() -> str:
+    width, left, right, top = 256, 92, 30, 9
+    plot = width - left - right
+    lo, hi = 110.0, 122.0
+    px = lambda v: left + plot * (v - lo) / (hi - lo)
+    rows = [("Prime (no shock)", ODISHA["prime"], SERVED), ("+2 K Bay of Bengal", ODISHA["best"], SHOCK)]
+    body = []
+    for i, (name, value, color) in enumerate(rows):
+        y = top + i * 12
+        body.append(text(left - 4, y + 7, name, 6.1, INK, "end"))
+        body.append(bar(left, y + 2, px(value) - left, 7, color))
+        body.append(text(px(value) + 2.5, y + 7.6, f"{value:.1f} mm", 6.1, INK, "start", 600))
+    end = top + 24
+    for t, label, anchor, dx in zip(ODISHA["targets"], ("target 117: crossed", "120: closest miss"), ("end", "start"), (-1.5, 1.5)):
+        x = px(t)
+        body.append(f'<line x1="{x:.1f}" x2="{x:.1f}" y1="{top - 2}" y2="{end + 1}" stroke="{INK}" stroke-width="0.7" stroke-dasharray="2 1.5"/>')
+        body.append(text(x + dx, top - 3.5, label, 5.4, MUTED, anchor))
+    for v in (112, 116, 120):
+        body.append(text(px(v), end + 8, str(v), 5.4, MUTED, "middle"))
+    body.append(text(left - 4, end + 8, "7-day rain, mm", 5.4, MUTED, "end"))
+    # Water top-up against the worst shortfall across the 13 shocks.
+    y0 = end + 18
+    body.append(text(left - 4, y0 + 5, "Worst water shortfall", 6.1, INK, "end", 600))
+    body.append(text(left - 4, y0 + 12, "(15 mm/day need)", 5.4, MUTED, "end"))
+    unit = plot / 7.0
+    for i, (supply, short) in enumerate(ODISHA["supply"]):
+        y = y0 + i * 9
+        body.append(text(left + 1, y + 5.6, f"supply {supply} mm", 5.6, MUTED))
+        x0 = left + 40
+        if short > 0:
+            body.append(bar(x0, y + 1, unit * short * 0.55, 6, WIND))
+        body.append(text(x0 + unit * short * 0.55 + 2.5, y + 5.8, f"{short:.1f} mm short" if short else "no shortfall", 5.8, INK, "start", 600))
+    return svg(width, y0 + 27, body, "Coastal Odisha inverse search: Prime and the best shock against two rain targets, and water shortfall")
+
+
 def box(x: float, y: float, w: float, h: float, title: str, lines: list[str], accent: str = INK, fill: str = "#fff") -> str:
     parts = [f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="3" fill="{fill}" stroke="{accent}" stroke-width="0.8"/>']
     base = y + h / 2 - (len(lines) * 7.2 + 7.6) / 2 + 6.4
@@ -244,7 +335,8 @@ def main() -> None:
     args = parser.parse_args()
     html = (BRIEF / "brief.template.html").read_text()
     figures = {"ARCH": architecture(), "RELEASES": releases_chart(), "SKILL": skill_chart(),
-               "VARIANCE": variance_chart(), "SHOCK": shock_chart(), "WORKED": worked_chart()}
+               "VARIANCE": variance_chart(), "SHOCK": shock_chart(), "WORKED": worked_chart(),
+               "BREAKDOWN": breakdown_chart(), "IMPACT": impact_chart(), "INVERSE": inverse_chart()}
     for key, figure in figures.items():
         token = "{{" + key + "}}"
         if token not in html:

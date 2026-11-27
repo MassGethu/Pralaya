@@ -76,7 +76,7 @@
   <p class="lead"><b>What makes it different.</b> From three days of India's weather, PRALAYA rolls the atmosphere forward ten days in about a quarter of a second on four CPU cores. Apply a shock, such as a warmer Bay of Bengal, and a second timeline shows where its effect travels. Both timelines feed a farm-stress panel. Everything on screen is computed live by our own trained model: nothing is looked up, pre-rendered or downloaded.</p>
 
   <div class="facts">
-    <div class="fact"><div class="n">64.9 <small>/ 70</small></div><div class="l">local kit score on the held-out 2021 year, up from 33.6 for our first model</div></div>
+    <div class="fact"><div class="n">64.9 <small>/ 70</small></div><div class="l">local kit score on the 2021 follow-up year (never trained or fitted on), up from 33.6 for our first model</div></div>
     <div class="fact"><div class="n">0.22–0.59 <small>s</small></div><div class="l">per 10-day request across two 4-CPU, 6 GB container runs with no network and a read-only repo</div></div>
     <div class="fact"><div class="n">0 <small>of 353</small></div><div class="l">2021 windows with an invalid forecast (NaN, negative rain or out-of-range temperature)</div></div>
     <div class="fact"><div class="n">97.5<small>%</small></div><div class="l">of 2021 windows beat “repeat yesterday” at day 4 (mean skill +0.26)</div></div>
@@ -90,14 +90,16 @@
       <h2>Model design and technical approach</h2>
       <ul>
         <li><b>Network.</b> A residual CNN (<code>model/net.py</code>): width 96, five residual blocks, replicate padding, 0.86 M parameters. Inputs: three days of the six channels, land–sea mask, orography, latitude, longitude and the season. It predicts tomorrow as a change to today, so an untrained network equals persistence.</li>
-        <li><b>Training</b> (<code>train.py</code>, latitude-weighted MSE). One-step (b1), then fine-tuning through 4-day (b3) and 8-day (e3) rollouts that feed the model its own output. e3_rainstab also weights ocean temperature 4× and penalises shock responses above 3 std. 2005–2019 train, 2020 selects, 2021 is held out; selection rules were fixed before scoring.</li>
+        <li><b>Training</b> (<code>train.py</code>, latitude-weighted MSE). One-step (b1), then fine-tuning through 4-day (b3) and 8-day (e3) rollouts that feed the model its own output. e3_rainstab also weights ocean temperature 4× and penalises shock responses above 3 std. 2005–2019 train, 2020 selects; every selection rule was written down before scoring. 2021 is never trained or fitted on; it was scored once after each decision as a follow-up check.</li>
         <li><b>Ensemble.</b> Prime is the mean of three seeds. Branch adds seed 0's own shock response: averaging the three responses weakened how far shocks spread and failed our gate.</li>
         <li><b>Calibration</b> (<code>model/calibration.py</code>). Weights fitted on 2020 per lead, channel and land or sea blend the mean toward a smooth seasonal curve (a mean plus three annual harmonics per cell, fitted on 2005–2019) and the last observed day. It holds no daily weather and no dates. Rain keeps weight 1: the model alone forecasts it.</li>
       </ul>
     </section>
     <section>
       <p class="chart-title">Local kit score on 2021, out of 70</p>
-      <figure>{{RELEASES}}<figcaption>Organizer scoring functions on 353 held-out windows: error 30, heavy rain 15, anti-blur 10, shock causality 15. The served model scores 27.2, 13.6, 10 and 14.1. Calibration is fitted on 2020, so 2021 is the clean estimate.</figcaption></figure>
+      <figure>{{RELEASES}}<figcaption>Organizer scoring functions on 353 windows of 2021. Each step was chosen on 2020 alone.</figcaption></figure>
+      <p class="chart-title">Where the served model's 2021 points come from</p>
+      <figure>{{BREAKDOWN}}<figcaption>The kit's four automatic parts (70 of the 100 points; the repo check and this brief make up the rest).</figcaption></figure>
     </section>
   </div>
 
@@ -176,19 +178,15 @@
     <section>
       <h2>Agricultural impact: weather-stress indicators</h2>
       <p>For a farm region the user draws (land cells only), computed the same way for both futures: cumulative rain (cos-latitude weighted), dry days (&lt; 2.5 mm/day) and the longest dry spell, heavy-rain exposure (share of cell-days ≥ 10 mm/day) and mean temperature.</p>
-      <table>
-        <tr><th>Days 1–7, central India</th><th class="n">Prime</th><th class="n">Branch</th><th class="n">Change</th></tr>
-        <tr><td>Cumulative rain</td><td class="n">63.3 mm</td><td class="n">63.9 mm</td><td class="n">+0.6 mm</td></tr>
-        <tr><td>Dry days, longest dry spell</td><td class="n">1, 1 d</td><td class="n">0, 0 d</td><td class="n">−1, −1 d</td></tr>
-        <tr><td>Heavy-rain exposure</td><td class="n">45.9%</td><td class="n">44.5%</td><td class="n">−1.4 pp</td></tr>
-        <tr><td>Mean 2 m temperature</td><td class="n">28.5 °C</td><td class="n">28.7 °C</td><td class="n">+0.19 K</td></tr>
-      </table>
+      <p class="chart-title">Days 1–7, central India: Prime against Branch</p>
+      <figure>{{IMPACT}}<figcaption>Each row has its own scale, so read Prime against Branch within a row, not across rows.</figcaption></figure>
       <p><b>Reading.</b> A warmer, moister Bay of Bengal barely changes central India's week of rain but removes its one dry day and warms it slightly. Rain rises on days 1–4 and falls on days 5–6.</p>
     </section>
     <section>
       <h2>Inverse search and preparedness</h2>
       <p>The scenario service asks the reverse question: which tested shock pushes a region past a rainfall target? It returns the lowest-cost qualifying shock or the closest miss, and <b>Replay as Branch</b> runs it through the full model.</p>
-      <p>For coastal Odisha (17–23°N, 82–88°E, days 1–7 from 2 July 2020), Prime gives 115.1 mm. Of 13 tested shocks, only +2 K over the Bay of Bengal crosses a 117 mm target (117.5 mm); at 120 mm it is the closest miss, 2.5 mm short. With an illustrative 15 mm/day water need, supplying 0, 14 or 28 mm leaves a worst shortfall of 6.5, 2.0 or 0 mm.</p>
+      <p class="chart-title">Coastal Odisha, days 1–7 from 2 July 2020 (13 tested shocks)</p>
+      <figure>{{INVERSE}}<figcaption>Only +2 K over the Bay of Bengal crosses 117 mm; at 120 mm it is the closest miss, 2.5 mm short. Bottom: the worst shortfall across all 13 futures for an illustrative 15 mm/day water need, by how much water is supplied.</figcaption></figure>
       <h3>Assumptions and limits</h3>
       <ul>
         <li>The indicators compare two simulated futures. They are not drought declarations, yield estimates or losses, and use no crop, soil or irrigation data.</li>
