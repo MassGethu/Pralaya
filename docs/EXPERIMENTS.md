@@ -412,3 +412,31 @@ weights pinned to 1, using `codex/rainstab-demo` once Codex pushes it.
    (tp has rain weight 1 in the calibration, so served Prime tp = raw tp).
 
 If any gate fails, or the run is not evaluated by 06:45, `a4_rainhead` is not promoted and the release stays as it is.
+
+### `a4_rainhead` result (val 2020, reported 06:04 IST): **FAIL, not promoted**
+Training 05:14–06:01, best epoch 10 (val_score 0.4076; start 0.4091; e3_rainstab 0.3999). `best.pt` sha256
+`717038a6…16297f11`. `codex/rainstab-demo` was not pushed by 06:01, so the calibration was refitted with
+`scripts/clim_blend_experiment.py` on `mass/clim-blend-e3` `bd573d1` (rung 4, floor 0.3), rain weights then pinned to 1
+and bound to the checkpoint hash (`calibration.pt` sha256 `263289d4…736ff6a`, not committed). The same procedure on the
+release checkpoint reproduces main's `calibration.pt` exactly (max |Δ| 0). The served path is main `b97d7d8`'s
+`inference_adapter.py` + `evaluation/evaluate.py --served` with this branch's `model/net.py`; the baseline was re-run
+the same way and reproduces S 57.92 (`release_served_val.json`). Per-window skills for gate 2 were captured from
+`evaluate`'s own per-window list.
+
+| gate | baseline (served release) | a4_rainhead served | result |
+|---|---|---|---|
+| 1. S ≥ 58.92 | 57.92 | **51.68** (raw 42.48) | **fail** |
+| 2. paired Δ skill CI > 0 | – | −0.0161 [−0.0194, −0.0121] | **fail** |
+| 3. propagation warm / stall (≥ −2 pp) | 97.7 / 57.1 % | 97.2 / **44.6 %** | **fail** (stall −12.4 pp) |
+| 3. stability warm / stall (≥ −2 pp) | 92.9 / 94.9 % | 96.3 / 98.0 % | pass |
+| 4. null exact, invalid windows | yes, 0 | yes, 0 | pass |
+| 5. anti-blur, day-8 in band (≥ −2 pp) | 10/10, 0.870 | 10/10, 0.851 (−1.9 pp) | pass |
+| 6. 25 mm CSI d1 / d8 > 0.365 / 0.078 | 0.365 / 0.078 | 0.368 / **0.049** | **fail** (d8) |
+
+- **Points:** RMSE 18.89 vs 22.92, CSI (10 mm) 8.99 vs 11.07, anti-blur 10 vs 10, causality 13.80 vs 13.92.
+- **Rain got drier, not sharper:** day-8 frequency bias at 25 mm/day 0.25 vs 0.31, POD 0.059 vs 0.095; day-8 tp
+  variance ratio 0.51 vs 0.61. Day-1 heavy rain is about unchanged (25 mm CSI 0.368 vs 0.365; 50 mm 0.222 vs 0.236).
+- **Likely cause:** the occurrence BCE dominated the start (epoch-1 loss 2.36, of which BCE 2.18; val_score jumped
+  0.409 → 0.465) and the run spent its epochs recovering. p < 1 also shrinks every rain amount, so the multiplicative
+  form biases tp low. Not tuned further: one pre-registered run.
+- **Outcome:** the release stays as it is.
