@@ -18,6 +18,7 @@ export interface HudTag {
   sub?: string; // one short line under the title
   rows: [string, string][];
   pin?: string; // compact value for small maps
+  chip?: string; // value shown at the right of the collapsed card's top line
   onOpen?: () => void;
   actions: { label: string; primary?: boolean; busy?: boolean; disabled?: boolean; onClick: () => void }[];
 }
@@ -42,6 +43,27 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls: string, text?: s
   e.className = cls;
   if (text != null) e.textContent = text;
   return e;
+}
+
+// Which cards the user has clicked open (kept across re-renders), and until when a run keeps them open.
+const pinned = new Set<HudTag["kind"]>();
+let peekUntil = 0;
+let peekTimer = 0;
+
+/** Open every card for `ms` (after a run, so the new numbers are seen), then fold back unless clicked open. */
+export function peekHud(host: HTMLElement, ms = 4000) {
+  peekUntil = performance.now() + ms;
+  host.querySelectorAll(".hud-tag:not(.compact)").forEach((t) => t.classList.add("open"));
+  clearTimeout(peekTimer);
+  peekTimer = window.setTimeout(() => {
+    peekUntil = 0;
+    host.querySelectorAll<HTMLElement>(".hud-tag:not(.compact)").forEach((t) => {
+      const kind = t.classList.contains("farm") ? "farm" : "shock";
+      if (pinned.has(kind)) return;
+      t.classList.remove("open");
+      t.querySelector(".hud-head")?.setAttribute("aria-expanded", "false");
+    });
+  }, ms);
 }
 
 export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
@@ -77,15 +99,36 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
       Object.assign(tag.style, { left: `${x}px`, top: `${y}px` });
       continue;
     }
-    const head = el("div", "hud-k");
+    // Collapsed by default: a one- or two-line chip, so the map underneath stays visible and drawable.
+    // Hover or keyboard focus opens it; clicking the top line keeps it open; peekHud() opens it briefly after a run.
+    const open = pinned.has(t.kind) || performance.now() < peekUntil;
+    tag.classList.toggle("open", open);
+    const head = el("button", "hud-k hud-head");
+    head.type = "button";
+    head.setAttribute("aria-expanded", String(open));
+    head.setAttribute("aria-label", `${t.kicker}: ${t.title}. ${open ? "Collapse" : "Expand"} details`);
     head.append(el("i", "hud-dot"), el("span", "", t.kicker));
-    tag.append(head, el("div", "hud-title", t.title));
-    if (t.sub) tag.append(el("div", "hud-sub", t.sub));
+    if (t.chip) head.append(el("span", "hud-chip-v", t.chip));
+    head.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (tag.classList.contains("open")) { pinned.delete(t.kind); peekUntil = 0; } else pinned.add(t.kind);
+      const now = pinned.has(t.kind);
+      tag.classList.toggle("open", now);
+      head.setAttribute("aria-expanded", String(now));
+    });
+    head.addEventListener("pointerdown", (e) => e.stopPropagation());
+    tag.append(head);
+    if (t.title !== t.kicker) tag.append(el("div", "hud-title", t.title));
+    const body = el("div", "hud-body");
+    const inner = el("div", "hud-body-in");
+    body.append(inner);
+    if (t.sub) inner.append(el("div", "hud-sub", t.sub));
     if (t.rows.length) {
       const kv = el("div", "hud-kv");
       for (const [k, v] of t.rows) kv.append(el("span", "", k), el("span", "hud-v", v));
-      tag.append(kv);
+      inner.append(kv);
     }
+    tag.append(body);
     if (t.actions.length) {
       const act = el("div", "hud-actions");
       for (const a of t.actions) {
@@ -96,10 +139,16 @@ export function renderHud(host: HTMLElement, g: MapGeometry, model: HudModel) {
         b.addEventListener("pointerdown", (e) => e.stopPropagation());
         act.append(b);
       }
-      tag.append(act);
+      inner.append(act);
     }
     host.append(tag);
+    // place by the opened size, so opening never lands on the other region
+    tag.classList.add("measure");
     const h = tag.offsetHeight || 110;
+    body.style.transition = "none"; // snap back to the chip: re-renders must not replay the closing animation
+    tag.classList.remove("measure");
+    void body.offsetHeight;
+    body.style.transition = "";
     const fit = (x: number, y: number): Rect => ({ x: Math.max(4, Math.min(g.width - TAG_W - 4, x)), y: Math.max(4, Math.min(g.height - h - 4, y)), w: TAG_W, h });
     const others = model.tags.filter((o) => o !== t).map((o) => boxRect(o.box, g));
     const candidates = [

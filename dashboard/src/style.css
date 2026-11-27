@@ -881,3 +881,29 @@ svg .callout { font-size: 12px; }
 .map-host.under-grid { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .mg, .mg-tile { animation: none; } .mg-tile { transition: none; } }
 @media (max-width: 900px) { .mg { left: var(--gap); } .mg-legend { display: none; } }
+
+/* ---- Map cards fold into chips: the map stays visible and drawable; hover, focus or a click opens them ---- */
+.hud-head { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 6px; width: 100%; cursor: pointer;
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--shock); }
+.hud-tag.farm .hud-head { color: var(--farm); }
+.hud-head { letter-spacing: 0.1em; }
+.hud-head > span:first-of-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-head::after { content: ""; flex: none; margin-left: 4px; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg); opacity: 0.7; transition: transform 180ms var(--ease-out); }
+.hud-chip-v { margin-left: auto; flex: none; white-space: nowrap; font: 600 12px var(--mono); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.hud-head:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 4px; }
+.hud-tag:not(.compact) { padding: 8px 11px; transition: opacity 160ms var(--ease-out), background-color 160ms; }
+.hud-tag:not(.compact) .hud-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 14px; }
+.hud-body { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows 200ms var(--ease-out), opacity 160ms var(--ease-out); }
+.hud-body-in { min-height: 0; overflow: hidden; }
+/* open: clicked, just ran, or hovered / focused (hover waits a moment so passing the pointer over does not pop it) */
+.hud-tag.open .hud-body, .hud-tag.measure .hud-body, .hud-tag:focus-within .hud-body { grid-template-rows: 1fr; opacity: 1; }
+.hud-tag:hover .hud-body { grid-template-rows: 1fr; opacity: 1; transition-delay: 160ms; }
+.hud-tag.measure .hud-body { transition: none; }
+.hud-tag.open .hud-head::after, .hud-tag:focus-within .hud-head::after, .hud-tag:hover .hud-head::after { transform: translateY(1px) rotate(-135deg); }
+.hud-tag.open .hud-title { white-space: normal; }
+/* collapsed chips are a little see-through so the field under them still reads */
+.hud-tag:not(.compact):not(.open):not(:hover):not(:focus-within) { background: rgba(7,10,15,0.7); }
+/* while a box is being drawn, every overlay steps aside */
+.hud.drawing .hud-tag, .hud.drawing .hud-hero, .hud.drawing .hud-line { opacity: 0.12; pointer-events: none !important; }
+@media (prefers-reduced-motion: reduce) { .hud-body, .hud-head::after, .hud-tag:not(.compact) { transition: none !important; } }

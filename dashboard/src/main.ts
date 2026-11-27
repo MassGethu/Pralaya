@@ -13,7 +13,7 @@ import { escapeHtml, fmt, signed } from "./format";
 import { WindFlow, type WindSource } from "./particles";
 import { CITIES, type MapContent, MapView, type Scale, classedRainScale, divergingScale, gridFrom, sequentialScale } from "./render";
 import { RIPPLE_THRESHOLDS, outsideMask, rippleFraction } from "./ripple";
-import { type HudModel, type HudTag, renderHud } from "./hud";
+import { type HudModel, type HudTag, peekHud, renderHud } from "./hud";
 import { Timeline } from "./timeline";
 import { CommandField } from "./command";
 import { type AppApi, buildCommands, nextAction } from "./actions";
@@ -121,6 +121,7 @@ function setupMaps() {
   };
   mapMain.onBox = (b, final) => {
     const box = clampBox(b);
+    $("hud").classList.toggle("drawing", !final); // cards fade and let clicks through while a box is drawn
     if (!final) {
       S.draft = box;
     } else {
@@ -436,6 +437,7 @@ async function runBranch(zero: boolean, replay?: ScenarioReplay) {
     }
     if (!zero) setTab("impact");
     flash(document.querySelector(".map-host"));
+    if (!zero) requestAnimationFrame(() => peekHud($("hud")));
     return true;
   } catch (e) {
     if (seq !== S.seq.branch || (e instanceof ApiError && e.kind === "aborted")) return;
@@ -885,7 +887,8 @@ function renderHudNow() {
     box: f, kind: "farm", kicker: "Farm region", state: imp && !imp.empty ? "live" : "empty",
     title: "Farm region",
     sub: !imp ? (S.prime ? "Run Branch to compare" : "Waiting for Prime") : imp.empty ? imp.reason : `${latOf(f.r0).toFixed(1)}–${latOf(f.r1).toFixed(1)}°N · ${lonOf(f.c0).toFixed(1)}–${lonOf(f.c1).toFixed(1)}°E`,
-    rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–", onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
+    rows: farmRows, pin: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : "–",
+    chip: imp && !imp.empty ? `${signed(imp.rainChangeMm, 1)} mm` : undefined, onOpen: () => openDrawer("impact"), actions: [{ label: "Details", onClick: () => openDrawer("impact") }],
   };
   renderHud($("hud"), mapMain.geometry(), { tags: S.input ? [shock, farm] : [], hero: heroReadout(b, stale, diffs) });
 }
