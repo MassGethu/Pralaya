@@ -27,4 +27,10 @@ def load_cpu(bundle_dir: Path) -> Callable[[np.ndarray, np.ndarray, int], np.nda
         return fc.simulate(history, doy_sincos, steps, None)
 
     forecast.model_id = fc.model_id  # type: ignore[attr-defined]
+    if len(fc.nets) > 1:
+        # Ensemble bundles take the shock response from the first member alone (see docs/EXPERIMENTS.md, a5b).
+        def response(history: np.ndarray, doy_sincos: np.ndarray, steps: int) -> np.ndarray:
+            return fc.simulate(history, doy_sincos, steps, None, member=0)
+
+        forecast.response = response  # type: ignore[attr-defined]
     return forecast

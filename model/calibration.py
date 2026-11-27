@@ -11,6 +11,15 @@ GRID_SHAPE = (6, 32, 36)
 DAY_ANGLE = 2 * np.pi / 365
 
 
+def bundle_fingerprint(bundle: Path) -> str:
+    """SHA-256 of pralaya.pt, or, for an ensemble bundle, of its members' SHA-256s in order."""
+    from model.forecaster import ensemble_members
+
+    members = ensemble_members(bundle / "pralaya.pt")
+    digests = [hashlib.sha256(member.read_bytes()).hexdigest() for member in members]
+    return digests[0] if len(digests) == 1 else hashlib.sha256(" ".join(digests).encode()).hexdigest()
+
+
 class Calibration:
     def __init__(self, coefficients: np.ndarray, alpha: np.ndarray, land: np.ndarray, persistence: np.ndarray):
         if coefficients.shape != (7, *GRID_SHAPE) or alpha.shape != (HORIZON, GRID_SHAPE[0], 2):
@@ -33,7 +42,7 @@ class Calibration:
         import torch
 
         pack = torch.load(path, map_location="cpu", weights_only=True)
-        checkpoint_sha = hashlib.sha256((bundle / "pralaya.pt").read_bytes()).hexdigest()
+        checkpoint_sha = bundle_fingerprint(bundle)
         if pack["checkpoint_sha256"] != checkpoint_sha:
             raise ValueError("calibration was fitted for a different checkpoint")
         return cls(*(pack[key].numpy() for key in ("coefficients", "alpha", "land", "persistence")))

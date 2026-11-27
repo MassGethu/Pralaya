@@ -72,9 +72,12 @@ def test_checkpoint_is_real_and_tracked():
         return  # The evaluator image can exercise the actual bundled bytes without Git.
     repo = subprocess.run([git, "rev-parse", "--show-toplevel"], cwd=ROOT, capture_output=True, text=True)
     if repo.returncode == 0 and Path(repo.stdout.strip()).resolve() == ROOT:
-        path = str(CHECKPOINT.relative_to(ROOT))
-        tracked = subprocess.run([git, "ls-files", "--error-unmatch", "--", path], cwd=ROOT, capture_output=True)
-        assert tracked.returncode == 0, f"checkpoint is not tracked: {path}"
+        from model.forecaster import ensemble_members
+
+        for member in ensemble_members(CHECKPOINT):
+            path = str(member.relative_to(ROOT))
+            tracked = subprocess.run([git, "ls-files", "--error-unmatch", "--", path], cwd=ROOT, capture_output=True)
+            assert tracked.returncode == 0, f"checkpoint is not tracked: {path}"
         ignored = subprocess.run([git, "check-ignore", "--no-index", "-q", "--", path], cwd=ROOT, capture_output=True)
         assert ignored.returncode == 1, ".gitignore must keep !model/bundle/pralaya.pt"
 
@@ -128,18 +131,41 @@ def test_calibration_preserves_rain_and_raw_shock_response():
     history = _history()
     prime_inputs = prepare_simulation(_body(history, None))
     branch_inputs = prepare_simulation(_body(history, _warm_bay_delta(history[-1]).tolist()))
+    # An ensemble bundle's Prime is the member mean; its shock response is the first member's own (a5b).
+    response = getattr(raw_forecast, "response", raw_forecast)
     raw_prime = raw_forecast(*prime_inputs[:3]).astype(np.float64)
-    raw_branch = raw_forecast(*branch_inputs[:3]).astype(np.float64)
+    raw_delta = (response(*branch_inputs[:3]).astype(np.float64)
+                 - response(*prime_inputs[:3]).astype(np.float64))
     prime = engine.run(*prime_inputs)
     branch = engine.run(*branch_inputs)
     np.testing.assert_array_equal(prime[:, 1], raw_prime[:, 1])
-    np.testing.assert_array_equal(branch[:, 1], raw_branch[:, 1])
-    np.testing.assert_allclose(branch - prime, raw_branch - raw_prime, atol=1e-10, rtol=0)
+    unclipped = raw_prime[:, 1] + raw_delta[:, 1] >= 0
+    np.testing.assert_allclose(branch[:, 1][unclipped], (raw_prime[:, 1] + raw_delta[:, 1])[unclipped], atol=1e-10, rtol=0)
+    np.testing.assert_allclose((branch - prime)[:, [0, 2, 3, 4, 5]], raw_delta[:, [0, 2, 3, 4, 5]], atol=1e-10, rtol=0)
+
+
+def test_ensemble_bundle_members_and_single_member_identity(tmp_path):
+    import json
+    import shutil
+
+    from model.forecaster import Forecaster, ensemble_members
+
+    spec = json.loads((BUNDLE / "ensemble.json").read_text())
+    assert spec["members"][0] == "pralaya.pt" and len(spec["members"]) == 3
+    assert [m.name for m in ensemble_members(BUNDLE / "pralaya.pt")] == spec["members"]
+    # Without ensemble.json the same pralaya.pt is a plain single model, and member=0 reproduces it exactly.
+    shutil.copy(BUNDLE / "pralaya.pt", tmp_path / "pralaya.pt")
+    single, ensemble = Forecaster(tmp_path / "pralaya.pt"), Forecaster(BUNDLE / "pralaya.pt")
+    assert len(single.nets) == 1 and len(ensemble.nets) == 3
+    history, season = _history(), np.array([0.5, 0.8], dtype=np.float32)
+    np.testing.assert_array_equal(single.simulate(history, season, STEPS), ensemble.simulate(history, season, STEPS, member=0))
+    members = [ensemble.simulate(history, season, STEPS, member=i) for i in range(3)]
+    np.testing.assert_allclose(ensemble.simulate(history, season, STEPS), np.mean(members, axis=0), atol=1e-4, rtol=0)
 
 
 def main() -> int:
     tests = [test_checkpoint_is_real_and_tracked, test_loader_contract, test_adapter_end_to_end,
-             test_calibration_preserves_rain_and_raw_shock_response]
+             test_calibration_preserves_rain_and_raw_shock_response]  # the ensemble test needs pytest's tmp_path
     failed = 0
     for test in tests:
         try:

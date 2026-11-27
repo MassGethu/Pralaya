@@ -20,3 +20,5 @@ evaluation/results/*.npy
 *.pt
 !model/bundle/pralaya.pt
 !model/bundle/calibration.pt
+!model/bundle/member_s1.pt
+!model/bundle/member_s2.pt

@@ -369,3 +369,66 @@ after another, 00:54–01:50, with `--init runs/b3_roll4_s{1,2}/best.pt --seed {
   - trusted Bay of Bengal −2 … +2 K and Arabian Sea wind −30 … +30 %;
   - the scenario service has an `e3_rainstab` profile with 13 defaults.
   - **The 2020-08-13 +1.5 K demo case no longer crosses.** The new demo is 2020-07-02, +2 K, 113.1 → 115.6 mm.
+
+---
+## Round 3, pre-registered: `a5_ens3` (3-seed average + recalibration)
+Written and pushed **before** any `a5_ens3` number was computed (27 Nov 2026, ~05:15 IST). Baseline: the served release
+on main `b97d7d8` (`e3_rainstab` seed 0 + paired calibration), served S **57.92** on val 2020.
+
+**Change (one idea):** the forecast is the mean of three independent rollouts of `e3_rainstab` seeds 0/1/2
+(`pralaya.pt` sha256 `90605130…`, `e3_rainstab_s1` `16eb4c26…`, `e3_rainstab_s2` `560bbcc3…`). Each member rolls out on
+its own; only the outputs are averaged. The paired calibration is then refitted to the ensemble's raw val rollouts
+with the existing rung-4 fit, floor 0.3, and the rain weights pinned to 1, exactly as for the release. Branch keeps
+the raw ensemble's paired response (raw ensemble Branch − raw ensemble Prime). No other setting is tuned.
+
+**Gates (all must hold, served path, val 2020, `python -m evaluation.evaluate --served`):**
+1. S ≥ 58.92 (served baseline + 1.0).
+2. Paired per-window skill difference vs the served baseline: 95% CI lower bound > 0.
+3. Shock propagation and stability, both boxes: no more than 2 pp below the served baseline.
+4. Null shock exact; 0 invalid windows.
+5. Anti-blur 10/10 and the day-8 in-band share no more than 2 pp below the served baseline.
+6. pytest, contract check, official validator and repo scan pass; p95 local request time < 500 ms.
+
+2021 is scored once afterwards as a follow-up (must not fall below the served release's 56.92). Seeds are the
+members themselves, so there is no separate rule-5 run. If any gate fails, the release stays as it is.
+
+### `a5_ens3` result (val 2020, served): **not promoted**, fails gate 3
+| served, val 2020 | S | rmse | CSI | blur | causality | propagates warm / stall | stable warm / stall | day-8 in band |
+|---|---|---|---|---|---|---|---|---|
+| release (`e3_rainstab` + calibration) | 57.92 | 22.92 | 11.07 | 10 | 13.92 | 97.7 / 57.1 % | 92.9 / 94.9 % | 0.870 |
+| `a5_ens3` | 65.82 | 29.16 | 12.79 | 10 | 13.87 | 95.5 / 44.9 % | 99.4 / 99.7 % | 0.858 |
+
+- Gate 1 passes (S +7.9). Gates 4 and 5 pass (null exact; anti-blur 10/10; in-band −1.1 pp; tp variance ratio 0.49).
+- **Gate 3 fails.** Averaging three members' shock responses shrinks the far-field response, so propagation falls
+  by 2.2 pp (warm) and 12.2 pp (stall). The 2 pp limit was fixed in advance, so `a5_ens3` is not promoted, and its
+  paired CI and the 2021 follow-up were not run.
+- The refitted weights trust the ensemble more than the single model (day-8 non-rain weights 0.30–0.84 vs
+  0.30–0.64; persistence share on day 1 is 0.5 vs 1.0).
+
+## Round 3b, pre-registered: `a5b_ens3_resp0`
+Written and pushed **before** any `a5b` number was computed (27 Nov 2026, ~05:25 IST), after `a5_ens3` failed gate 3.
+
+**Change vs `a5_ens3`, one thing:** Prime stays the calibrated 3-seed mean (same `calibration.pt`, same fit). Branch
+uses seed 0's own paired response instead of the averaged one: Branch = calibrated ensemble Prime +
+(seed-0 raw Branch − seed-0 raw Prime). The shock response is therefore exactly the shipped release's.
+**Gates:** the same six as `a5_ens3`, against the same served baseline. 2021 follow-up once afterwards (≥ 56.92).
+
+### `a5b_ens3_resp0` result: **passes all six gates, promoted**
+| served | S | rmse | CSI | blur | causality | propagates warm / stall | stable warm / stall | day-8 in band |
+|---|---|---|---|---|---|---|---|---|
+| release, val 2020 | 57.92 | 22.92 | 11.07 | 10 | 13.92 | 97.7 / 57.1 % | 92.9 / 94.9 % | 0.870 |
+| **a5b, val 2020** | **65.92** | 29.16 | 12.79 | 10 | 13.97 | 97.7 / 57.6 % | 93.5 / 96.0 % | 0.858 |
+| release, 2021 follow-up | 56.92 | 21.00 | 11.84 | 10 | 14.08 | 96.9 / 60.6 % | 95.8 / 97.7 % | 0.856 |
+| **a5b, 2021 follow-up** | **64.93** | 27.24 | 13.58 | 10 | 14.10 | 96.9 / 60.9 % | 96.3 / 98.0 % | 0.844 |
+
+- Gate 1: S +8.00. Gate 2: paired per-window skill +0.0250 [+0.0218, +0.0276] (354 windows, block bootstrap).
+- Gate 3: propagation and stability are equal or higher in both boxes. Gate 4: null exact, 0 invalid windows.
+- Gate 5: anti-blur 10/10; in-band −1.1 pp; day-8 variance ratios 0.49 (tp) to 1.00, all inside 0.4–2.5.
+- Gate 6: 36 pytest, contract check, official schema validator and repo scan 15/15 pass. Requests take 100–167 ms
+  on the M5 (5 rollouts for a shocked request, 3 otherwise), 245 MB RSS. Native x86 timing is not measured.
+- 2021 follow-up (run once, after selection): +8.01 S, paired +0.0250 [+0.0219, +0.0285] on 353 windows.
+- **Caveat:** the calibration weights are fitted on 2020, so the 2020 number is partly in-sample. Quote the 2021
+  follow-up (64.93) as the cleaner estimate. Score aggregation differs from other teams' reports.
+- Reproduce: `scripts/clim_blend_experiment.py prepare/val --rung 4 --floor 0.3 --ckpt <bundle>/pralaya.pt` on the
+  ensemble bundle, pin rain weights to 1, then `python scripts/paired_served_eval.py <release>/pralaya.pt
+  <candidate>/pralaya.pt val <data>`. Results in `evaluation/results/a5b/`. calibration.pt sha256 `1f9d56217bf1bd5f…`.
